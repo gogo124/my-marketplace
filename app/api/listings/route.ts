@@ -39,12 +39,35 @@ export async function POST(request: Request) {
     const title = String(formData.get("title") || "").trim();
     const description = String(formData.get("description") || "").trim();
     const price = Number(formData.get("price"));
+    const type = String(formData.get("type") || "sale").trim();
     const category = String(formData.get("category") || "").trim();
     const location = String(formData.get("location") || "").trim();
+    const phoneNumber = String(formData.get("phoneNumber") || "").trim();
+    const whatsappNumber = String(formData.get("whatsappNumber") || "").trim();
+    const startDate = String(formData.get("startDate") || "").trim();
+    const endDate = String(formData.get("endDate") || "").trim();
+    const deposit = String(formData.get("deposit") || "").trim();
     const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File);
 
-    if (!title || !description || !category || !location || Number.isNaN(price) || price < 0) {
+    if (
+      !title ||
+      !description ||
+      !["sale", "rental"].includes(type) ||
+      !category ||
+      !location ||
+      !phoneNumber ||
+      !whatsappNumber ||
+      Number.isNaN(price) ||
+      price < 0
+    ) {
       return NextResponse.json({ error: "Invalid listing payload." }, { status: 400 });
+    }
+
+    if (type === "rental" && (!startDate || !endDate || !deposit)) {
+      return NextResponse.json(
+        { error: "Rental listings require start date, end date, and deposit." },
+        { status: 400 }
+      );
     }
 
     if (files.length > MAX_IMAGES) {
@@ -89,11 +112,17 @@ export async function POST(request: Request) {
     );
 
     const listing = await Listing.create({
+      type,
       title,
       description,
       price,
       category,
       location,
+      phoneNumber,
+      whatsappNumber,
+      startDate: type === "rental" && startDate ? new Date(startDate) : null,
+      endDate: type === "rental" && endDate ? new Date(endDate) : null,
+      deposit: type === "rental" ? deposit : "",
       images,
       seller: session.user.id
     });

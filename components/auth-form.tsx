@@ -12,6 +12,7 @@ type AuthFormProps = {
 export function AuthForm({ mode }: AuthFormProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -60,13 +61,33 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setError("");
+    setGoogleLoading(true);
+
+    try {
+      await signIn("google", { callbackUrl: "/" });
+    } catch (submissionError) {
+      setError(
+        submissionError instanceof Error ? submissionError.message : "Google sign-in failed."
+      );
+      setGoogleLoading(false);
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-[2rem] border border-ink/10 bg-white p-8 shadow-card">
-      <div>
+    <form
+      onSubmit={handleSubmit}
+      className="glass-panel space-y-5 rounded-[2.4rem] border border-white/70 p-8"
+    >
+      <div className="space-y-3">
+        <span className="inline-flex rounded-full bg-forest px-3 py-1 text-xs font-bold uppercase tracking-[0.25em] text-white">
+          Moroccan Trip
+        </span>
         <h1 className="text-3xl font-black text-ink">
           {mode === "login" ? "Welcome back" : "Create your seller account"}
         </h1>
-        <p className="mt-2 text-sm text-ink/65">
+        <p className="text-sm leading-7 text-ink/65">
           {mode === "login"
             ? "Log in to publish listings and reply to buyers."
             : "Join the marketplace to publish listings and chat securely."}
@@ -77,7 +98,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           name="name"
           placeholder="Full name"
           required
-          className="w-full rounded-2xl border border-ink/10 px-4 py-3 outline-none ring-clay/30 focus:ring"
+          className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
         />
       ) : null}
       <input
@@ -85,7 +106,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         type="email"
         placeholder="Email address"
         required
-        className="w-full rounded-2xl border border-ink/10 px-4 py-3 outline-none ring-clay/30 focus:ring"
+        className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
       <input
         name="password"
@@ -93,13 +114,22 @@ export function AuthForm({ mode }: AuthFormProps) {
         placeholder="Password"
         required
         minLength={6}
-        className="w-full rounded-2xl border border-ink/10 px-4 py-3 outline-none ring-clay/30 focus:ring"
+        className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
+      <button
+        type="button"
+        onClick={handleGoogleSignIn}
+        disabled={loading || googleLoading}
+        className="w-full rounded-[1.4rem] border border-ink/10 bg-white px-4 py-3 font-semibold text-ink shadow-card disabled:opacity-60"
+      >
+        {googleLoading ? "Connecting to Google..." : "Continue with Google"}
+      </button>
+      <p className="text-center text-xs uppercase tracking-[0.2em] text-ink/40">or</p>
       {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
       <button
         type="submit"
-        disabled={loading}
-        className="w-full rounded-2xl bg-forest px-4 py-3 font-semibold text-white disabled:opacity-60"
+        disabled={loading || googleLoading}
+        className="w-full rounded-[1.4rem] bg-forest px-4 py-3 font-semibold text-white shadow-card disabled:opacity-60"
       >
         {loading ? "Please wait..." : mode === "login" ? "Log in" : "Register"}
       </button>

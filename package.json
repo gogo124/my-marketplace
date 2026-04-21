@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.104.0",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
     "mongodb-memory-server": "^11.0.1",

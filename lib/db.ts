@@ -26,10 +26,13 @@ export async function connectToDatabase() {
 
   if (!cached.promise) {
     let mongoUri = process.env.MONGODB_URI;
+    const allowInMemoryDatabase = process.env.ALLOW_IN_MEMORY_DB === "true";
 
     if (!mongoUri) {
-      if (process.env.NODE_ENV === "production") {
-        throw new Error("Missing MONGODB_URI environment variable.");
+      if (process.env.NODE_ENV === "production" && !allowInMemoryDatabase) {
+        throw new Error(
+          "Missing MONGODB_URI environment variable. Add it to .env.local or set ALLOW_IN_MEMORY_DB=true for a temporary in-memory database."
+        );
       }
 
       cached.memoryServer ??= await MongoMemoryServer.create({

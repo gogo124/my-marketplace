@@ -1,9 +1,7 @@
 export function formatPrice(price: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  return `${new Intl.NumberFormat("fr-MA", {
     maximumFractionDigits: 0
-  }).format(price);
+  }).format(price)} DH`;
 }
 
 export function serializeDocument<T>(document: T): T {

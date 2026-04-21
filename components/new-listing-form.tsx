@@ -10,6 +10,14 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_IMAGES = 6;
 
 export function NewListingForm() {
+  return <ListingForm mode="sale" />;
+}
+
+export function RentalListingForm() {
+  return <ListingForm mode="rental" />;
+}
+
+function ListingForm({ mode }: { mode: "sale" | "rental" }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -77,8 +85,14 @@ export function NewListingForm() {
     payload.set("title", String(formData.get("title") || ""));
     payload.set("description", String(formData.get("description") || ""));
     payload.set("price", String(formData.get("price") || ""));
+    payload.set("type", mode);
     payload.set("category", String(formData.get("category") || ""));
     payload.set("location", String(formData.get("location") || ""));
+    payload.set("phoneNumber", String(formData.get("phoneNumber") || ""));
+    payload.set("whatsappNumber", String(formData.get("whatsappNumber") || ""));
+    payload.set("startDate", String(formData.get("startDate") || ""));
+    payload.set("endDate", String(formData.get("endDate") || ""));
+    payload.set("deposit", String(formData.get("deposit") || ""));
     selectedFiles.forEach((file) => payload.append("images", file));
 
     try {
@@ -110,18 +124,28 @@ export function NewListingForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-[2rem] border border-ink/10 bg-white p-8 shadow-card">
-      <div>
-        <h1 className="text-3xl font-black text-ink">Create a listing</h1>
-        <p className="mt-2 text-sm text-ink/65">
-          Publish a clear, local-first ad with pricing, imagery, and a chat-ready listing page.
+    <form
+      onSubmit={handleSubmit}
+      className="glass-panel space-y-5 rounded-[2.4rem] border border-white/70 p-8"
+    >
+      <div className="space-y-3">
+        <span className="inline-flex rounded-full bg-clay px-3 py-1 text-xs font-bold uppercase tracking-[0.25em] text-white">
+          Moroccan Trip
+        </span>
+        <h1 className="text-3xl font-black text-ink">
+          {mode === "sale" ? "Create a sale listing" : "Create a rental listing"}
+        </h1>
+        <p className="text-sm leading-7 text-ink/65">
+          {mode === "sale"
+            ? "Publish a clear product or service listing with direct contact."
+            : "Publish a rental listing with availability dates, deposit, and direct contact."}
         </p>
       </div>
       <input
         name="title"
         placeholder="Title"
         required
-        className="w-full rounded-2xl border border-ink/10 px-4 py-3 outline-none ring-clay/30 focus:ring"
+        className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
       <div className="grid gap-4 md:grid-cols-2">
         <input
@@ -130,22 +154,60 @@ export function NewListingForm() {
           min="0"
           placeholder="Price"
           required
-          className="w-full rounded-2xl border border-ink/10 px-4 py-3 outline-none ring-clay/30 focus:ring"
+          className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
         />
         <input
           name="category"
           placeholder="Category"
           required
-          className="w-full rounded-2xl border border-ink/10 px-4 py-3 outline-none ring-clay/30 focus:ring"
+          className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
         />
       </div>
       <input
         name="location"
         placeholder="Location"
         required
-        className="w-full rounded-2xl border border-ink/10 px-4 py-3 outline-none ring-clay/30 focus:ring"
+        className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
-      <div className="space-y-3 rounded-[1.5rem] border border-ink/10 bg-sand/60 p-4">
+      <input
+        name="phoneNumber"
+        type="tel"
+        placeholder="Phone number"
+        required
+        className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
+      />
+      <input
+        name="whatsappNumber"
+        type="tel"
+        placeholder="WhatsApp number"
+        required
+        className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
+      />
+      {mode === "rental" ? (
+        <>
+          <div className="grid gap-4 md:grid-cols-2">
+            <input
+              name="startDate"
+              type="date"
+              required
+              className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
+            />
+            <input
+              name="endDate"
+              type="date"
+              required
+              className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
+            />
+          </div>
+          <input
+            name="deposit"
+            placeholder="Deposit"
+            required
+            className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
+          />
+        </>
+      ) : null}
+      <div className="space-y-3 rounded-[1.7rem] border border-ink/10 bg-sand/70 p-4">
         <div>
           <p className="text-sm font-semibold text-ink">Product images</p>
           <p className="mt-1 text-sm text-ink/60">
@@ -184,15 +246,15 @@ export function NewListingForm() {
         placeholder="Description"
         rows={6}
         required
-        className="w-full rounded-2xl border border-ink/10 px-4 py-3 outline-none ring-clay/30 focus:ring"
+        className="w-full rounded-[1.6rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
       {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-2xl bg-clay px-4 py-3 font-semibold text-white disabled:opacity-60"
+        className="w-full rounded-[1.4rem] bg-clay px-4 py-3 font-semibold text-white shadow-card disabled:opacity-60"
       >
-        {loading ? "Publishing..." : "Publish listing"}
+        {loading ? "Publishing..." : mode === "sale" ? "Publish sale listing" : "Publish rental listing"}
       </button>
     </form>
   );

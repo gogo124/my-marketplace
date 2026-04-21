@@ -30,14 +30,16 @@ export async function POST(request: Request) {
     const user = await User.create({
       name,
       email: String(email).toLowerCase(),
-      password: hashedPassword
+      password: hashedPassword,
+      role: "user"
     });
 
     return NextResponse.json({
       user: {
         id: user._id.toString(),
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
   } catch (error) {
