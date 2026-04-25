@@ -9,6 +9,15 @@ import User from "@/models/User";
 
 const TOKEN_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
+function isDynamicServerUsageError(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      (error as { digest?: unknown }).digest === "DYNAMIC_SERVER_USAGE"
+  );
+}
+
 const googleProvider =
   process.env.GOOGLE_ID && process.env.GOOGLE_SECRET
     ? GoogleProvider({
@@ -191,6 +200,10 @@ export async function getAuthSession() {
 
     return session;
   } catch (error) {
+    if (isDynamicServerUsageError(error)) {
+      throw error;
+    }
+
     logServerError("auth.getAuthSession", error);
     return null;
   }
