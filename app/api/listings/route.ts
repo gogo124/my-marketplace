@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
+import { createRouteErrorResponse } from "@/lib/api-errors";
 import { connectToDatabase } from "@/lib/db";
 import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
 import { MAX_LISTING_IMAGES } from "@/lib/image-upload-shared";
@@ -16,6 +17,8 @@ export async function GET(request: Request) {
     const type = String(searchParams.get("type") || "").trim();
     const status = String(searchParams.get("status") || "active").trim();
     const q = String(searchParams.get("q") || "").trim();
+    const page = Math.max(1, Number(searchParams.get("page")) || 1);
+    const pageSize = Math.min(24, Math.max(1, Number(searchParams.get("pageSize")) || 12));
     const query: Record<string, unknown> = {};
 
     if (status === "active" || status === "inactive") {
@@ -35,14 +38,35 @@ export async function GET(request: Request) {
       ];
     }
 
-    const listings = await Listing.find(query)
-      .populate("seller", "name email avatar")
-      .sort({ createdAt: -1 });
+    const [listings, total] = await Promise.all([
+      Listing.find(query)
+        .select(
+          "title description price type category location phoneNumber whatsappNumber startDate endDate deposit images seller status createdAt"
+        )
+        .populate("seller", "name email avatar sellerVerificationStatus verified")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * pageSize)
+        .limit(pageSize)
+        .lean(),
+      Listing.countDocuments(query)
+    ]);
 
-    return NextResponse.json({ listings });
+    return NextResponse.json({
+      listings,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        hasNextPage: page * pageSize < total,
+        hasPreviousPage: page > 1
+      }
+    });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not fetch listings.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return createRouteErrorResponse(error, "Could not fetch listings.", {
+      logContext: "api.listings.get",
+      logDetails: { url: request.url }
+    });
   }
 }
 
@@ -108,7 +132,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ listing: populatedListing }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not create listing.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return createRouteErrorResponse(error, "Could not create listing.", {
+      duplicateKeyMessage: "A listing with these details already exists.",
+      logContext: "api.listings.post"
+    });
   }
 }

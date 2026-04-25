@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { PlaceDirectory } from "@/components/place-directory";
 import { PlaceForm } from "@/components/place-form";
-import { getBestPlaces, getPlaces, getTrendingPlaces } from "@/lib/camping";
+import { getCampingHighlights, getPlaces } from "@/lib/camping";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getDirection, resolveLocale, withLocale } from "@/lib/i18n";
+import { logServerError } from "@/lib/server-log";
 
 export default async function CampingPage({
   searchParams
@@ -13,12 +14,21 @@ export default async function CampingPage({
 }) {
   const { lang, q = "", city = "", category = "", bestSeason = "", safety = "", submitted = "" } = await searchParams;
   const locale = resolveLocale(lang);
-  const session = await getAuthSession();
-  const [places, trendingPlaces, bestPlaces] = await Promise.all([
-    getPlaces({ q, city, category, bestSeason, safety, userId: session?.user?.id }),
-    getTrendingPlaces(4),
-    getBestPlaces(4)
+  const session = await getAuthSession().catch((error) => {
+    logServerError("page.camping.auth", error);
+    return null;
+  });
+  const [places, highlights] = await Promise.all([
+    getPlaces({ q, city, category, bestSeason, safety, userId: session?.user?.id }).catch((error) => {
+      logServerError("page.camping.places", error, { q, city, category, bestSeason, safety });
+      return [];
+    }),
+    getCampingHighlights(4).catch((error) => {
+      logServerError("page.camping.highlights", error);
+      return { trendingPlaces: [], bestPlaces: [] };
+    })
   ]);
+  const { trendingPlaces, bestPlaces } = highlights;
   const loginHref = buildLoginPath("/camping", `lang=${locale}`, locale);
 
   return (

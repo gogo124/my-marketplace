@@ -4,7 +4,10 @@ import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { connectToDatabase } from "@/lib/db";
+import { logServerError } from "@/lib/server-log";
 import User from "@/models/User";
+
+const TOKEN_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 const googleProvider =
   process.env.GOOGLE_ID && process.env.GOOGLE_SECRET
@@ -124,9 +127,15 @@ export const authOptions: NextAuthOptions = {
         token.accountStatus = user.accountStatus ?? "active";
         token.canCreateAgency = Boolean(user.canCreateAgency);
         token.canCreateRenter = Boolean(user.canCreateRenter);
+        token.dbSyncedAt = Date.now();
       }
 
-      if (token.sub) {
+      const needsRefresh =
+        !token.dbSyncedAt ||
+        typeof token.dbSyncedAt !== "number" ||
+        Date.now() - token.dbSyncedAt > TOKEN_REFRESH_INTERVAL_MS;
+
+      if (token.sub && needsRefresh) {
         await connectToDatabase();
         const dbUser = await User.findById(token.sub)
           .select("role name email avatar accountStatus canCreateAgency canCreateRenter")
@@ -141,6 +150,8 @@ export const authOptions: NextAuthOptions = {
           token.canCreateAgency = Boolean(dbUser.canCreateAgency);
           token.canCreateRenter = Boolean(dbUser.canCreateRenter);
         }
+
+        token.dbSyncedAt = Date.now();
       }
 
       return token;
@@ -171,11 +182,16 @@ export const authOptions: NextAuthOptions = {
 };
 
 export async function getAuthSession() {
-  const session = await getServerSession(authOptions);
+  try {
+    const session = await getServerSession(authOptions);
 
-  if (session?.user?.accountStatus === "disabled") {
+    if (session?.user?.accountStatus === "disabled") {
+      return null;
+    }
+
+    return session;
+  } catch (error) {
+    logServerError("auth.getAuthSession", error);
     return null;
   }
-
-  return session;
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logServerError } from "@/lib/server-log";
 
 type DuplicateKeyError = {
   code?: number;
@@ -19,9 +20,11 @@ export function createRouteErrorResponse(
   fallback: string,
   options?: {
     duplicateKeyMessage?: string;
+    logContext?: string;
+    logDetails?: Record<string, unknown>;
   }
 ) {
-  console.error(error);
+  logServerError(options?.logContext || "api-route", error, options?.logDetails);
 
   if (isDuplicateKeyError(error)) {
     return NextResponse.json(

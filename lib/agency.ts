@@ -15,6 +15,7 @@ import Review from "@/models/Review";
 type AgencyDirectoryFilters = {
   q?: string;
   city?: string;
+  limit?: number;
 };
 
 export async function getAgencyProfileById(agencyId: string) {
@@ -78,8 +79,12 @@ export async function getAgencyProfiles(filters: AgencyDirectoryFilters = {}) {
   }
 
   const profiles = await AgencyProfile.find(query)
+    .select(
+      "name city description logo coverImage user whatsapp verificationStatus linkedRenterPartners trustedRenterPartners recommendedRenterPartners createdAt"
+    )
     .populate("user", "name email avatar role sellerVerificationStatus verified")
     .sort({ createdAt: -1 })
+    .limit(typeof filters.limit === "number" && filters.limit > 0 ? filters.limit : 0)
     .lean();
 
   const serializedProfiles = serializeDocument(profiles) as any[];
