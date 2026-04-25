@@ -10,11 +10,16 @@ type ListingFilters = {
   type?: string;
   location?: string;
   category?: string;
+  limit?: number;
+  page?: number;
+  pageSize?: number;
 };
 
-export async function getListings(filters: ListingFilters = {}) {
-  await connectToDatabase();
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
+function buildListingQuery(filters: ListingFilters = {}) {
   const query: Record<string, unknown> = { status: "active" };
   const search = typeof filters.q === "string" ? filters.q.trim() : "";
   const type = filters.type === "sale" || filters.type === "rental" ? filters.type : "";
@@ -26,28 +31,77 @@ export async function getListings(filters: ListingFilters = {}) {
   }
 
   if (location) {
-    query.location = { $regex: location, $options: "i" };
+    query.location = { $regex: escapeRegExp(location), $options: "i" };
   }
 
   if (category) {
-    query.category = { $regex: category, $options: "i" };
+    query.category = { $regex: escapeRegExp(category), $options: "i" };
   }
 
   if (search) {
+    const safeSearch = escapeRegExp(search);
     query.$or = [
-      { title: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
-      { location: { $regex: search, $options: "i" } },
-      { category: { $regex: search, $options: "i" } }
+      { title: { $regex: safeSearch, $options: "i" } },
+      { description: { $regex: safeSearch, $options: "i" } },
+      { location: { $regex: safeSearch, $options: "i" } },
+      { category: { $regex: safeSearch, $options: "i" } }
     ];
   }
 
-  const listings = await Listing.find(query)
+  return query;
+}
+
+export async function getListings(filters: ListingFilters = {}) {
+  await connectToDatabase();
+
+  const query = buildListingQuery(filters);
+
+  const listingQuery = Listing.find(query)
+    .select(
+      "title description price type category location phoneNumber whatsappNumber startDate endDate deposit images seller status createdAt"
+    )
     .populate("seller", "name email avatar sellerVerificationStatus verified")
-    .sort({ createdAt: -1 })
-    .lean();
+    .sort({ createdAt: -1 });
+
+  if (typeof filters.limit === "number" && filters.limit > 0) {
+    listingQuery.limit(filters.limit);
+  }
+
+  const listings = await listingQuery.lean();
 
   return serializeDocument(listings);
+}
+
+export async function getListingsPage(filters: ListingFilters = {}) {
+  await connectToDatabase();
+
+  const page = Math.max(1, Number(filters.page) || 1);
+  const pageSize = Math.min(24, Math.max(1, Number(filters.pageSize) || Number(filters.limit) || 12));
+  const query = buildListingQuery(filters);
+  const [listings, total] = await Promise.all([
+    Listing.find(query)
+      .select(
+        "title description price type category location phoneNumber whatsappNumber startDate endDate deposit images seller status createdAt"
+      )
+      .populate("seller", "name email avatar sellerVerificationStatus verified")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .lean(),
+    Listing.countDocuments(query)
+  ]);
+
+  return {
+    listings: serializeDocument(listings),
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      hasNextPage: page * pageSize < total,
+      hasPreviousPage: page > 1
+    }
+  };
 }
 
 export async function getListingById(id: string) {

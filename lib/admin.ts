@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
+import { createRouteErrorResponse } from "@/lib/api-errors";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { resolveLocale, withLocale } from "@/lib/i18n";
@@ -73,14 +74,18 @@ export async function getAdminPageSession() {
 }
 
 export async function getAdminApiSession() {
-  const session = await getAuthSession();
-  const deniedResponse = requireAdminPermission(session);
+  try {
+    const session = await getAuthSession();
+    const deniedResponse = requireAdminPermission(session);
 
-  if (deniedResponse) {
-    return { error: deniedResponse };
+    if (deniedResponse) {
+      return { error: deniedResponse };
+    }
+
+    return { session };
+  } catch (error) {
+    return { error: createRouteErrorResponse(error, "Could not verify admin session.") };
   }
-
-  return { session };
 }
 
 export async function getAdminDashboardData() {

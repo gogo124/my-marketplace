@@ -17,6 +17,7 @@ type PlaceFilters = {
   savedOnly?: boolean;
   userId?: string;
   includePending?: boolean;
+  limit?: number;
 };
 
 function escapeRegExp(value: string) {
@@ -99,10 +100,16 @@ function scorePlace(place: any) {
 export async function getPlaces(filters: PlaceFilters = {}) {
   await connectToDatabase();
 
-  const places = await Place.find(buildPlaceSearchQuery(filters))
+  const placeQuery = Place.find(buildPlaceSearchQuery(filters))
+    .select("name city category description bestSeason safety images mapLink createdBy savedBy createdAt")
     .populate("createdBy", "name avatar")
-    .sort({ createdAt: -1 })
-    .lean();
+    .sort({ createdAt: -1 });
+
+  if (typeof filters.limit === "number" && filters.limit > 0) {
+    placeQuery.limit(filters.limit);
+  }
+
+  const places = await placeQuery.lean();
 
   const placeIds = places.map((place) => place._id);
   const [reviews, stories] = await Promise.all([
@@ -161,6 +168,22 @@ export async function getBestPlaces(limit = 6) {
     .filter((place: any) => Number(place.reviewCount || 0) > 0)
     .sort((a: any, b: any) => Number(b.ratingAverage || 0) - Number(a.ratingAverage || 0) || Number(b.reviewCount || 0) - Number(a.reviewCount || 0))
     .slice(0, limit);
+}
+
+export async function getCampingHighlights(limit = 6) {
+  const places = await getPlaces({ limit: Math.max(limit * 3, 12) });
+
+  return {
+    trendingPlaces: [...places].sort((a: any, b: any) => scorePlace(b) - scorePlace(a)).slice(0, limit),
+    bestPlaces: places
+      .filter((place: any) => Number(place.reviewCount || 0) > 0)
+      .sort(
+        (a: any, b: any) =>
+          Number(b.ratingAverage || 0) - Number(a.ratingAverage || 0) ||
+          Number(b.reviewCount || 0) - Number(a.reviewCount || 0)
+      )
+      .slice(0, limit)
+  };
 }
 
 export async function getPlaceById(placeId: string, userId?: string) {

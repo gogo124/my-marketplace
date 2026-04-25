@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getAdminDashboardData } from "@/lib/admin";
+import { getAdminDashboardData, getAdminPageSession } from "@/lib/admin";
 import { formatLocaleDateTime, getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
 
 export default async function AdminPage({
@@ -21,7 +21,34 @@ export default async function AdminPage({
     { key: "messagesCount", label: copy.messages },
     { key: "reportsCount", label: copy.reports }
   ] as const;
-  const dashboard = await getAdminDashboardData();
+  await getAdminPageSession();
+
+  let dashboard: Awaited<ReturnType<typeof getAdminDashboardData>> | null = null;
+  let dashboardError = "";
+
+  try {
+    dashboard = await getAdminDashboardData();
+  } catch (error) {
+    dashboardError = error instanceof Error ? error.message : "Could not load admin dashboard.";
+  }
+
+  if (!dashboard) {
+    return (
+      <div dir={getDirection(locale)} className="space-y-8">
+        <section className="rounded-[2.75rem] bg-forest px-8 py-10 text-white shadow-card">
+          <p className="text-sm uppercase tracking-[0.3em] text-white/60">{copy.overview}</p>
+          <h1 className="mt-4 text-4xl font-black">{copy.adminPlatformControl}</h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75">{copy.adminPlatformBody}</p>
+        </section>
+        <section className="rounded-[2rem] bg-white p-6 shadow-card">
+          <p className="text-lg font-bold text-ink">{locale === "ar" ? "تعذر تحميل لوحة التحكم" : "Could not load the dashboard"}</p>
+          <p className="mt-2 text-sm text-ink/60">
+            {dashboardError || (locale === "ar" ? "حدث خطأ غير متوقع." : "An unexpected error occurred.")}
+          </p>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div dir={getDirection(locale)} className="space-y-8">
