@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import { createRouteErrorResponse } from "@/lib/api-errors";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
-import { saveImageFiles } from "@/lib/image-upload";
-import { MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
+import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
+import { MAX_LISTING_IMAGES } from "@/lib/image-upload-shared";
 import { getAcceptedRenterPartnerIdsForAgency } from "@/lib/partnerships";
 import { generateUniqueTripCode, isTripCodeAvailable, validateManagedTripCodeInput } from "@/lib/trip-code";
-import { deleteUploadedFiles } from "@/lib/uploads";
 import { validateAgencyTripPayload } from "@/lib/validation";
 import { getSessionUser, getUserPermissions } from "@/lib/permissions";
 import AgencyProfile from "@/models/AgencyProfile";
@@ -45,8 +44,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  let uploadedImages: string[] = [];
-
   try {
     const session = await getAuthSession();
     const user = getSessionUser(session);
@@ -60,7 +57,7 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData();
-    const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    const imageUrls = getSubmittedImageUrls(formData, "images");
     const payload = {
       title: formData.get("title"),
       destination: formData.get("destination"),
@@ -90,8 +87,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const imageValidationError = validateImageFiles({
-      files,
+    const imageValidationError = validateSubmittedImageUrls({
+      urls: imageUrls,
       maxFiles: MAX_LISTING_IMAGES,
       label: "images per trip"
     });
@@ -144,14 +141,12 @@ export async function POST(request: Request) {
       }
     }
 
-    uploadedImages = await saveImageFiles(files);
-
     const trip = await AgencyTrip.create({
       agency: profile._id,
       owner: user.id,
       tripCode,
       ...validation.data,
-      images: uploadedImages,
+      images: imageUrls,
       renterPartners: validation.data.renterPartnerIds || [],
       trustedRenterPartners: validation.data.trustedRenterPartnerIds || [],
       recommendedRenterPartners: validation.data.recommendedRenterPartnerIds || []
@@ -159,10 +154,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ trip }, { status: 201 });
   } catch (error) {
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(uploadedImages);
-    }
-
     return createRouteErrorResponse(error, "Could not create trip.");
   }
 }

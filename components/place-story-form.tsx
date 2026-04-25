@@ -5,6 +5,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
 import { compressImageIfPossible } from "@/lib/client-image";
+import { uploadImage } from "@/lib/image-upload";
 import { ACCEPTED_IMAGE_INPUT, validateImageFiles } from "@/lib/image-upload-shared";
 import { resolveLocale, translateApiError } from "@/lib/i18n";
 
@@ -59,7 +60,7 @@ export function PlaceStoryForm({ placeId }: { placeId: string }) {
       const formData = new FormData(formRef.current || event.currentTarget);
 
       if (file) {
-        formData.set("image", file);
+        formData.set("image", await uploadImage(file));
       }
 
       const response = await fetch(`/api/places/${placeId}/stories`, {

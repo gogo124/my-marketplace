@@ -5,6 +5,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
 import { compressImageIfPossible } from "@/lib/client-image";
+import { uploadImage } from "@/lib/image-upload";
 import { ACCEPTED_IMAGE_INPUT, validateImageFiles } from "@/lib/image-upload-shared";
 import { resolveLocale, siteCopy, translateApiError } from "@/lib/i18n";
 
@@ -63,13 +64,14 @@ export function ReviewForm({
       return;
     }
 
-    const formData = new FormData();
-    formData.set("listingId", listingId);
-    formData.set("rating", String(rating));
-    formData.set("comment", String(new FormData(formRef.current || event.currentTarget).get("comment") || ""));
-    files.forEach((file) => formData.append("images", file));
-
     try {
+      const uploadedImages = await Promise.all(files.map((file) => uploadImage(file)));
+      const formData = new FormData();
+      formData.set("listingId", listingId);
+      formData.set("rating", String(rating));
+      formData.set("comment", String(new FormData(formRef.current || event.currentTarget).get("comment") || ""));
+      uploadedImages.forEach((url) => formData.append("images", url));
+
       const response = await fetch("/api/reviews", {
         method: "POST",
         body: formData

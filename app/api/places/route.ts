@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { getPlaces, parseCoordinatesFromMapInput } from "@/lib/camping";
 import { connectToDatabase } from "@/lib/db";
-import { MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
-import { saveImageFiles } from "@/lib/image-upload";
+import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
+import { MAX_LISTING_IMAGES } from "@/lib/image-upload-shared";
 import { checkRateLimit, getRequestIdentity } from "@/lib/rate-limit";
-import { deleteUploadedFiles } from "@/lib/uploads";
 import { validatePlacePayload } from "@/lib/validation";
 import Place from "@/models/Place";
 
@@ -30,8 +29,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  let uploadedImages: string[] = [];
-
   try {
     const session = await getAuthSession();
 
@@ -40,7 +37,7 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData();
-    const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    const imageUrls = getSubmittedImageUrls(formData, "images");
     const payload = {
       name: formData.get("name"),
       city: formData.get("city"),
@@ -57,8 +54,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const imageValidationError = validateImageFiles({
-      files,
+    const imageValidationError = validateSubmittedImageUrls({
+      urls: imageUrls,
       maxFiles: MAX_LISTING_IMAGES,
       label: "images"
     });
@@ -89,14 +86,13 @@ export async function POST(request: Request) {
     }
 
     await connectToDatabase();
-    uploadedImages = await saveImageFiles(files);
 
     const place = await Place.create({
       ...validation.data,
       createdBy: session.user.id,
       status: "pending",
       coordinates: parseCoordinatesFromMapInput(validation.data.mapLink),
-      images: uploadedImages
+      images: imageUrls
     });
 
     const populatedPlace = await place.populate("createdBy", "name avatar");
@@ -109,10 +105,6 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(uploadedImages);
-    }
-
     const message = error instanceof Error ? error.message : "Could not create place.";
     return NextResponse.json({ error: message }, { status: 500 });
   }

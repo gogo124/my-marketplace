@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
-import { saveImageFiles } from "@/lib/image-upload";
-import { MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
-import { deleteUploadedFiles } from "@/lib/uploads";
+import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
+import { MAX_LISTING_IMAGES } from "@/lib/image-upload-shared";
 import { validateRentalItemPayload } from "@/lib/validation";
 import RentalItem from "@/models/RentalItem";
 import RenterProfile from "@/models/RenterProfile";
@@ -13,8 +12,6 @@ type RouteContext = {
 };
 
 export async function PATCH(request: Request, context: RouteContext) {
-  let uploadedImages: string[] = [];
-
   try {
     const session = await getAuthSession();
 
@@ -40,7 +37,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const formData = await request.formData();
     const status = String(formData.get("status") || "").trim();
-    const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    const imageUrls = getSubmittedImageUrls(formData, "images");
     const update: Record<string, unknown> = {};
 
     if (
@@ -87,9 +84,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       update.status = status;
     }
 
-    if (files.length > 0) {
-      const imageValidationError = validateImageFiles({
-        files,
+    if (imageUrls.length > 0) {
+      const imageValidationError = validateSubmittedImageUrls({
+        urls: imageUrls,
         maxFiles: MAX_LISTING_IMAGES,
         label: "images per rental item"
       });
@@ -98,8 +95,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         return NextResponse.json({ error: imageValidationError }, { status: 400 });
       }
 
-      uploadedImages = await saveImageFiles(files);
-      update.images = uploadedImages;
+      update.images = imageUrls;
     }
 
     if (Object.keys(update).length === 0) {
@@ -110,16 +106,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     Object.assign(item, update);
     await item.save();
 
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(previousImages);
-    }
-
     return NextResponse.json({ item });
   } catch (error) {
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(uploadedImages);
-    }
-
     const message = error instanceof Error ? error.message : "Could not update rental item.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
@@ -148,8 +136,6 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (!item) {
       return NextResponse.json({ error: "Rental item not found." }, { status: 404 });
     }
-
-    await deleteUploadedFiles(Array.isArray(item.images) ? item.images : []);
 
     return NextResponse.json({ success: true });
   } catch (error) {

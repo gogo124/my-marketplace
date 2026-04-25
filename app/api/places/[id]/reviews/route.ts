@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
-import { saveImageFiles } from "@/lib/image-upload";
-import { validateImageFiles } from "@/lib/image-upload-shared";
+import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
 import { checkRateLimit, getRequestIdentity } from "@/lib/rate-limit";
 import { canUserReviewPlace } from "@/lib/reviews";
-import { deleteUploadedFiles } from "@/lib/uploads";
 import { validatePlaceReviewPayload } from "@/lib/validation";
 import Review from "@/models/Review";
 
@@ -32,8 +30,6 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  let uploadedImages: string[] = [];
-
   try {
     const session = await getAuthSession();
 
@@ -53,7 +49,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const formData = await request.formData();
-    const files = formData.getAll("image").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    const imageUrls = getSubmittedImageUrls(formData, "image");
     const validation = validatePlaceReviewPayload({
       rating: formData.get("rating"),
       comment: formData.get("comment")
@@ -63,8 +59,8 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const imageValidationError = validateImageFiles({
-      files,
+    const imageValidationError = validateSubmittedImageUrls({
+      urls: imageUrls,
       maxFiles: 3,
       label: "review images"
     });
@@ -84,26 +80,19 @@ export async function POST(request: Request, context: RouteContext) {
     if (existingReview) {
       return NextResponse.json({ error: "You have already reviewed this place." }, { status: 409 });
     }
-
-    uploadedImages = await saveImageFiles(files);
-
     const review = await Review.create({
       place: id,
       author: session.user.id,
       rating: validation.data.rating,
       comment: validation.data.comment,
-      image: uploadedImages[0] || "",
-      images: uploadedImages,
+      image: imageUrls[0] || "",
+      images: imageUrls,
       status: "pending"
     });
 
     const populatedReview = await review.populate("author", "name avatar");
     return NextResponse.json({ review: populatedReview }, { status: 201 });
   } catch (error) {
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(uploadedImages);
-    }
-
     const message = error instanceof Error ? error.message : "Could not create place review.";
     return NextResponse.json({ error: message }, { status: 500 });
   }

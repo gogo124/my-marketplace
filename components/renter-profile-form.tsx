@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
+import { uploadImage } from "@/lib/image-upload";
 import { resolveLocale, translateApiError } from "@/lib/i18n";
 import { ACCEPTED_IMAGE_INPUT, validateImageFiles } from "@/lib/image-upload-shared";
 import { getAgencyVerificationLabel, getProfileCompleteness } from "@/lib/trust";
@@ -111,22 +112,16 @@ export function RenterProfileForm({ profile }: RenterProfileFormProps) {
     setError("");
 
     try {
+      const nextLogo = logoFile ? await uploadImage(logoFile) : logo;
+      const nextCoverImage = coverImageFile ? await uploadImage(coverImageFile) : coverImage;
       const payload = new FormData();
       payload.set("name", name);
       payload.set("city", city);
       payload.set("description", description);
       payload.set("phone", phone);
       payload.set("whatsapp", whatsapp);
-      payload.set("logo", logo);
-      payload.set("coverImage", coverImage);
-
-      if (logoFile) {
-        payload.set("logoFile", logoFile);
-      }
-
-      if (coverImageFile) {
-        payload.set("coverImageFile", coverImageFile);
-      }
+      payload.set("logo", nextLogo);
+      payload.set("coverImage", nextCoverImage);
 
       const response = await fetch("/api/renter/profile", {
         method: "POST",
@@ -139,6 +134,10 @@ export function RenterProfileForm({ profile }: RenterProfileFormProps) {
         throw new Error(translateApiError(getApiError(data, "Could not save renter profile."), locale));
       }
 
+      setLogo(nextLogo);
+      setCoverImage(nextCoverImage);
+      setLogoFile(null);
+      setCoverImageFile(null);
       router.refresh();
     } catch (submissionError) {
       setError(

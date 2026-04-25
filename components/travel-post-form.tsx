@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
+import { uploadImage } from "@/lib/image-upload";
 import { ACCEPTED_IMAGE_INPUT, validateImageFiles } from "@/lib/image-upload-shared";
 import { resolveLocale, siteCopy, translateApiError, withLocale } from "@/lib/i18n";
 
@@ -86,15 +87,15 @@ export function TravelPostForm() {
     setLoading(true);
     setError("");
 
-    const formData = new FormData(formRef.current || event.currentTarget);
-    if (selectedFile) {
-      formData.set("profileImage", selectedFile);
-    }
-    if (selectedCoverFile) {
-      formData.set("coverImage", selectedCoverFile);
-    }
-
     try {
+      const formData = new FormData(formRef.current || event.currentTarget);
+      if (selectedFile) {
+        formData.set("profileImage", await uploadImage(selectedFile));
+      }
+      if (selectedCoverFile) {
+        formData.set("coverImage", await uploadImage(selectedCoverFile));
+      }
+
       const response = await fetch("/api/travel-posts", {
         method: "POST",
         body: formData

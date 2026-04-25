@@ -13,7 +13,6 @@ import Review from "@/models/Review";
 import Story from "@/models/Story";
 import TravelPost from "@/models/TravelPost";
 import User from "@/models/User";
-import { deleteUploadedFiles } from "@/lib/uploads";
 
 export async function deleteListingByAdmin(listingId: string) {
   const listing = await Listing.findById(listingId).select("images").lean();
@@ -27,7 +26,6 @@ export async function deleteListingByAdmin(listingId: string) {
   const reviewIds = await Review.find({ listing: listingId }).distinct("_id");
 
   await Promise.all([
-    deleteUploadedFiles(Array.isArray(listing.images) ? listing.images : []),
     Listing.deleteOne({ _id: listingId }),
     Review.deleteMany({ listing: listingId }),
     Lead.deleteMany({ listingId }),
@@ -52,7 +50,6 @@ export async function deleteTravelPostByAdmin(postId: string) {
   }
 
   await Promise.all([
-    deleteUploadedFiles([post.profileImage]),
     Report.deleteMany({ targetType: "travel-post", targetId: postId })
   ]);
   return post;
@@ -66,7 +63,6 @@ export async function deleteReviewByAdmin(reviewId: string) {
   }
 
   await Promise.all([
-    deleteUploadedFiles([review.image]),
     Report.deleteMany({ targetType: "review", targetId: reviewId })
   ]);
   return review;
@@ -88,11 +84,6 @@ export async function deletePlaceByAdmin(placeId: string) {
   const reviewImages = await Review.find({ place: placeId }).distinct("image");
 
   await Promise.all([
-    deleteUploadedFiles([
-      ...(Array.isArray(place.images) ? place.images : []),
-      ...storyImages,
-      ...reviewImages
-    ]),
     Place.deleteOne({ _id: placeId }),
     Review.deleteMany({ place: placeId }),
     Story.deleteMany({ place: placeId }),
@@ -117,7 +108,6 @@ export async function deleteStoryByAdmin(storyId: string) {
   }
 
   await Promise.all([
-    deleteUploadedFiles([story.image]),
     Report.deleteMany({ targetType: "story", targetId: storyId })
   ]);
 
@@ -162,7 +152,6 @@ export async function deleteAgencyByAdmin(agencyId: string) {
   const tripIds = trips.map((trip) => trip._id);
 
   await Promise.all([
-    deleteUploadedFiles([agency.logo, agency.coverImage]),
     AgencyProfile.deleteOne({ _id: agencyId }),
     AgencyTrip.deleteMany({ agency: agencyId }),
     AgencyReservation.deleteMany({
@@ -203,15 +192,6 @@ export async function deleteUserByAdmin(userId: string) {
   const conversationIds = conversations.map((conversation) => conversation._id);
 
   await Promise.all([
-    deleteUploadedFiles([
-      user.avatar,
-      ...(agency ? [agency.logo, agency.coverImage] : []),
-      ...(renter ? [renter.logo, renter.coverImage] : []),
-      ...renterItems.flatMap((item: any) => (Array.isArray(item.images) ? item.images : [])),
-      ...listings.flatMap((listing: any) => (Array.isArray(listing.images) ? listing.images : [])),
-      ...places.flatMap((place: any) => (Array.isArray(place.images) ? place.images : [])),
-      ...(await TravelPost.find({ userId }).distinct("profileImage"))
-    ]),
     User.deleteOne({ _id: userId }),
     agency ? AgencyProfile.deleteOne({ _id: agency._id }) : Promise.resolve(),
     agency ? AgencyTrip.deleteMany({ agency: agency._id }) : Promise.resolve(),

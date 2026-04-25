@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
+import { uploadImage } from "@/lib/image-upload";
 import { ACCEPTED_IMAGE_INPUT, MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
 import { resolveLocale, siteCopy, translateApiError, withLocale } from "@/lib/i18n";
 import { normalizePhoneNumber } from "@/lib/validation";
@@ -24,6 +25,7 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
 
   const previews = useMemo(
     () => selectedFiles.map((file) => ({ file, url: URL.createObjectURL(file) })),
@@ -71,6 +73,7 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
 
     setError("");
     setSelectedFiles(mergedFiles);
+    setUploadedImageUrls([]);
     event.target.value = "";
   }
 
@@ -85,6 +88,7 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
           )
       )
     );
+    setUploadedImageUrls([]);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -101,21 +105,28 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
       return;
     }
 
-    const payload = new FormData();
-    payload.set("title", String(formData.get("title") || ""));
-    payload.set("description", String(formData.get("description") || ""));
-    payload.set("price", String(formData.get("price") || ""));
-    payload.set("type", mode);
-    payload.set("category", String(formData.get("category") || ""));
-    payload.set("location", String(formData.get("location") || ""));
-    payload.set("phoneNumber", String(formData.get("phoneNumber") || ""));
-    payload.set("whatsappNumber", String(formData.get("whatsappNumber") || ""));
-    payload.set("startDate", String(formData.get("startDate") || ""));
-    payload.set("endDate", String(formData.get("endDate") || ""));
-    payload.set("deposit", String(formData.get("deposit") || ""));
-    selectedFiles.forEach((file) => payload.append("images", file));
-
     try {
+      const nextUploadedImageUrls =
+        uploadedImageUrls.length === selectedFiles.length
+          ? uploadedImageUrls
+          : await Promise.all(selectedFiles.map((file) => uploadImage(file)));
+
+      setUploadedImageUrls(nextUploadedImageUrls);
+
+      const payload = new FormData();
+      payload.set("title", String(formData.get("title") || ""));
+      payload.set("description", String(formData.get("description") || ""));
+      payload.set("price", String(formData.get("price") || ""));
+      payload.set("type", mode);
+      payload.set("category", String(formData.get("category") || ""));
+      payload.set("location", String(formData.get("location") || ""));
+      payload.set("phoneNumber", String(formData.get("phoneNumber") || ""));
+      payload.set("whatsappNumber", String(formData.get("whatsappNumber") || ""));
+      payload.set("startDate", String(formData.get("startDate") || ""));
+      payload.set("endDate", String(formData.get("endDate") || ""));
+      payload.set("deposit", String(formData.get("deposit") || ""));
+      nextUploadedImageUrls.forEach((url) => payload.append("images", String(url)));
+
       const response = await fetch("/api/listings", {
         method: "POST",
         body: payload
@@ -134,6 +145,7 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
       }
 
       setSelectedFiles([]);
+      setUploadedImageUrls([]);
       router.push(withLocale(`/listings/${listing._id}`, locale));
       router.refresh();
     } catch (submissionError) {
