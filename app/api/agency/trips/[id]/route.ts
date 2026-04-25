@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import { createRouteErrorResponse } from "@/lib/api-errors";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
-import { saveImageFiles } from "@/lib/image-upload";
-import { MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
+import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
+import { MAX_LISTING_IMAGES } from "@/lib/image-upload-shared";
 import { getAcceptedRenterPartnerIdsForAgency } from "@/lib/partnerships";
 import { isTripCodeAvailable, validateManagedTripCodeInput } from "@/lib/trip-code";
-import { deleteUploadedFiles } from "@/lib/uploads";
 import { validateAgencyTripPayload } from "@/lib/validation";
 import { getSessionUser, getUserPermissions } from "@/lib/permissions";
 import AgencyProfile from "@/models/AgencyProfile";
@@ -20,9 +19,6 @@ type RouteContext = {
 export const runtime = "nodejs";
 
 export async function PATCH(request: Request, context: RouteContext) {
-  let uploadedImages: string[] = [];
-  let replacedImages: string[] = [];
-
   try {
     const session = await getAuthSession();
     const user = getSessionUser(session);
@@ -37,7 +33,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const { id } = await context.params;
     const formData = await request.formData();
-    const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    const imageUrls = getSubmittedImageUrls(formData, "images");
     const payload = {
       title: formData.get("title"),
       destination: formData.get("destination"),
@@ -119,9 +115,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
     }
 
-    if (files.length > 0) {
-      const imageValidationError = validateImageFiles({
-        files,
+    if (imageUrls.length > 0) {
+      const imageValidationError = validateSubmittedImageUrls({
+        urls: imageUrls,
         maxFiles: MAX_LISTING_IMAGES,
         label: "images per trip"
       });
@@ -130,9 +126,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         return NextResponse.json({ error: imageValidationError }, { status: 400 });
       }
 
-      uploadedImages = await saveImageFiles(files);
-      replacedImages = Array.isArray(tripRecord.images) ? tripRecord.images : [];
-      update.images = uploadedImages;
+      update.images = imageUrls;
     }
 
     if (status !== null) {
@@ -166,15 +160,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     Object.assign(tripRecord, update);
     await tripRecord.save();
 
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(replacedImages);
-    }
     return NextResponse.json({ trip: tripRecord });
   } catch (error) {
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(uploadedImages);
-    }
-
     return createRouteErrorResponse(error, "Could not update trip.");
   }
 }
@@ -207,8 +194,6 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (!trip) {
       return NextResponse.json({ error: "Trip not found." }, { status: 404 });
     }
-
-    await deleteUploadedFiles(Array.isArray(trip.images) ? trip.images : []);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -5,6 +5,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
 import { compressImagesIfPossible } from "@/lib/client-image";
+import { uploadImage } from "@/lib/image-upload";
 import { ACCEPTED_IMAGE_INPUT, MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
 import { resolveLocale, translateApiError, withLocale } from "@/lib/i18n";
 
@@ -53,7 +54,8 @@ export function PlaceForm() {
 
     try {
       const formData = new FormData(formElement);
-      files.forEach((file) => formData.append("images", file));
+      const uploadedImages = await Promise.all(files.map((file) => uploadImage(file)));
+      uploadedImages.forEach((url) => formData.append("images", url));
 
       const response = await fetch("/api/places", {
         method: "POST",

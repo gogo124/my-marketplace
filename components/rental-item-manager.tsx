@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
+import { uploadImage } from "@/lib/image-upload";
 import { ACCEPTED_IMAGE_INPUT, MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
 import { resolveLocale, SiteLocale, translateApiError } from "@/lib/i18n";
 
@@ -199,6 +200,7 @@ export function RentalItemManager({ items, locale = "ar" }: { items: RentalItem[
     setError("");
 
     try {
+      const uploadedImages = await Promise.all(selectedFiles.map((file) => uploadImage(file)));
       const payload = new FormData();
       payload.set("title", form.title);
       payload.set("category", form.category);
@@ -217,7 +219,7 @@ export function RentalItemManager({ items, locale = "ar" }: { items: RentalItem[
       payload.set("deliveryInfo", form.deliveryInfo);
       payload.set("isTrustedPartner", String(form.isTrustedPartner));
       payload.set("isRecommended", String(form.isRecommended));
-      selectedFiles.forEach((file) => payload.append("images", file));
+      uploadedImages.forEach((url) => payload.append("images", url));
 
       const response = await fetch(form.id ? `/api/renter/items/${form.id}` : "/api/renter/items", {
         method: form.id ? "PATCH" : "POST",

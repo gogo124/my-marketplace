@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
-import { saveImageFiles } from "@/lib/image-upload";
-import { validateImageFiles } from "@/lib/image-upload-shared";
+import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
 import { checkRateLimit, getRequestIdentity } from "@/lib/rate-limit";
-import { deleteUploadedFiles } from "@/lib/uploads";
 import { validateStoryPayload } from "@/lib/validation";
 import Place from "@/models/Place";
 import Story from "@/models/Story";
@@ -32,8 +30,6 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  let uploadedImages: string[] = [];
-
   try {
     const session = await getAuthSession();
 
@@ -53,7 +49,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const formData = await request.formData();
-    const files = formData.getAll("image").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    const imageUrls = getSubmittedImageUrls(formData, "image");
     const validation = validateStoryPayload({
       title: formData.get("title"),
       body: formData.get("body"),
@@ -64,8 +60,8 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const imageValidationError = validateImageFiles({
-      files,
+    const imageValidationError = validateSubmittedImageUrls({
+      urls: imageUrls,
       maxFiles: 1,
       label: "story image"
     });
@@ -81,25 +77,18 @@ export async function POST(request: Request, context: RouteContext) {
     if (!place || place.status !== "approved") {
       return NextResponse.json({ error: "Place not found." }, { status: 404 });
     }
-
-    uploadedImages = await saveImageFiles(files);
-
     const story = await Story.create({
       place: id,
       author: session.user.id,
       title: validation.data.title,
       body: validation.data.body,
       tripDate: validation.data.tripDate,
-      image: uploadedImages[0] || ""
+      image: imageUrls[0] || ""
     });
 
     const populatedStory = await story.populate("author", "name avatar");
     return NextResponse.json({ story: populatedStory }, { status: 201 });
   } catch (error) {
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(uploadedImages);
-    }
-
     const message = error instanceof Error ? error.message : "Could not create story.";
     return NextResponse.json({ error: message }, { status: 500 });
   }

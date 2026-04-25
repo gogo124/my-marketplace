@@ -1,46 +1,76 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
-
-function resolveImageExtension(file: File) {
-  const normalizedType = String(file.type || "").toLowerCase();
-  const fileName = String(file.name || "").toLowerCase();
-
-  if (normalizedType === "image/png" || fileName.endsWith(".png")) {
-    return "png";
-  }
-
-  if (normalizedType === "image/webp" || fileName.endsWith(".webp")) {
-    return "webp";
-  }
-
-  if (normalizedType === "image/jpeg" || normalizedType === "image/jpg" || fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
-    return "jpg";
-  }
-
-  throw new Error("Only JPG, JPEG, PNG, and WEBP images are allowed.");
+function isValidImageUrl(value: string) {
+  return value.startsWith("https://") || value.startsWith("http://") || value.startsWith("/");
 }
 
-export async function saveImageFiles(files: File[]) {
-  const validFiles = files.filter((file) => file.size > 0);
+export async function uploadImage(file: File) {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
-  if (validFiles.length === 0) {
-    return [];
+  if (!cloudName || !uploadPreset) {
+    throw new Error("Cloudinary is not configured. Check NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.");
   }
 
-  const uploadDirectory = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadDirectory, { recursive: true });
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", uploadPreset);
 
-  return Promise.all(
-    validFiles.map(async (file) => {
-      const extension = resolveImageExtension(file);
-      const fileName = `${randomUUID()}.${extension}`;
-      const filePath = path.join(uploadDirectory, fileName);
-      const buffer = Buffer.from(await file.arrayBuffer());
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: "POST",
+    body: formData
+  });
+  const data = await response.json();
 
-      await writeFile(filePath, buffer);
+  if (!response.ok) {
+    const cloudinaryMessage =
+      typeof data?.error?.message === "string" && data.error.message.trim().length > 0
+        ? data.error.message.trim()
+        : "Image upload failed.";
 
-      return `/uploads/${fileName}`;
-    })
-  );
+    if (cloudinaryMessage.toLowerCase().includes("unknown api key")) {
+      throw new Error(`Cloudinary rejected the upload. Verify NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="${cloudName}".`);
+    }
+
+    if (cloudinaryMessage.toLowerCase().includes("upload preset")) {
+      throw new Error(
+        `Cloudinary rejected upload preset "${uploadPreset}". Verify that it exists and is unsigned.`
+      );
+    }
+
+    throw new Error(cloudinaryMessage);
+  }
+
+  if (typeof data?.secure_url !== "string" || data.secure_url.length === 0) {
+    throw new Error("Image upload did not return a secure URL.");
+  }
+
+  return data.secure_url as string;
+}
+
+export function getSubmittedImageUrls(formData: FormData, fieldName: string) {
+  return formData
+    .getAll(fieldName)
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter(Boolean);
+}
+
+export function validateSubmittedImageUrls({
+  urls,
+  maxFiles,
+  label
+}: {
+  urls: string[];
+  maxFiles: number;
+  label: string;
+}) {
+  if (urls.length > maxFiles) {
+    return `You can upload up to ${maxFiles} ${label}.`;
+  }
+
+  for (const url of urls) {
+    if (!isValidImageUrl(url)) {
+      return "Invalid image URL.";
+    }
+  }
+
+  return "";
 }

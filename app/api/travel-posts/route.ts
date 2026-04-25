@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
-import { saveImageFiles } from "@/lib/image-upload";
-import { MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
+import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
 import { checkRateLimit, getRequestIdentity } from "@/lib/rate-limit";
-import { deleteUploadedFiles } from "@/lib/uploads";
 import { validateTravelPostPayload } from "@/lib/validation";
 import TravelPost from "@/models/TravelPost";
 
@@ -45,8 +43,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  let uploadedImages: string[] = [];
-
   try {
     const session = await getAuthSession();
 
@@ -65,8 +61,8 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData();
-    const profileFiles = formData.getAll("profileImage").filter((entry): entry is File => entry instanceof File && entry.size > 0);
-    const coverFiles = formData.getAll("coverImage").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    const profileImages = getSubmittedImageUrls(formData, "profileImage");
+    const coverImages = getSubmittedImageUrls(formData, "coverImage");
     const payload = {
       destination: formData.get("destination"),
       date: formData.get("date"),
@@ -80,8 +76,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const imageValidationError = validateImageFiles({
-      files: profileFiles,
+    const imageValidationError = validateSubmittedImageUrls({
+      urls: profileImages,
       maxFiles: 1,
       label: "profile image"
     });
@@ -90,8 +86,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: imageValidationError }, { status: 400 });
     }
 
-    const coverImageValidationError = validateImageFiles({
-      files: coverFiles,
+    const coverImageValidationError = validateSubmittedImageUrls({
+      urls: coverImages,
       maxFiles: 1,
       label: "trip image"
     });
@@ -113,9 +109,6 @@ export async function POST(request: Request) {
     if (duplicatePost) {
       return NextResponse.json({ error: "A similar travel post was already published recently." }, { status: 409 });
     }
-
-    uploadedImages = await saveImageFiles([...profileFiles, ...coverFiles]);
-
     const post = await TravelPost.create({
       userId: session.user.id,
       destination: validation.data.destination,
@@ -123,8 +116,8 @@ export async function POST(request: Request) {
       description: validation.data.description,
       phoneNumber: validation.data.phoneNumber,
       gender: validation.data.gender,
-      profileImage: profileFiles.length > 0 ? uploadedImages[0] || "" : "",
-      coverImage: coverFiles.length > 0 ? uploadedImages[profileFiles.length] || "" : "",
+      profileImage: profileImages[0] || "",
+      coverImage: coverImages[0] || "",
       interestedUserIds: []
     });
 
@@ -132,10 +125,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ post: populatedPost }, { status: 201 });
   } catch (error) {
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(uploadedImages);
-    }
-
     const message = error instanceof Error ? error.message : "Could not create travel post.";
     return NextResponse.json({ error: message }, { status: 500 });
   }

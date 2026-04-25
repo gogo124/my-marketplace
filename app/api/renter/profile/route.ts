@@ -2,10 +2,8 @@ import { NextResponse } from "next/server";
 import { createRouteErrorResponse } from "@/lib/api-errors";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
-import { saveImageFiles } from "@/lib/image-upload";
-import { validateImageFiles } from "@/lib/image-upload-shared";
+import { validateSubmittedImageUrls } from "@/lib/image-upload";
 import { getSessionUser, getUserPermissions } from "@/lib/permissions";
-import { deleteUploadedFiles } from "@/lib/uploads";
 import { validateRenterProfilePayload } from "@/lib/validation";
 import RenterProfile from "@/models/RenterProfile";
 import User from "@/models/User";
@@ -32,8 +30,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  let uploadedImages: string[] = [];
-
   try {
     const session = await getAuthSession();
     const user = getSessionUser(session);
@@ -78,12 +74,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const logoFile = formData.get("logoFile");
-    const coverImageFile = formData.get("coverImageFile");
-    const imageFiles = [logoFile, coverImageFile].filter((entry): entry is File => entry instanceof File && entry.size > 0);
-
-    const imageValidationError = validateImageFiles({
-      files: imageFiles,
+    const imageValidationError = validateSubmittedImageUrls({
+      urls: [validation.data.logo, validation.data.coverImage].filter(Boolean),
       maxFiles: 2,
       label: "renter images"
     });
@@ -91,30 +83,8 @@ export async function POST(request: Request) {
     if (imageValidationError) {
       return NextResponse.json({ error: imageValidationError }, { status: 400 });
     }
-
-    uploadedImages = await saveImageFiles(imageFiles);
-    const nextLogo =
-      logoFile instanceof File && logoFile.size > 0
-        ? uploadedImages[0] || validation.data.logo
-        : validation.data.logo || existingProfile?.logo || "";
-    const nextCoverImage =
-      coverImageFile instanceof File && coverImageFile.size > 0
-        ? uploadedImages[logoFile instanceof File && logoFile.size > 0 ? 1 : 0] || validation.data.coverImage
-        : validation.data.coverImage || existingProfile?.coverImage || "";
-
-    const replacedUploads: string[] = [];
-
-    if (existingProfile?.logo && existingProfile.logo !== nextLogo && existingProfile.logo.startsWith("/uploads/")) {
-      replacedUploads.push(existingProfile.logo);
-    }
-
-    if (
-      existingProfile?.coverImage &&
-      existingProfile.coverImage !== nextCoverImage &&
-      existingProfile.coverImage.startsWith("/uploads/")
-    ) {
-      replacedUploads.push(existingProfile.coverImage);
-    }
+    const nextLogo = validation.data.logo || existingProfile?.logo || "";
+    const nextCoverImage = validation.data.coverImage || existingProfile?.coverImage || "";
 
     const verificationStatus = existingProfile?.verificationStatus === "verified" ? "verified" : "pending";
 
@@ -136,17 +106,8 @@ export async function POST(request: Request) {
     ).populate("user", "name email avatar role");
 
     await User.findByIdAndUpdate(user.id, { $set: { role: "renter" } });
-
-    if (replacedUploads.length > 0) {
-      await deleteUploadedFiles(replacedUploads);
-    }
-
     return NextResponse.json({ profile });
   } catch (error) {
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(uploadedImages);
-    }
-
     return createRouteErrorResponse(error, "Could not save renter profile.");
   }
 }

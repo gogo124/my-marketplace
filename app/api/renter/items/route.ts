@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
-import { saveImageFiles } from "@/lib/image-upload";
-import { MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
-import { deleteUploadedFiles } from "@/lib/uploads";
+import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
+import { MAX_LISTING_IMAGES } from "@/lib/image-upload-shared";
 import { validateRentalItemPayload } from "@/lib/validation";
 import RentalItem from "@/models/RentalItem";
 import RenterProfile from "@/models/RenterProfile";
@@ -35,8 +34,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  let uploadedImages: string[] = [];
-
   try {
     const session = await getAuthSession();
 
@@ -45,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData();
-    const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File);
+    const imageUrls = getSubmittedImageUrls(formData, "images");
     const validation = validateRentalItemPayload({
       title: formData.get("title"),
       category: formData.get("category"),
@@ -70,8 +67,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const imageValidationError = validateImageFiles({
-      files,
+    const imageValidationError = validateSubmittedImageUrls({
+      urls: imageUrls,
       maxFiles: MAX_LISTING_IMAGES,
       label: "images per rental item"
     });
@@ -87,22 +84,15 @@ export async function POST(request: Request) {
     if (!profile) {
       return NextResponse.json({ error: "Create your renter profile first." }, { status: 400 });
     }
-
-    uploadedImages = await saveImageFiles(files);
-
     const item = await RentalItem.create({
       renter: profile._id,
       owner: session.user.id,
       ...validation.data,
-      images: uploadedImages
+      images: imageUrls
     });
 
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {
-    if (uploadedImages.length > 0) {
-      await deleteUploadedFiles(uploadedImages);
-    }
-
     const message = error instanceof Error ? error.message : "Could not create rental item.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
