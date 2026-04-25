@@ -2,8 +2,10 @@
 
 import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
+import { normalizeInternalRedirect } from "@/lib/auth-flow";
+import { resolveLocale, siteCopy, translateApiError, withLocale } from "@/lib/i18n";
 
 type AuthFormProps = {
   mode: "login" | "register";
@@ -13,7 +15,12 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [startedAt] = useState(() => Date.now());
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const locale = resolveLocale(searchParams.get("lang") || undefined);
+  const callbackUrl = searchParams.get("callbackUrl") || withLocale("/", locale);
+  const copy = siteCopy[locale];
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -24,37 +31,40 @@ export function AuthForm({ mode }: AuthFormProps) {
     const name = String(formData.get("name") || "");
     const email = String(formData.get("email") || "");
     const password = String(formData.get("password") || "");
+    const website = String(formData.get("website") || "");
+    const formStartedAt = Number(formData.get("formStartedAt") || startedAt);
 
     try {
       if (mode === "register") {
         const response = await fetch("/api/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password })
+          body: JSON.stringify({ name, email, password, website, formStartedAt })
         });
 
         const data = await parseApiResponse(response);
 
         if (!response.ok) {
-          throw new Error(getApiError(data, "Registration failed."));
+          throw new Error(translateApiError(getApiError(data, "Registration failed."), locale));
         }
       }
 
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: false
+        redirect: false,
+        callbackUrl
       });
 
       if (result?.error) {
         throw new Error(result.error);
       }
 
-      router.push("/");
-      router.refresh();
+      const redirectTarget = normalizeInternalRedirect(result?.url || callbackUrl, withLocale("/", locale));
+      window.location.assign(redirectTarget);
     } catch (submissionError) {
       setError(
-        submissionError instanceof Error ? submissionError.message : "Something went wrong."
+        submissionError instanceof Error ? translateApiError(submissionError.message, locale) : translateApiError("Unexpected error.", locale)
       );
     } finally {
       setLoading(false);
@@ -66,10 +76,10 @@ export function AuthForm({ mode }: AuthFormProps) {
     setGoogleLoading(true);
 
     try {
-      await signIn("google", { callbackUrl: "/" });
+      await signIn("google", { callbackUrl });
     } catch (submissionError) {
       setError(
-        submissionError instanceof Error ? submissionError.message : "Google sign-in failed."
+        submissionError instanceof Error ? translateApiError(submissionError.message, locale) : translateApiError("Unexpected error.", locale)
       );
       setGoogleLoading(false);
     }
@@ -85,35 +95,45 @@ export function AuthForm({ mode }: AuthFormProps) {
           Moroccan Trip
         </span>
         <h1 className="text-3xl font-black text-ink">
-          {mode === "login" ? "Welcome back" : "Create your seller account"}
+          {mode === "login" ? copy.welcomeBack : copy.createSellerAccount}
         </h1>
         <p className="text-sm leading-7 text-ink/65">
           {mode === "login"
-            ? "Log in to publish listings and reply to buyers."
-            : "Join the marketplace to publish listings and chat securely."}
+            ? copy.loginFormBody
+            : copy.registerFormBody}
         </p>
       </div>
       {mode === "register" ? (
-        <input
-          name="name"
-          placeholder="Full name"
-          required
-          className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
-        />
+        <>
+          <input
+            name="name"
+            placeholder={copy.fullName}
+            required
+            className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
+          />
+          <input type="hidden" name="formStartedAt" value={startedAt} />
+          <input
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            className="hidden"
+            aria-hidden="true"
+          />
+        </>
       ) : null}
       <input
         name="email"
         type="email"
-        placeholder="Email address"
+        placeholder={copy.emailAddress}
         required
         className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
       <input
         name="password"
         type="password"
-        placeholder="Password"
+        placeholder={copy.password}
         required
-        minLength={6}
+        minLength={8}
         className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
       <button
@@ -122,16 +142,16 @@ export function AuthForm({ mode }: AuthFormProps) {
         disabled={loading || googleLoading}
         className="w-full rounded-[1.4rem] border border-ink/10 bg-white px-4 py-3 font-semibold text-ink shadow-card disabled:opacity-60"
       >
-        {googleLoading ? "Connecting to Google..." : "Continue with Google"}
+        {googleLoading ? copy.connectingGoogle : copy.continueWithGoogle}
       </button>
-      <p className="text-center text-xs uppercase tracking-[0.2em] text-ink/40">or</p>
+      <p className="text-center text-xs uppercase tracking-[0.2em] text-ink/40">{copy.or}</p>
       {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
       <button
         type="submit"
         disabled={loading || googleLoading}
         className="w-full rounded-[1.4rem] bg-forest px-4 py-3 font-semibold text-white shadow-card disabled:opacity-60"
       >
-        {loading ? "Please wait..." : mode === "login" ? "Log in" : "Register"}
+        {loading ? copy.pleaseWait : mode === "login" ? copy.login : copy.register}
       </button>
     </form>
   );

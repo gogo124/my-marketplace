@@ -41,6 +41,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials.");
         }
 
+        if (user.accountStatus === "disabled") {
+          throw new Error("This account has been disabled.");
+        }
+
         const isValid = await bcrypt.compare(credentials.password, user.password);
 
         if (!isValid) {
@@ -52,7 +56,10 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           image: user.avatar,
-          role: user.role
+          role: user.role,
+          accountStatus: user.accountStatus,
+          canCreateAgency: Boolean(user.canCreateAgency),
+          canCreateRenter: Boolean(user.canCreateRenter)
         };
       }
     })
@@ -81,7 +88,9 @@ export const authOptions: NextAuthOptions = {
           },
           $setOnInsert: {
             password: null,
-            role: "user"
+            role: "user",
+            canCreateAgency: false,
+            canCreateRenter: false
           }
         },
         {
@@ -95,6 +104,13 @@ export const authOptions: NextAuthOptions = {
       user.email = dbUser.email;
       user.image = dbUser.avatar;
       user.role = dbUser.role;
+      user.accountStatus = dbUser.accountStatus;
+      user.canCreateAgency = Boolean(dbUser.canCreateAgency);
+      user.canCreateRenter = Boolean(dbUser.canCreateRenter);
+
+      if (dbUser.accountStatus === "disabled") {
+        throw new Error("This account has been disabled.");
+      }
 
       return true;
     },
@@ -105,17 +121,25 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.picture = user.image;
         token.role = user.role ?? "user";
+        token.accountStatus = user.accountStatus ?? "active";
+        token.canCreateAgency = Boolean(user.canCreateAgency);
+        token.canCreateRenter = Boolean(user.canCreateRenter);
       }
 
       if (token.sub) {
         await connectToDatabase();
-        const dbUser = await User.findById(token.sub).select("role name email avatar").lean();
+        const dbUser = await User.findById(token.sub)
+          .select("role name email avatar accountStatus canCreateAgency canCreateRenter")
+          .lean();
 
         if (dbUser) {
           token.role = dbUser.role ?? "user";
           token.name = dbUser.name ?? token.name;
           token.email = dbUser.email ?? token.email;
           token.picture = dbUser.avatar ?? token.picture;
+          token.accountStatus = dbUser.accountStatus ?? "active";
+          token.canCreateAgency = Boolean(dbUser.canCreateAgency);
+          token.canCreateRenter = Boolean(dbUser.canCreateRenter);
         }
       }
 
@@ -124,10 +148,20 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user && token.sub) {
         session.user.id = token.sub;
-        session.user.role = token.role === "agency" ? "agency" : "user";
+        session.user.role =
+          token.role === "admin"
+            ? "admin"
+            : token.role === "agency"
+              ? "agency"
+              : token.role === "renter"
+                ? "renter"
+                : "user";
+        session.user.accountStatus = token.accountStatus === "disabled" ? "disabled" : "active";
         session.user.name = token.name ?? "";
         session.user.email = token.email ?? "";
         session.user.image = typeof token.picture === "string" ? token.picture : null;
+        session.user.canCreateAgency = Boolean(token.canCreateAgency);
+        session.user.canCreateRenter = Boolean(token.canCreateRenter);
       }
 
       return session;
@@ -136,6 +170,12 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET
 };
 
-export function getAuthSession() {
-  return getServerSession(authOptions);
+export async function getAuthSession() {
+  const session = await getServerSession(authOptions);
+
+  if (session?.user?.accountStatus === "disabled") {
+    return null;
+  }
+
+  return session;
 }

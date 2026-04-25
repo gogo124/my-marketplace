@@ -1,22 +1,42 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
+import { saveImageFiles } from "@/lib/image-upload";
+import { MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
+import { deleteUploadedFiles } from "@/lib/uploads";
+import { validateListingPayload } from "@/lib/validation";
 import Listing from "@/models/Listing";
-
-const ACCEPTED_IMAGE_TYPES = new Set(["image/png", "image/jpeg"]);
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const MAX_IMAGES = 6;
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectToDatabase();
 
-    const listings = await Listing.find({})
+    const { searchParams } = new URL(request.url);
+    const type = String(searchParams.get("type") || "").trim();
+    const status = String(searchParams.get("status") || "active").trim();
+    const q = String(searchParams.get("q") || "").trim();
+    const query: Record<string, unknown> = {};
+
+    if (status === "active" || status === "inactive") {
+      query.status = status;
+    }
+
+    if (type === "sale" || type === "rental") {
+      query.type = type;
+    }
+
+    if (q) {
+      query.$or = [
+        { title: { $regex: q, $options: "i" } },
+        { description: { $regex: q, $options: "i" } },
+        { location: { $regex: q, $options: "i" } },
+        { category: { $regex: q, $options: "i" } }
+      ];
+    }
+
+    const listings = await Listing.find(query)
       .populate("seller", "name email avatar")
       .sort({ createdAt: -1 });
 
@@ -28,6 +48,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  let uploadedImages: string[] = [];
+
   try {
     const session = await getAuthSession();
 
@@ -49,81 +71,40 @@ export async function POST(request: Request) {
     const deposit = String(formData.get("deposit") || "").trim();
     const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File);
 
-    if (
-      !title ||
-      !description ||
-      !["sale", "rental"].includes(type) ||
-      !category ||
-      !location ||
-      !phoneNumber ||
-      !whatsappNumber ||
-      Number.isNaN(price) ||
-      price < 0
-    ) {
-      return NextResponse.json({ error: "Invalid listing payload." }, { status: 400 });
-    }
-
-    if (type === "rental" && (!startDate || !endDate || !deposit)) {
-      return NextResponse.json(
-        { error: "Rental listings require start date, end date, and deposit." },
-        { status: 400 }
-      );
-    }
-
-    if (files.length > MAX_IMAGES) {
-      return NextResponse.json(
-        { error: `You can upload up to ${MAX_IMAGES} images per listing.` },
-        { status: 400 }
-      );
-    }
-
-    for (const file of files) {
-      if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
-        return NextResponse.json(
-          { error: "Only PNG and JPEG images are allowed." },
-          { status: 400 }
-        );
-      }
-
-      if (file.size > MAX_IMAGE_SIZE) {
-        return NextResponse.json(
-          { error: "Each image must be 5 MB or smaller." },
-          { status: 400 }
-        );
-      }
-    }
-
-    await connectToDatabase();
-
-    const uploadDirectory = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDirectory, { recursive: true });
-
-    const images = await Promise.all(
-      files.map(async (file) => {
-        const extension = file.type === "image/png" ? "png" : "jpg";
-        const fileName = `${randomUUID()}.${extension}`;
-        const filePath = path.join(uploadDirectory, fileName);
-        const buffer = Buffer.from(await file.arrayBuffer());
-
-        await writeFile(filePath, buffer);
-
-        return `/uploads/${fileName}`;
-      })
-    );
-
-    const listing = await Listing.create({
-      type,
+    const validation = validateListingPayload({
       title,
       description,
       price,
+      type,
       category,
       location,
       phoneNumber,
       whatsappNumber,
-      startDate: type === "rental" && startDate ? new Date(startDate) : null,
-      endDate: type === "rental" && endDate ? new Date(endDate) : null,
-      deposit: type === "rental" ? deposit : "",
-      images,
+      startDate,
+      endDate,
+      deposit
+    });
+
+    if ("error" in validation) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    const imageValidationError = validateImageFiles({
+      files,
+      maxFiles: MAX_LISTING_IMAGES,
+      label: "images per listing"
+    });
+
+    if (imageValidationError) {
+      return NextResponse.json({ error: imageValidationError }, { status: 400 });
+    }
+
+    await connectToDatabase();
+    uploadedImages = await saveImageFiles(files);
+
+    const listing = await Listing.create({
+      ...validation.data,
+      images: uploadedImages,
       seller: session.user.id
     });
 
@@ -131,6 +112,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ listing: populatedListing }, { status: 201 });
   } catch (error) {
+    if (uploadedImages.length > 0) {
+      await deleteUploadedFiles(uploadedImages);
+    }
+
     const message = error instanceof Error ? error.message : "Could not create listing.";
     return NextResponse.json({ error: message }, { status: 500 });
   }

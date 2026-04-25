@@ -9,6 +9,11 @@ const LeadSchema = new Schema(
       type: String,
       enum: ["whatsapp", "call", "chat"],
       required: true
+    },
+    status: {
+      type: String,
+      enum: ["new", "contacted", "closed"],
+      default: "new"
     }
   },
   { timestamps: { createdAt: true, updatedAt: false } }

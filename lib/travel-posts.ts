@@ -5,6 +5,7 @@ import TravelPost from "@/models/TravelPost";
 type TravelPostFilters = {
   destination?: string;
   date?: string;
+  userId?: string;
 };
 
 export async function getTravelPosts(filters: TravelPostFilters = {}) {
@@ -31,5 +32,13 @@ export async function getTravelPosts(filters: TravelPostFilters = {}) {
     .sort({ createdAt: -1 })
     .lean();
 
-  return serializeDocument(posts);
+  return serializeDocument(
+    posts.map((post: any) => ({
+      ...post,
+      interestedCount: Array.isArray(post.interestedUserIds) ? post.interestedUserIds.length : 0,
+      isInterested: filters.userId
+        ? Array.isArray(post.interestedUserIds) && post.interestedUserIds.some((id: any) => String(id) === filters.userId)
+        : false
+    }))
+  );
 }

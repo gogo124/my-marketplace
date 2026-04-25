@@ -9,9 +9,32 @@ const UserSchema = new Schema(
     avatar: { type: String, default: "" },
     role: {
       type: String,
-      enum: ["user", "agency"],
+      enum: ["user", "agency", "renter", "admin"],
       default: "user"
-    }
+    },
+    sellerVerificationStatus: {
+      type: String,
+      enum: ["unverified", "verified"],
+      default: "unverified"
+    },
+    verified: {
+      type: Boolean,
+      default: false
+    },
+    canCreateAgency: {
+      type: Boolean,
+      default: false
+    },
+    canCreateRenter: {
+      type: Boolean,
+      default: false
+    },
+    savedPlaceIds: [{ type: Schema.Types.ObjectId, ref: "Place" }],
+    accountStatus: {
+      type: String,
+      enum: ["active", "disabled"],
+      default: "active"
+    },
   },
   { timestamps: true }
 );

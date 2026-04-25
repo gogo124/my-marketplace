@@ -1,20 +1,36 @@
 import { NextResponse } from "next/server";
+import { createRouteErrorResponse } from "@/lib/api-errors";
 import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
+import { saveImageFiles } from "@/lib/image-upload";
+import { MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
+import { getAcceptedRenterPartnerIdsForAgency } from "@/lib/partnerships";
+import { generateUniqueTripCode, isTripCodeAvailable, validateManagedTripCodeInput } from "@/lib/trip-code";
+import { deleteUploadedFiles } from "@/lib/uploads";
+import { validateAgencyTripPayload } from "@/lib/validation";
+import { getSessionUser, getUserPermissions } from "@/lib/permissions";
 import AgencyProfile from "@/models/AgencyProfile";
 import AgencyTrip from "@/models/AgencyTrip";
+import RenterProfile from "@/models/RenterProfile";
+
+export const runtime = "nodejs";
 
 export async function GET() {
   try {
     const session = await getAuthSession();
+    const user = getSessionUser(session);
 
-    if (!session?.user?.id) {
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
+    if (!getUserPermissions(user).canAccessAgencyWorkspace) {
+      return NextResponse.json({ error: "Access denied." }, { status: 403 });
     }
 
     await connectToDatabase();
 
-    const profile = await AgencyProfile.findOne({ user: session.user.id });
+    const profile = await AgencyProfile.findOne({ user: user.id });
 
     if (!profile) {
       return NextResponse.json({ trips: [] });
@@ -24,49 +40,129 @@ export async function GET() {
 
     return NextResponse.json({ trips });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not fetch trips.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return createRouteErrorResponse(error, "Could not fetch trips.");
   }
 }
 
 export async function POST(request: Request) {
+  let uploadedImages: string[] = [];
+
   try {
     const session = await getAuthSession();
+    const user = getSessionUser(session);
 
-    if (!session?.user?.id) {
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    const { title, destination, city, description, price, startDate, endDate, seatsTotal } = await request.json();
+    if (!getUserPermissions(user).canAccessAgencyWorkspace) {
+      return NextResponse.json({ error: "Access denied." }, { status: 403 });
+    }
 
-    if (!title || !destination || !city || !startDate || !endDate || Number(price) < 0 || Number(seatsTotal) < 1) {
-      return NextResponse.json({ error: "Invalid trip payload." }, { status: 400 });
+    const formData = await request.formData();
+    const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    const payload = {
+      title: formData.get("title"),
+      destination: formData.get("destination"),
+      city: formData.get("city"),
+      departureCities: String(formData.get("departureCities") || "")
+        .split("\n")
+        .map((value) => value.trim())
+        .filter(Boolean),
+      region: formData.get("region"),
+      description: formData.get("description"),
+      price: formData.get("price"),
+      tripCode: formData.get("tripCode"),
+      startDate: formData.get("startDate"),
+      endDate: formData.get("endDate"),
+      seatsTotal: formData.get("seatsTotal"),
+      equipmentRequirements: String(formData.get("equipmentRequirements") || "")
+        .split("\n")
+        .map((value) => value.trim())
+        .filter(Boolean),
+      renterPartnerIds: formData.getAll("renterPartnerIds"),
+      trustedRenterPartnerIds: formData.getAll("trustedRenterPartnerIds"),
+      recommendedRenterPartnerIds: formData.getAll("recommendedRenterPartnerIds")
+    };
+    const validation = validateAgencyTripPayload(payload);
+
+    if ("error" in validation) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    const imageValidationError = validateImageFiles({
+      files,
+      maxFiles: MAX_LISTING_IMAGES,
+      label: "images per trip"
+    });
+
+    if (imageValidationError) {
+      return NextResponse.json({ error: imageValidationError }, { status: 400 });
     }
 
     await connectToDatabase();
 
-    const profile = await AgencyProfile.findOne({ user: session.user.id });
+    const profile = await AgencyProfile.findOne({ user: user.id });
 
     if (!profile) {
       return NextResponse.json({ error: "Create your agency profile first." }, { status: 400 });
     }
 
+    const acceptedPartnerIds = new Set(await getAcceptedRenterPartnerIdsForAgency(String(profile._id)));
+
+    if (Array.isArray(validation.data.renterPartnerIds) && validation.data.renterPartnerIds.length > 0) {
+      if (validation.data.renterPartnerIds.some((partnerId) => !acceptedPartnerIds.has(String(partnerId)))) {
+        return NextResponse.json({ error: "Only accepted renter partners can be linked to trips." }, { status: 400 });
+      }
+
+      const validPartnersCount = await RenterProfile.countDocuments({
+        _id: { $in: validation.data.renterPartnerIds }
+      });
+
+      if (validPartnersCount !== validation.data.renterPartnerIds.length) {
+        return NextResponse.json({ error: "One or more renter partners are invalid." }, { status: 400 });
+      }
+    }
+
+    let tripCode = await generateUniqueTripCode();
+
+    if (payload.tripCode !== undefined) {
+      const tripCodeValidation = validateManagedTripCodeInput(payload.tripCode, { allowBlank: true });
+
+      if ("error" in tripCodeValidation) {
+        return NextResponse.json({ error: tripCodeValidation.error }, { status: 400 });
+      }
+
+      if (tripCodeValidation.data) {
+        const available = await isTripCodeAvailable(tripCodeValidation.data);
+
+        if (!available) {
+          return NextResponse.json({ error: "Trip code is already in use." }, { status: 400 });
+        }
+
+        tripCode = tripCodeValidation.data;
+      }
+    }
+
+    uploadedImages = await saveImageFiles(files);
+
     const trip = await AgencyTrip.create({
       agency: profile._id,
-      owner: session.user.id,
-      title: String(title).trim(),
-      destination: String(destination).trim(),
-      city: String(city).trim(),
-      description: String(description || "").trim(),
-      price: Number(price),
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      seatsTotal: Number(seatsTotal)
+      owner: user.id,
+      tripCode,
+      ...validation.data,
+      images: uploadedImages,
+      renterPartners: validation.data.renterPartnerIds || [],
+      trustedRenterPartners: validation.data.trustedRenterPartnerIds || [],
+      recommendedRenterPartners: validation.data.recommendedRenterPartnerIds || []
     });
 
     return NextResponse.json({ trip }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not create trip.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (uploadedImages.length > 0) {
+      await deleteUploadedFiles(uploadedImages);
+    }
+
+    return createRouteErrorResponse(error, "Could not create trip.");
   }
 }

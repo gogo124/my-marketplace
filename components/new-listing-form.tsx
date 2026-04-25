@@ -2,12 +2,11 @@
 
 import Image from "next/image";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
-
-const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg"];
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const MAX_IMAGES = 6;
+import { ACCEPTED_IMAGE_INPUT, MAX_LISTING_IMAGES, validateImageFiles } from "@/lib/image-upload-shared";
+import { resolveLocale, siteCopy, translateApiError, withLocale } from "@/lib/i18n";
+import { normalizePhoneNumber } from "@/lib/validation";
 
 export function NewListingForm() {
   return <ListingForm mode="sale" />;
@@ -19,6 +18,9 @@ export function RentalListingForm() {
 
 function ListingForm({ mode }: { mode: "sale" | "rental" }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const locale = resolveLocale(searchParams.get("lang") || undefined);
+  const copy = siteCopy[locale];
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -35,36 +37,54 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
   }, [previews]);
 
   function validateFiles(files: File[]) {
-    if (files.length > MAX_IMAGES) {
-      return `You can upload up to ${MAX_IMAGES} images per listing.`;
-    }
-
-    for (const file of files) {
-      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-        return "Only PNG and JPEG images are allowed.";
-      }
-
-      if (file.size > MAX_IMAGE_SIZE) {
-        return "Each image must be 5 MB or smaller.";
-      }
-    }
-
-    return "";
+    return validateImageFiles({
+      files,
+      maxFiles: MAX_LISTING_IMAGES,
+      label: "images per listing"
+    });
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files || []);
-    const validationError = validateFiles(files);
+    const incomingFiles = Array.from(event.target.files || []);
+    const mergedFiles = [...selectedFiles];
+
+    for (const incomingFile of incomingFiles) {
+      const exists = mergedFiles.some(
+        (currentFile) =>
+          currentFile.name === incomingFile.name &&
+          currentFile.size === incomingFile.size &&
+          currentFile.lastModified === incomingFile.lastModified
+      );
+
+      if (!exists) {
+        mergedFiles.push(incomingFile);
+      }
+    }
+
+    const validationError = validateFiles(mergedFiles);
 
     if (validationError) {
-      setSelectedFiles([]);
       setError(validationError);
       event.target.value = "";
       return;
     }
 
     setError("");
-    setSelectedFiles(files);
+    setSelectedFiles(mergedFiles);
+    event.target.value = "";
+  }
+
+  function removeFile(targetFile: File) {
+    setSelectedFiles((currentFiles) =>
+      currentFiles.filter(
+        (file) =>
+          !(
+            file.name === targetFile.name &&
+            file.size === targetFile.size &&
+            file.lastModified === targetFile.lastModified
+          )
+      )
+    );
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -104,20 +124,22 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
       const data = await parseApiResponse(response);
 
       if (!response.ok) {
-        throw new Error(getApiError(data, "Could not create listing."));
+        throw new Error(translateApiError(getApiError(data, "Could not create listing."), locale));
       }
 
       const listing = data.listing as { _id?: string } | undefined;
 
       if (!listing?._id) {
-        throw new Error("The server did not return the created listing.");
+        throw new Error(translateApiError("The server did not return the created listing.", locale));
       }
 
       setSelectedFiles([]);
-      router.push(`/listings/${listing._id}`);
+      router.push(withLocale(`/listings/${listing._id}`, locale));
       router.refresh();
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "Unexpected error.");
+      setError(
+        submissionError instanceof Error ? translateApiError(submissionError.message, locale) : translateApiError("Unexpected error.", locale)
+      );
     } finally {
       setLoading(false);
     }
@@ -133,17 +155,17 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
           Moroccan Trip
         </span>
         <h1 className="text-3xl font-black text-ink">
-          {mode === "sale" ? "Create a sale listing" : "Create a rental listing"}
+          {mode === "sale" ? copy.listingCreateSaleTitle : copy.listingCreateRentalTitle}
         </h1>
         <p className="text-sm leading-7 text-ink/65">
           {mode === "sale"
-            ? "Publish a clear product or service listing with direct contact."
-            : "Publish a rental listing with availability dates, deposit, and direct contact."}
+            ? copy.listingCreateSaleBody
+            : copy.listingCreateRentalBody}
         </p>
       </div>
       <input
         name="title"
-        placeholder="Title"
+        placeholder={copy.title}
         required
         className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
@@ -152,37 +174,44 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
           name="price"
           type="number"
           min="0"
-          placeholder="Price"
+          step="1"
+          placeholder={copy.price}
           required
           className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
         />
         <input
           name="category"
-          placeholder="Category"
+          placeholder={copy.categoryPlaceholder}
           required
           className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
         />
       </div>
       <input
         name="location"
-        placeholder="Location"
+        placeholder={copy.location}
         required
         className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
-      <input
-        name="phoneNumber"
-        type="tel"
-        placeholder="Phone number"
-        required
-        className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
-      />
-      <input
-        name="whatsappNumber"
-        type="tel"
-        placeholder="WhatsApp number"
-        required
-        className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
-      />
+        <input
+          name="phoneNumber"
+          type="tel"
+          placeholder={copy.phoneNumber}
+          required
+          onChange={(event) => {
+            event.currentTarget.value = normalizePhoneNumber(event.currentTarget.value);
+          }}
+          className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
+        />
+        <input
+          name="whatsappNumber"
+          type="tel"
+          placeholder={copy.whatsappNumber}
+          required
+          onChange={(event) => {
+            event.currentTarget.value = normalizePhoneNumber(event.currentTarget.value);
+          }}
+          className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
+        />
       {mode === "rental" ? (
         <>
           <div className="grid gap-4 md:grid-cols-2">
@@ -201,7 +230,7 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
           </div>
           <input
             name="deposit"
-            placeholder="Deposit"
+            placeholder={copy.deposit}
             required
             className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
           />
@@ -209,15 +238,15 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
       ) : null}
       <div className="space-y-3 rounded-[1.7rem] border border-ink/10 bg-sand/70 p-4">
         <div>
-          <p className="text-sm font-semibold text-ink">Product images</p>
+          <p className="text-sm font-semibold text-ink">{copy.productImages}</p>
           <p className="mt-1 text-sm text-ink/60">
-            Upload up to {MAX_IMAGES} images from your device. Supported formats: PNG and JPEG.
+            {copy.productImagesBody.replace("{count}", String(MAX_LISTING_IMAGES))}
           </p>
         </div>
         <input
           name="images"
           type="file"
-          accept="image/png,image/jpeg"
+          accept={ACCEPTED_IMAGE_INPUT}
           multiple
           onChange={handleFileChange}
           className="block w-full text-sm text-ink file:mr-4 file:rounded-full file:border-0 file:bg-forest file:px-4 file:py-2 file:font-semibold file:text-white"
@@ -235,6 +264,13 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
                 <div className="p-3 text-xs text-ink/65">
                   <p className="truncate font-semibold text-ink">{preview.file.name}</p>
                   <p>{Math.round(preview.file.size / 1024)} KB</p>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(preview.file)}
+                    className="mt-2 rounded-full border border-ink/10 px-3 py-1 text-xs font-semibold text-ink"
+                  >
+                    {copy.delete}
+                  </button>
                 </div>
               </div>
             ))}
@@ -243,9 +279,10 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
       </div>
       <textarea
         name="description"
-        placeholder="Description"
+        placeholder={copy.description}
         rows={6}
         required
+        minLength={10}
         className="w-full rounded-[1.6rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
       {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
@@ -254,7 +291,7 @@ function ListingForm({ mode }: { mode: "sale" | "rental" }) {
         disabled={loading}
         className="w-full rounded-[1.4rem] bg-clay px-4 py-3 font-semibold text-white shadow-card disabled:opacity-60"
       >
-        {loading ? "Publishing..." : mode === "sale" ? "Publish sale listing" : "Publish rental listing"}
+        {loading ? copy.publishing : mode === "sale" ? copy.listingCreateSaleTitle : copy.listingCreateRentalTitle}
       </button>
     </form>
   );

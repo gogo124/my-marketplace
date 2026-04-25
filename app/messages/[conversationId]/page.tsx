@@ -5,19 +5,25 @@ import { connectToDatabase } from "@/lib/db";
 import Conversation from "@/models/Conversation";
 import { getMessagesForConversation } from "@/lib/data";
 import { serializeDocument } from "@/lib/utils";
+import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConversationPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ conversationId: string }>;
+  searchParams: Promise<{ lang?: string }>;
 }) {
   const { conversationId } = await params;
+  const { lang } = await searchParams;
+  const locale = resolveLocale(lang);
+  const copy = siteCopy[locale];
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
-    redirect("/login");
+    redirect(withLocale("/login", locale));
   }
 
   await connectToDatabase();
@@ -35,17 +41,17 @@ export default async function ConversationPage({
   const listing = normalizedConversation.listing as unknown as { title?: string };
 
   if (!normalizedConversation.participants.some((participant: any) => participant._id === session.user.id)) {
-    redirect("/messages");
+    redirect(withLocale("/messages", locale));
   }
 
   const messages = await getMessagesForConversation(conversationId);
 
   return (
-    <main className="page-shell space-y-6">
+    <main dir={getDirection(locale)} className="page-shell space-y-6">
       <div className="rounded-[2rem] bg-white p-6 shadow-card">
-        <p className="text-sm uppercase tracking-[0.25em] text-ink/50">Conversation</p>
+        <p className="text-sm uppercase tracking-[0.25em] text-ink/50">{copy.conversation}</p>
         <h1 className="mt-2 text-3xl font-black text-ink">
-          {listing?.title || "Marketplace chat"}
+          {listing?.title || copy.marketplaceChat}
         </h1>
       </div>
       <section className="space-y-4 rounded-[2rem] bg-white p-6 shadow-card">
@@ -68,7 +74,7 @@ export default async function ConversationPage({
             );
           })
         ) : (
-          <p className="text-sm text-ink/60">No messages yet.</p>
+          <p className="text-sm text-ink/60">{copy.noMessages}</p>
         )}
       </section>
       <MessageComposer conversationId={conversationId} />

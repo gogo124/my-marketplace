@@ -6,8 +6,18 @@ const AgencyReservationSchema = new Schema(
     agency: { type: Schema.Types.ObjectId, ref: "AgencyProfile", required: true },
     user: { type: Schema.Types.ObjectId, ref: "User", default: null },
     customerName: { type: String, default: "", trim: true },
+    customerEmail: { type: String, default: "", trim: true, lowercase: true },
     phoneNumber: { type: String, default: "", trim: true },
-    seats: { type: Number, required: true, min: 1 }
+    city: { type: String, default: "", trim: true },
+    seats: { type: Number, required: true, min: 1 },
+    preferredDate: { type: Date, default: null },
+    unitPrice: { type: Number, default: 0, min: 0 },
+    totalPrice: { type: Number, default: 0, min: 0 },
+    status: {
+      type: String,
+      enum: ["pending", "confirmed", "completed", "cancelled"],
+      default: "pending"
+    }
   },
   { timestamps: true }
 );

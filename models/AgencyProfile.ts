@@ -10,7 +10,15 @@ const AgencyProfileSchema = new Schema(
     description: { type: String, default: "", trim: true },
     phone: { type: String, required: true, trim: true },
     whatsapp: { type: String, required: true, trim: true },
-    rating: { type: Number, default: 0 }
+    rating: { type: Number, default: 0 },
+    linkedRenterPartners: [{ type: Schema.Types.ObjectId, ref: "RenterProfile" }],
+    trustedRenterPartners: [{ type: Schema.Types.ObjectId, ref: "RenterProfile" }],
+    recommendedRenterPartners: [{ type: Schema.Types.ObjectId, ref: "RenterProfile" }],
+    verificationStatus: {
+      type: String,
+      enum: ["unverified", "pending", "verified"],
+      default: "unverified"
+    }
   },
   { timestamps: true }
 );

@@ -1,115 +1,106 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AgencyProfileForm } from "@/components/agency-profile-form";
-import { AgencyTripManager } from "@/components/agency-trip-manager";
+import { AgencyOverviewSection, AgencyReservationsSection, AgencyStatsGrid } from "@/components/agency-owner-sections";
+import { StatusBadge } from "@/components/status-badge";
+import { PartnershipManager } from "@/components/partnership-manager";
 import { getAuthSession } from "@/lib/auth";
 import { getAgencyDashboardData } from "@/lib/agency";
+import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
+import { getAgencyWorkspaceRedirectPath, getSessionUser } from "@/lib/permissions";
 
-export default async function AgencyDashboardPage() {
+export default async function AgencyDashboardPage({
+  searchParams
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}) {
+  const { lang } = await searchParams;
+  const locale = resolveLocale(lang);
+  const copy = siteCopy[locale];
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
-    redirect("/login");
+    redirect(withLocale("/login", locale));
   }
 
   const dashboard = await getAgencyDashboardData(session.user.id);
-  const isAgencyUser = session.user.role === "agency" || Boolean(dashboard.profile?._id);
+  const redirectPath = getAgencyWorkspaceRedirectPath(getSessionUser(session), locale, Boolean(dashboard.profile?._id));
+
+  if (redirectPath) {
+    redirect(redirectPath);
+  }
+
+  const cards = [
+    { href: "/agency/trips", label: copy.trips, value: dashboard.stats.tripsCount, note: locale === "ar" ? "الرحلات ورموزها" : "Trips and codes" },
+    { href: "/agency/reservations", label: copy.reservations, value: dashboard.stats.reservationsCount, note: locale === "ar" ? "إدارة الحجوزات" : "Manage reservations" },
+    { href: "/agency/rental-requests", label: locale === "ar" ? "طلبات الكراء" : "Demandes location", value: dashboard.stats.rentalRequestsCount, note: locale === "ar" ? "مرتبطة برحلاتك" : "Linked to your trips" }
+  ];
 
   return (
-    <main className="page-shell space-y-8">
-      <section className="rounded-[2.75rem] bg-forest px-8 py-10 text-white shadow-card">
-        <p className="text-sm uppercase tracking-[0.3em] text-white/60">Agency dashboard</p>
-        <h1 className="mt-4 text-4xl font-black">Manage your agency profile, trips, and inbox.</h1>
-        <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75">
-          View your trips, reservations, remaining seats, leads, and messages from one simple dashboard.
-        </p>
-        {dashboard.profile?._id ? (
-          <Link href={`/agencies/${dashboard.profile._id}`} className="mt-6 inline-flex rounded-full bg-white px-5 py-3 font-semibold text-forest">
-            View public profile
-          </Link>
-        ) : null}
+    <div dir={getDirection(locale)} className="space-y-8">
+      <section className="rounded-[2rem] bg-white p-6 shadow-card">
+        <h1 className="text-3xl font-black text-ink">{copy.agencyDashboardTitle}</h1>
+        <p className="mt-3 text-sm text-ink/60">{copy.agencyDashboardBody}</p>
       </section>
 
-      {!isAgencyUser ? (
-        <section className="rounded-[2rem] bg-white p-6 shadow-card">
-          <h2 className="text-2xl font-black text-ink">Become an agency</h2>
-          <p className="mt-3 text-sm text-ink/60">
-            Complete your agency profile to activate the dashboard and publish trips.
-          </p>
-          <div className="mt-6">
-            <AgencyProfileForm profile={dashboard.profile} />
+      <section className="grid gap-6 md:grid-cols-3">
+        {cards.map((card) => (
+          <Link key={card.href} href={withLocale(card.href, locale)} className="rounded-[2rem] bg-white p-6 shadow-card">
+            <p className="text-sm text-ink/50">{card.label}</p>
+            <p className="mt-3 text-3xl font-black text-ink">{card.value || 0}</p>
+            <p className="mt-2 text-sm text-ink/60">{card.note}</p>
+          </Link>
+        ))}
+      </section>
+
+      <AgencyStatsGrid stats={dashboard.stats as any} locale={locale} />
+      <AgencyOverviewSection
+        stats={dashboard.stats as any}
+        leadsByType={(dashboard.stats as any).leadsByType || {}}
+        locale={locale}
+      />
+      <AgencyReservationsSection reservations={dashboard.reservations as any[]} locale={locale} />
+
+      <section className="rounded-[2rem] bg-white p-6 shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-black text-ink">{locale === "ar" ? "المراجعات والتقييم" : "Avis et note"}</h2>
+            <p className="mt-2 text-sm text-ink/60">
+              {locale === "ar" ? "ملخص مراجعات هذا الحساب داخل المنصة." : "Resume des avis lies a ce compte dans la plateforme."}
+            </p>
           </div>
-        </section>
-      ) : (
-        <>
-          <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
-            <div className="rounded-[2rem] bg-white p-6 shadow-card"><p className="text-sm text-ink/50">Trips</p><p className="mt-3 text-3xl font-black text-ink">{dashboard.stats.tripsCount}</p></div>
-            <div className="rounded-[2rem] bg-white p-6 shadow-card"><p className="text-sm text-ink/50">Reservations</p><p className="mt-3 text-3xl font-black text-ink">{dashboard.stats.reservationsCount}</p></div>
-            <div className="rounded-[2rem] bg-white p-6 shadow-card"><p className="text-sm text-ink/50">Remaining seats</p><p className="mt-3 text-3xl font-black text-ink">{dashboard.stats.remainingSeats}</p></div>
-            <div className="rounded-[2rem] bg-white p-6 shadow-card"><p className="text-sm text-ink/50">Leads</p><p className="mt-3 text-3xl font-black text-ink">{dashboard.stats.leadsCount}</p></div>
-            <div className="rounded-[2rem] bg-white p-6 shadow-card"><p className="text-sm text-ink/50">Messages</p><p className="mt-3 text-3xl font-black text-ink">{dashboard.stats.messagesCount}</p></div>
-          </section>
-
-          <AgencyProfileForm profile={dashboard.profile} />
-          <AgencyTripManager trips={dashboard.trips as any[]} />
-
-          <section className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-[2rem] bg-white p-6 shadow-card">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-black text-ink">Reservations</h2>
-                <span className="text-sm text-ink/60">{dashboard.reservations.length} total</span>
-              </div>
-              {dashboard.reservations.length > 0 ? (
-                <div className="mt-6 space-y-4">
-                  {dashboard.reservations.map((reservation: any) => (
-                    <div key={reservation._id} className="rounded-[1.5rem] border border-ink/10 p-4">
-                      <p className="font-semibold text-ink">{reservation.trip?.title || "Trip"}</p>
-                      <p className="mt-2 text-sm text-ink/60">{reservation.user?.name || reservation.customerName || "Guest"}</p>
-                      <p className="mt-2 text-sm text-ink/60">Seats: {reservation.seats}</p>
-                      <p className="mt-2 text-sm text-ink/60">{reservation.phoneNumber || reservation.user?.email || "-"}</p>
-                    </div>
-                  ))}
+          <div className="rounded-[1.5rem] bg-sand px-5 py-4 text-right">
+            <p className="text-sm text-ink/50">{locale === "ar" ? "المعدل" : "Moyenne"}</p>
+            <p className="mt-2 text-3xl font-black text-clay">{(dashboard as any).reviewsSummary?.averageRating || 0}/5</p>
+          </div>
+        </div>
+        {(dashboard as any).reviews?.length > 0 ? (
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            {(dashboard as any).reviews.slice(0, 6).map((review: any) => (
+              <article key={review._id} className="rounded-[1.5rem] border border-ink/10 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-ink">{review.listing?.title || review.place?.name || (locale === "ar" ? "مراجعة" : "Avis")}</p>
+                    <p className="mt-1 text-sm text-ink/60">{review.rating}/5</p>
+                    <p className="mt-2 text-sm text-ink/70 line-clamp-3">{review.comment}</p>
+                  </div>
+                  <StatusBadge kind="review" status={review.status} locale={locale} />
                 </div>
-              ) : (
-                <p className="mt-6 text-sm text-ink/60">No reservations yet.</p>
-              )}
-            </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-6 text-sm text-ink/60">{locale === "ar" ? "لا توجد مراجعات بعد." : "Pas encore d'avis."}</p>
+        )}
+      </section>
 
-            <div className="rounded-[2rem] bg-white p-6 shadow-card">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-black text-ink">Leads and messages</h2>
-                <span className="text-sm text-ink/60">Latest activity</span>
-              </div>
-              <div className="mt-6 space-y-4">
-                {dashboard.leads.length > 0 ? (
-                  dashboard.leads.map((lead: any) => (
-                    <div key={lead._id} className="rounded-[1.5rem] border border-ink/10 p-4">
-                      <p className="font-semibold text-ink">Lead: {lead.type}</p>
-                      <p className="mt-2 text-sm text-ink/60">
-                        {new Date(lead.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-ink/60">No leads yet.</p>
-                )}
-                {dashboard.conversations.length > 0 ? (
-                  dashboard.conversations.map((conversation: any) => (
-                    <Link key={conversation._id} href={`/messages/${conversation._id}`} className="block rounded-[1.5rem] border border-ink/10 p-4">
-                      <p className="font-semibold text-ink">{conversation.listing?.title || "Conversation"}</p>
-                      <p className="mt-2 text-sm text-ink/60">
-                        {new Date(conversation.lastMessageAt).toLocaleString()}
-                      </p>
-                    </Link>
-                  ))
-                ) : (
-                  <p className="text-sm text-ink/60">No messages yet.</p>
-                )}
-              </div>
-            </div>
-          </section>
-        </>
-      )}
-    </main>
+      <PartnershipManager
+        role="agency"
+        directory={(dashboard.partnerships as any).directory || []}
+        accepted={(dashboard.partnerships as any).accepted || []}
+        incomingRequests={(dashboard.partnerships as any).incomingRequests || []}
+        outgoingRequests={(dashboard.partnerships as any).outgoingRequests || []}
+        locale={locale}
+      />
+    </div>
   );
 }

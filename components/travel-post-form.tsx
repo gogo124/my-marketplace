@@ -1,50 +1,125 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import Image from "next/image";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
-import { resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
+import { ACCEPTED_IMAGE_INPUT, validateImageFiles } from "@/lib/image-upload-shared";
+import { resolveLocale, siteCopy, translateApiError, withLocale } from "@/lib/i18n";
 
 export function TravelPostForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = resolveLocale(searchParams.get("lang") || undefined);
   const copy = siteCopy[locale];
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const profileInputRef = useRef<HTMLInputElement | null>(null);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
+  const previews = useMemo(
+    () => [
+      ...(selectedFile ? [{ url: URL.createObjectURL(selectedFile), kind: "profile" as const }] : []),
+      ...(selectedCoverFile ? [{ url: URL.createObjectURL(selectedCoverFile), kind: "cover" as const }] : [])
+    ],
+    [selectedCoverFile, selectedFile]
+  );
+
+  useEffect(() => {
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    };
+  }, [previews]);
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] || null;
+
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
+
+    const validationError = validateImageFiles({
+      files: [file],
+      maxFiles: 1,
+      label: "profile image"
+    });
+
+    if (validationError) {
+      setError(validationError);
+      event.target.value = "";
+      return;
+    }
+
+    setError("");
+    setSelectedFile(file);
+  }
+
+  function handleCoverFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] || null;
+
+    if (!file) {
+      setSelectedCoverFile(null);
+      return;
+    }
+
+    const validationError = validateImageFiles({
+      files: [file],
+      maxFiles: 1,
+      label: "trip image"
+    });
+
+    if (validationError) {
+      setError(validationError);
+      event.target.value = "";
+      return;
+    }
+
+    setError("");
+    setSelectedCoverFile(file);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError("");
 
-    const formData = new FormData(event.currentTarget);
-    const payload = {
-      destination: String(formData.get("destination") || "").trim(),
-      date: String(formData.get("date") || ""),
-      description: String(formData.get("description") || "").trim(),
-      phoneNumber: String(formData.get("phoneNumber") || "").trim()
-    };
+    const formData = new FormData(formRef.current || event.currentTarget);
+    if (selectedFile) {
+      formData.set("profileImage", selectedFile);
+    }
+    if (selectedCoverFile) {
+      formData.set("coverImage", selectedCoverFile);
+    }
 
     try {
       const response = await fetch("/api/travel-posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: formData
       });
 
       const data = await parseApiResponse(response);
 
       if (!response.ok) {
-        throw new Error(getApiError(data, "Could not publish travel post."));
+        throw new Error(translateApiError(getApiError(data, "Could not publish travel post."), locale));
       }
 
-      event.currentTarget.reset();
+      formRef.current?.reset();
+      if (profileInputRef.current) {
+        profileInputRef.current.value = "";
+      }
+      if (coverInputRef.current) {
+        coverInputRef.current.value = "";
+      }
+      setSelectedFile(null);
+      setSelectedCoverFile(null);
       router.push(withLocale("/travel-partners", locale));
       router.refresh();
     } catch (submissionError) {
       setError(
-        submissionError instanceof Error ? submissionError.message : "Unexpected error."
+        submissionError instanceof Error ? translateApiError(submissionError.message, locale) : translateApiError("Unexpected error.", locale)
       );
     } finally {
       setLoading(false);
@@ -53,6 +128,7 @@ export function TravelPostForm() {
 
   return (
     <form
+      ref={formRef}
       onSubmit={handleSubmit}
       className="relative space-y-5 overflow-hidden rounded-[2.25rem] border border-white/80 bg-white/90 p-6 shadow-card backdrop-blur"
     >
@@ -72,7 +148,7 @@ export function TravelPostForm() {
           <input
             name="destination"
             required
-            placeholder={copy.searchPlaceholder}
+            placeholder={locale === "ar" ? "مثال: مرزوكة، تغازوت، إفران" : "Ex: Merzouga, Taghazout, Ifrane"}
             className="w-full rounded-[1.4rem] border border-ink/10 bg-sand/70 px-4 py-3 outline-none ring-clay/30 focus:ring"
           />
         </label>
@@ -86,6 +162,58 @@ export function TravelPostForm() {
             required
             className="w-full rounded-[1.4rem] border border-ink/10 bg-sand/70 px-4 py-3 outline-none ring-clay/30 focus:ring"
           />
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs font-bold uppercase tracking-[0.25em] text-ink/45">
+            {locale === "ar" ? "الجنس" : "Gender"}
+          </span>
+          <select
+            name="gender"
+            required
+            className="w-full rounded-[1.4rem] border border-ink/10 bg-sand/70 px-4 py-3 outline-none ring-clay/30 focus:ring"
+          >
+            <option value="">{locale === "ar" ? "اختر الجنس" : "Select gender"}</option>
+            <option value="male">{locale === "ar" ? "ذكر" : "Male"}</option>
+            <option value="female">{locale === "ar" ? "أنثى" : "Female"}</option>
+          </select>
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs font-bold uppercase tracking-[0.25em] text-ink/45">
+            {locale === "ar" ? "صورة الوجهة" : "Photo destination"}
+          </span>
+          <input
+            ref={coverInputRef}
+            name="coverImage"
+            type="file"
+            accept={ACCEPTED_IMAGE_INPUT}
+            onChange={handleCoverFileChange}
+            className="w-full rounded-[1.4rem] border border-ink/10 bg-sand/70 px-4 py-3 text-sm outline-none ring-clay/30 focus:ring"
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs font-bold uppercase tracking-[0.25em] text-ink/45">
+            {locale === "ar" ? "الصورة الشخصية" : "Profile photo"}
+          </span>
+          <input
+            ref={profileInputRef}
+            name="profileImage"
+            type="file"
+            accept={ACCEPTED_IMAGE_INPUT}
+            onChange={handleFileChange}
+            className="w-full rounded-[1.4rem] border border-ink/10 bg-sand/70 px-4 py-3 text-sm outline-none ring-clay/30 focus:ring"
+          />
+          {previews.length > 0 ? (
+            <div className="flex flex-wrap gap-3">
+              {previews.map((preview) => (
+                <div
+                  key={preview.url}
+                  className={`relative overflow-hidden border border-ink/10 bg-sand ${preview.kind === "profile" ? "h-20 w-20 rounded-full" : "h-20 w-28 rounded-[1rem]"}`}
+                >
+                  <Image src={preview.url} alt="Preview" fill sizes="112px" className="object-cover" />
+                </div>
+              ))}
+            </div>
+          ) : null}
         </label>
         <label className="space-y-2">
           <span className="text-xs font-bold uppercase tracking-[0.25em] text-ink/45">
@@ -107,7 +235,7 @@ export function TravelPostForm() {
             name="description"
             required
             rows={6}
-            placeholder={copy.description}
+            placeholder={locale === "ar" ? "منين غادي تطلق، شنو الخطة، وشنو النوع ديال الرفيق اللي كتبحث عليه." : "Precisez depart, rythme du trajet et le type de compagnon recherche."}
             className="w-full rounded-[1.6rem] border border-ink/10 bg-sand/70 px-4 py-3 outline-none ring-clay/30 focus:ring"
           />
         </label>

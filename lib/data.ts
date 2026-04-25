@@ -5,11 +5,45 @@ import Message from "@/models/Message";
 import Review from "@/models/Review";
 import { serializeDocument } from "@/lib/utils";
 
-export async function getListings() {
+type ListingFilters = {
+  q?: string;
+  type?: string;
+  location?: string;
+  category?: string;
+};
+
+export async function getListings(filters: ListingFilters = {}) {
   await connectToDatabase();
 
-  const listings = await Listing.find({ status: "active" })
-    .populate("seller", "name email avatar")
+  const query: Record<string, unknown> = { status: "active" };
+  const search = typeof filters.q === "string" ? filters.q.trim() : "";
+  const type = filters.type === "sale" || filters.type === "rental" ? filters.type : "";
+  const location = typeof filters.location === "string" ? filters.location.trim() : "";
+  const category = typeof filters.category === "string" ? filters.category.trim() : "";
+
+  if (type) {
+    query.type = type;
+  }
+
+  if (location) {
+    query.location = { $regex: location, $options: "i" };
+  }
+
+  if (category) {
+    query.category = { $regex: category, $options: "i" };
+  }
+
+  if (search) {
+    query.$or = [
+      { title: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+      { location: { $regex: search, $options: "i" } },
+      { category: { $regex: search, $options: "i" } }
+    ];
+  }
+
+  const listings = await Listing.find(query)
+    .populate("seller", "name email avatar sellerVerificationStatus verified")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -19,15 +53,18 @@ export async function getListings() {
 export async function getListingById(id: string) {
   await connectToDatabase();
 
-  const listing = await Listing.findById(id).populate("seller", "name email avatar").lean();
+  const listing = await Listing.findById(id)
+    .populate("seller", "name email avatar sellerVerificationStatus verified")
+    .lean();
   return listing ? serializeDocument(listing) : null;
 }
 
 export async function getReviewsForListing(listingId: string) {
   await connectToDatabase();
 
-  const reviews = await Review.find({ listing: listingId })
+  const reviews = await Review.find({ listing: listingId, status: "approved" })
     .populate("author", "name")
+    .populate("providerReplyBy", "name")
     .sort({ createdAt: -1 })
     .lean();
 
