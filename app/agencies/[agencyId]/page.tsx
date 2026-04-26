@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { AgencyTripCard } from "@/components/agency-trip-card";
 import { ReportForm } from "@/components/report-form";
 import { VerificationBadge } from "@/components/verification-badge";
-import { TrackedExternalLink } from "@/components/tracked-external-link";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getAgencyProfileById, getAgencyTrips } from "@/lib/agency";
@@ -175,16 +174,15 @@ export default async function AgencyProfilePage({
                 {session?.user ? (
                   <>
                     {whatsappDigits ? (
-                      <TrackedExternalLink
+                      <a
                         href={`https://wa.me/${whatsappDigits}`}
                         target="_blank"
                         rel="noreferrer"
-                        eventName="whatsapp_click"
-                        eventData={{ surface: "agency_profile", agency_id: agencyId }}
+                        data-analytics-event="whatsapp_click"
                         className="rounded-full bg-forest px-4 py-2 font-semibold text-white transition hover:bg-forest/90"
                       >
                         {copy.contactAction}
-                      </TrackedExternalLink>
+                      </a>
                     ) : null}
                     {profile.phone ? (
                       <a

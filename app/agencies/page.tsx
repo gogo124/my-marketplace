@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { VerificationBadge } from "@/components/verification-badge";
-import { TrackedExternalLink } from "@/components/tracked-external-link";
 import { getAgencyProfiles } from "@/lib/agency";
 import { formatLocaleNumber, getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
 
@@ -254,16 +253,15 @@ export default async function AgenciesPage({
                       {copy.viewAgency}
                     </Link>
                     {agency.whatsapp ? (
-                      <TrackedExternalLink
+                      <a
                         href={`https://wa.me/${String(agency.whatsapp).replace(/\D/g, "")}`}
                         target="_blank"
                         rel="noreferrer"
-                        eventName="whatsapp_click"
-                        eventData={{ surface: "agency_list", agency_id: agency._id }}
+                        data-analytics-event="whatsapp_click"
                         className="rounded-full border border-ink/10 px-4 py-2 font-semibold text-ink transition hover:border-clay hover:text-clay"
                       >
                         {copy.contact}
-                      </TrackedExternalLink>
+                      </a>
                     ) : null}
                   </div>
                 </div>

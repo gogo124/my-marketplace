@@ -8,7 +8,6 @@ import { ReportForm } from "@/components/report-form";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewReplyForm } from "@/components/review-reply-form";
 import { VerificationBadge } from "@/components/verification-badge";
-import { TrackedExternalLink } from "@/components/tracked-external-link";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getListingById, getReviewsForListing } from "@/lib/data";
@@ -280,16 +279,15 @@ export default async function ListingDetailsPage({
             <div className="space-y-4 rounded-[2rem] bg-white p-6 shadow-card">
               <div className="grid gap-3 sm:grid-cols-2">
                 {whatsappDigits ? (
-                  <TrackedExternalLink
+                  <a
                     href={`https://wa.me/${whatsappDigits}`}
                     target="_blank"
                     rel="noreferrer"
-                    eventName="whatsapp_click"
-                    eventData={{ surface: "listing_details", listing_id: listing._id }}
+                    data-analytics-event="whatsapp_click"
                     className="inline-flex items-center justify-center rounded-2xl bg-forest px-4 py-3 font-semibold text-white shadow-card transition hover:-translate-y-0.5"
                   >
                     {locale === "ar" ? "واتساب" : "WhatsApp"}
-                  </TrackedExternalLink>
+                  </a>
                 ) : (
                   <span className="inline-flex items-center justify-center rounded-2xl bg-forest px-4 py-3 font-semibold text-white opacity-60">
                     {locale === "ar" ? "واتساب" : "WhatsApp"}

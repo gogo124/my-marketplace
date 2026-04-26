@@ -31,5 +31,35 @@ export function AnalyticsTracker() {
     });
   }, [pathname, searchParams]);
 
+  useEffect(() => {
+    function handleClick(event: MouseEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const trackedElement = target.closest<HTMLElement>("[data-analytics-event]");
+
+      if (!trackedElement) {
+        return;
+      }
+
+      const eventType = trackedElement.dataset.analyticsEvent?.trim();
+
+      if (!eventType) {
+        return;
+      }
+
+      trackAnalyticsEvent(eventType);
+    }
+
+    document.addEventListener("click", handleClick, true);
+
+    return () => {
+      document.removeEventListener("click", handleClick, true);
+    };
+  }, []);
+
   return null;
 }

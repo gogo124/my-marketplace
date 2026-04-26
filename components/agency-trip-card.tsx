@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { RentalTripAccessForm } from "@/components/rental-trip-access-form";
 import { AgencyReservationForm } from "@/components/agency-reservation-form";
 import { TripMediaCarousel } from "@/components/trip-media-carousel";
-import { TrackedExternalLink } from "@/components/tracked-external-link";
 import { formatLocaleDate, formatLocalePrice, resolveLocale, SiteLocale, siteCopy } from "@/lib/i18n";
 
 type AgencyTripCardProps = {
@@ -228,16 +227,15 @@ export function AgencyTripCard({
                     </div>
                   </div>
                   {agencyWhatsapp ? (
-                    <TrackedExternalLink
+                    <a
                       href={`https://wa.me/${String(agencyWhatsapp).replace(/\D/g, "")}`}
                       target="_blank"
                       rel="noreferrer"
-                      eventName="whatsapp_click"
-                      eventData={{ surface: "agency_trip", trip_id: trip._id, agency_id: agencyId }}
+                      data-analytics-event="whatsapp_click"
                       className="inline-flex rounded-full bg-forest px-4 py-2 font-semibold text-white"
                     >
                       WhatsApp
-                    </TrackedExternalLink>
+                    </a>
                   ) : null}
                   <RentalTripAccessForm
                     placeholder={safeLocale === "ar" ? "أدخل رمز الرحلة" : "Enter trip code"}

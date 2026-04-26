@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { TrackedExternalLink } from "@/components/tracked-external-link";
 import { formatShortDate } from "@/lib/utils";
 import { getDirection, resolveLocale, withLocale } from "@/lib/i18n";
 import { normalizeTripCode } from "@/lib/trip-code";
@@ -125,16 +124,15 @@ export default async function TripCodePage({
               <Link href={reservationLink} className="rounded-full bg-forest px-4 py-2 font-semibold text-white">
                 {locale === "ar" ? "الحجز" : "Reservation"}
               </Link>
-              <TrackedExternalLink
+              <a
                 href={`https://wa.me/${agencyWhatsappDigits}`}
                 target="_blank"
                 rel="noreferrer"
-                eventName="whatsapp_click"
-                eventData={{ surface: "trip_code", code: displayCode }}
+                data-analytics-event="whatsapp_click"
                 className="rounded-full border border-ink/10 px-4 py-2 font-semibold text-ink"
               >
                 WhatsApp
-              </TrackedExternalLink>
+              </a>
             </div>
           </div>
         </div>
