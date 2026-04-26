@@ -7,6 +7,7 @@ import { Header } from "@/components/header";
 import { LocaleDocumentSync } from "@/components/locale-document-sync";
 import { getDirection, resolveLocale, SITE_LOCALE_COOKIE } from "@/lib/i18n";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 const alexandria = Alexandria({
   subsets: ["arabic", "latin"],
