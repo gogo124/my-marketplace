@@ -6,6 +6,7 @@ import { ReportForm } from "@/components/report-form";
 import { TravelPostInterestButton } from "@/components/travel-post-interest-button";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { buildLoginPath } from "@/lib/auth-flow";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { formatLocaleDate, localizeRecordField, siteCopy, translateApiError } from "@/lib/i18n";
 
 type TravelPostCardProps = {
@@ -57,7 +58,7 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
           : "Male"
         : "";
   const profileImage = post.profileImage || "";
-  const coverImage = post.coverImage || "";
+  const coverImage = post.coverImage || "/images/travel-partner.jpg";
   const [isInterested, setIsInterested] = useState(Boolean(post.isInterested));
   const [interestedCount, setInterestedCount] = useState(Number(post.interestedCount || 0));
 
@@ -72,47 +73,45 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
   }
 
   return (
-    <article className="group relative flex h-full flex-col justify-between overflow-hidden rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-card backdrop-blur transition hover:-translate-y-1">
-      {coverImage ? (
-        <div className="relative -mx-6 -mt-6 mb-5 h-48 overflow-hidden">
-          <Image src={coverImage} alt={destination} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,24,39,0.08),rgba(17,24,39,0.55))]" />
-          <div className="absolute inset-x-5 bottom-5 flex items-end justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/70">{copy.destination}</p>
-              <h3 className="mt-2 truncate text-2xl font-black text-white">{destination}</h3>
-            </div>
-            <div className="rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-forest">
-              {formattedDate}
-            </div>
-          </div>
+    <article className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-slate-100 bg-white/95 shadow-[0_18px_45px_rgba(15,61,46,0.08)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_26px_60px_rgba(15,61,46,0.16)]">
+      <div className="relative h-56 overflow-hidden">
+        <Image src={coverImage} alt={destination} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover object-center transition duration-700 group-hover:scale-105" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,61,46,0.2)_45%,rgba(0,0,0,0.76)_100%)] transition duration-500 group-hover:bg-[linear-gradient(180deg,rgba(15,23,42,0.12)_0%,rgba(15,61,46,0.32)_45%,rgba(0,0,0,0.84)_100%)]" />
+        <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+          <span className="rounded-full bg-black/40 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md">
+            {copy.destination}
+          </span>
+          <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-[#0f3d2e] backdrop-blur-md">
+            {formattedDate}
+          </span>
         </div>
-      ) : null}
-      <div className="absolute inset-x-6 top-0 h-20 rounded-b-[2rem] bg-[radial-gradient(circle,rgba(184,138,68,0.14),transparent_70%)]" />
-      <div className="space-y-4">
-        {!coverImage ? (
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-clay">
-                {copy.destination}
-              </p>
-              <h3 className="mt-2 text-2xl font-black leading-tight text-ink">{destination}</h3>
-            </div>
-            <div className="rounded-full bg-sand px-4 py-2 text-sm font-semibold text-forest">
-              {formattedDate}
-            </div>
+        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="line-clamp-2 text-2xl font-black leading-tight text-white">{destination}</h3>
+            <p className="mt-2 line-clamp-2 text-sm text-white/80">{description}</p>
           </div>
-        ) : null}
-        <p className="line-clamp-4 text-sm leading-7 text-ink/70">{description}</p>
-        <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/45">
-          <span>{formattedDate}</span>
-          {genderLabel ? <span>{genderLabel}</span> : null}
-          <span>{interestedCount} {locale === "ar" ? "مهتم" : "interesses"}</span>
+          <div className="relative h-14 w-14 overflow-hidden rounded-full border border-white/40 bg-white/20 backdrop-blur">
+            {profileImage ? (
+              <Image src={profileImage} alt={user?.name || "Traveler"} fill sizes="56px" className="object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-white/15 text-lg font-black text-white">
+                {user?.name?.slice(0, 1).toUpperCase() || "M"}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="mt-6 space-y-4 border-t border-ink/10 pt-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-1 flex-col gap-4 p-5">
+        <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+          <span className="rounded-full bg-slate-50 px-3 py-1">{formattedDate}</span>
+          {genderLabel ? <span className="rounded-full bg-slate-50 px-3 py-1">{genderLabel}</span> : null}
+          <span className="rounded-full bg-slate-50 px-3 py-1">
+            {interestedCount} {locale === "ar" ? "مهتم" : "interesses"}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-[1.4rem] bg-slate-50 p-4">
           <div className="relative h-12 w-12 overflow-hidden rounded-full border border-ink/10 bg-sand">
             {profileImage ? (
               <Image src={profileImage} alt={user?.name || "Traveler"} fill sizes="48px" className="object-cover" />
@@ -122,14 +121,21 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
               </div>
             )}
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.2em] text-ink/45">{copy.postedBy}</p>
-            <p className="font-semibold text-ink">{user?.name || "Moroccan Trip"}</p>
-            {genderLabel ? <p className="text-sm text-ink/55">{genderLabel}</p> : null}
+            <p className="truncate font-semibold text-ink">{user?.name || "Moroccan Trip"}</p>
             <p className="text-sm text-ink/55">{normalizedPhone || "-"}</p>
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">{copy.destination}</span>
+          <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+            {locale === "ar" ? "تواصل آمن" : "Contact securise"}
+          </span>
+        </div>
+
+        <div className="mt-auto grid gap-3 sm:grid-cols-2">
           <TravelPostInterestButton
             postId={post._id}
             initialInterested={isInterested}
@@ -144,23 +150,27 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
             href={whatsappDigits ? `https://wa.me/${whatsappDigits}` : "#"}
             target="_blank"
             rel="noreferrer"
-            onClick={requireSignIn}
+            onClick={(event) => {
+              requireSignIn(event);
+              if (whatsappDigits && isSignedIn) {
+                trackAnalyticsEvent("whatsapp_click", { surface: "travel_partner", post_id: post._id });
+              }
+            }}
             aria-disabled={!whatsappDigits}
-            className="inline-flex w-full items-center justify-center rounded-full bg-forest px-4 py-3 font-semibold text-white shadow-card disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center rounded-full bg-forest px-4 py-3 font-semibold text-white shadow-card transition hover:bg-[#14533f] disabled:opacity-60"
           >
             {copy.contactAction}
           </a>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
           <a
             href={phoneDigits ? `tel:${phoneDigits}` : "#"}
             onClick={requireSignIn}
             aria-disabled={!phoneDigits}
-            className="inline-flex w-full items-center justify-center rounded-full bg-clay px-4 py-3 font-semibold text-white shadow-card disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center rounded-full border border-ink/10 bg-white px-4 py-3 font-semibold text-ink transition hover:bg-slate-50 disabled:opacity-60 sm:col-span-2"
           >
             {copy.callAction}
           </a>
         </div>
+
         {authError ? <p className="text-sm font-medium text-red-600">{authError}</p> : null}
         {canReport ? (
           <div className="flex flex-wrap gap-3">

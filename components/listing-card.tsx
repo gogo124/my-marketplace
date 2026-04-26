@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { VerificationBadge } from "@/components/verification-badge";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { localizeRecordField, resolveLocale, SiteLocale, siteCopy, withLocale } from "@/lib/i18n";
 import { formatPrice } from "@/lib/utils";
 
@@ -12,54 +13,99 @@ type ListingCardProps = {
     type?: string;
     category: string;
     location: string;
+    description?: string;
+    createdAt?: string;
     images?: string[];
     seller?: { name?: string; sellerVerificationStatus?: string; verified?: boolean };
   };
   locale?: SiteLocale;
 };
 
+function deriveCondition(title: string, description: string, locale: SiteLocale) {
+  const text = `${title} ${description}`.toLowerCase();
+
+  if (/occasion|used|second|مستعمل|مستخدمة|مستعملة/.test(text)) {
+    return locale === "ar" ? "مستعمل" : "Occasion";
+  }
+
+  return locale === "ar" ? "جديد" : "Neuf";
+}
+
 export function ListingCard({ listing, locale = "ar" }: ListingCardProps) {
   const safeLocale = resolveLocale(locale);
   const copy = siteCopy[safeLocale];
-  const image = listing.images?.[0] || "https://images.unsplash.com/photo-1507089947368-19c1da9775ae";
+  const image = listing.images?.[0] || "/images/buy-gear.jpg";
   const title = localizeRecordField(listing as Record<string, any>, "title", safeLocale, listing.title);
   const category = localizeRecordField(listing as Record<string, any>, "category", safeLocale, listing.category);
   const location = localizeRecordField(listing as Record<string, any>, "location", safeLocale, listing.location);
+  const description = localizeRecordField(listing as Record<string, any>, "description", safeLocale, listing.description || "");
+  const condition = deriveCondition(title, description, safeLocale);
+  const isRecent = listing.createdAt ? Date.now() - new Date(listing.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000 : false;
+  const verified = Boolean(listing.seller?.sellerVerificationStatus === "verified" || listing.seller?.verified);
 
   return (
     <Link
       href={withLocale(`/listings/${listing._id}`, safeLocale)}
-      className="group overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-card transition hover:-translate-y-1"
+      onClick={() => trackAnalyticsEvent("listing_click", { listing_id: listing._id, category, type: listing.type || "sale" })}
+      className="group flex min-h-[440px] flex-col overflow-hidden rounded-[1.75rem] border border-slate-100 bg-white shadow-[0_16px_40px_rgba(15,61,46,0.08)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_24px_60px_rgba(15,61,46,0.16)]"
     >
-      <div className="relative h-56 overflow-hidden">
+      <div className="relative h-64 overflow-hidden bg-slate-100">
         <Image
           src={image}
           alt={title}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-          className="object-cover transition duration-500 group-hover:scale-105"
+          className="object-cover object-center transition duration-700 group-hover:scale-105"
         />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.04)_0%,rgba(15,61,46,0.18)_50%,rgba(0,0,0,0.72)_100%)] transition duration-500 group-hover:bg-[linear-gradient(180deg,rgba(15,23,42,0.12)_0%,rgba(15,61,46,0.3)_50%,rgba(0,0,0,0.82)_100%)]" />
+        <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+          <span className="inline-flex rounded-full bg-black/40 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md">
+            {category}
+          </span>
+          <span className="inline-flex rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-[#0f3d2e] shadow-sm backdrop-blur-md">
+            {condition}
+          </span>
+          {isRecent ? (
+            <span className="inline-flex rounded-full bg-[#f97316] px-3 py-1 text-xs font-bold text-white shadow-sm">
+              {safeLocale === "ar" ? "تم النشر مؤخراً" : "Publié récemment"}
+            </span>
+          ) : null}
+        </div>
       </div>
-      <div className="space-y-3 p-5">
+      <div className="flex flex-1 flex-col gap-4 p-5">
         <div className="flex items-start justify-between gap-4">
-          <h3 className="text-lg font-bold text-ink">{title}</h3>
-          <span className="text-lg font-black text-clay">{formatPrice(listing.price, safeLocale)}</span>
+          <h3 className="line-clamp-2 text-xl font-black leading-tight text-slate-900">{title}</h3>
+          <span className="shrink-0 text-2xl font-black text-[#f97316]">{formatPrice(listing.price, safeLocale)}</span>
         </div>
-        <div className="flex items-center justify-between text-sm text-ink/70">
-          <span>{location}</span>
-          <span>{category}</span>
+        <div className="flex items-center justify-between text-sm text-slate-500">
+          <span className="truncate">{location}</span>
+          <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+            {listing.type === "rental" ? copy.rental : copy.sale}
+          </span>
         </div>
-        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">
-          <span>{listing.type === "rental" ? copy.rental : copy.sale}</span>
-          <span>{copy.viewDetails}</span>
+        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+          <p className="truncate">
+            {copy.seller}: {listing.seller?.name || copy.marketplaceUser}
+          </p>
+          {verified ? (
+            <VerificationBadge
+              type="seller"
+              locale={safeLocale}
+              status={listing.seller?.sellerVerificationStatus || "verified"}
+            />
+          ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-sm text-ink/60">
-          <p>{copy.seller}: {listing.seller?.name || copy.marketplaceUser}</p>
-          <VerificationBadge
-            type="seller"
-            locale={safeLocale}
-            status={listing.seller?.sellerVerificationStatus || (listing.seller?.verified ? "verified" : "unverified")}
-          />
+        <div className="mt-auto flex items-center justify-between pt-2">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#0f3d2e] transition duration-300 group-hover:translate-x-1">
+            {safeLocale === "ar" ? "عرض التفاصيل" : "Voir détail"}
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
+          </span>
+          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#f97316] opacity-90 transition duration-300 group-hover:opacity-100">
+            {safeLocale === "ar" ? "تفاصيل" : "Details"}
+          </span>
         </div>
       </div>
     </Link>

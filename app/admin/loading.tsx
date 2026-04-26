@@ -1,7 +1,7 @@
 export default function AdminLoading() {
   return (
     <div className="space-y-8" aria-busy="true" aria-live="polite">
-      <section className="rounded-[2.75rem] bg-forest px-8 py-10 text-white shadow-card">
+      <section className="image-surface rounded-[2.75rem] px-8 py-10 text-white shadow-card">
         <div className="h-4 w-24 rounded-full bg-white/20" />
         <div className="mt-4 h-10 w-64 rounded-full bg-white/20" />
         <div className="mt-4 h-4 max-w-2xl rounded-full bg-white/15" />

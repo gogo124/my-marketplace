@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getApiError, parseApiResponse } from "@/lib/api";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { resolveLocale, siteCopy, translateApiError, withLocale } from "@/lib/i18n";
 import { isValidPhoneNumber } from "@/lib/validation";
 
@@ -68,6 +69,7 @@ export function ContactSellerForm({
         throw new Error(translateApiError("WhatsApp number is not available for this listing.", safeLocale));
       }
 
+      trackAnalyticsEvent("whatsapp_click", { surface: "listing_contact", listing_id: listingId });
       await trackLead("whatsapp");
 
       const text = encodeURIComponent(message || copy.defaultSellerMessage);

@@ -28,7 +28,7 @@ export default async function AgencyRentalRequestsPage({
 
   return (
     <div dir={getDirection(locale)} className="space-y-8">
-      <section className="rounded-[2.75rem] bg-forest px-8 py-10 text-white shadow-card">
+      <section className="image-surface rounded-[2.75rem] px-8 py-10 text-white shadow-card">
         <p className="text-sm uppercase tracking-[0.3em] text-white/60">{locale === "ar" ? "طلبات الكراء" : "Demandes location"}</p>
         <h1 className="mt-4 text-4xl font-black">{locale === "ar" ? "راجع طلبات الكراء المرتبطة برحلاتك" : "Consultez les demandes location liees a vos voyages"}</h1>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75">{copy.agencyLeadsHeroBody}</p>

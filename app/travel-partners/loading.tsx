@@ -2,7 +2,7 @@ export default function Loading() {
   return (
     <main className="page-shell space-y-10">
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="animate-pulse rounded-[2.75rem] bg-forest p-8 shadow-card">
+        <div className="image-surface animate-pulse rounded-[2.75rem] p-8 shadow-card">
           <div className="h-9 w-36 rounded-full bg-white/10" />
           <div className="mt-5 h-14 w-4/5 rounded-[1.5rem] bg-white/10" />
           <div className="mt-3 h-5 w-3/4 rounded-full bg-white/10" />

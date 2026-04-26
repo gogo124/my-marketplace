@@ -2,6 +2,8 @@ import { AdminMutationButton } from "@/components/admin-mutation-button";
 import { getAdminAgencies } from "@/lib/admin";
 import { getAgencyVerificationLabel, getSellerVerificationLabel } from "@/lib/trust";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminAgenciesPage() {
   const agencies = await getAdminAgencies();
 

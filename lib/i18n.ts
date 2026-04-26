@@ -171,6 +171,34 @@ const apiErrorDictionary = {
     ar: "فشل إنشاء الحساب.",
     fr: "Echec de l'inscription."
   },
+  "Missing email or password.": {
+    ar: "البريد الإلكتروني وكلمة المرور مطلوبان.",
+    fr: "L'email et le mot de passe sont obligatoires."
+  },
+  "Invalid credentials.": {
+    ar: "بيانات تسجيل الدخول غير صحيحة.",
+    fr: "Identifiants invalides."
+  },
+  "This account has been disabled.": {
+    ar: "تم تعطيل هذا الحساب.",
+    fr: "Ce compte a ete desactive."
+  },
+  "Authentication service is not configured.": {
+    ar: "إعدادات تسجيل الدخول غير مكتملة.",
+    fr: "La configuration de l'authentification est incomplete."
+  },
+  "Authentication service is unavailable.": {
+    ar: "خدمة تسجيل الدخول غير متاحة حالياً.",
+    fr: "Le service d'authentification est indisponible pour le moment."
+  },
+  "Unable to sign in right now.": {
+    ar: "تعذر تسجيل الدخول حالياً.",
+    fr: "Connexion impossible pour le moment."
+  },
+  "Unable to create a session right now.": {
+    ar: "تعذر إنشاء الجلسة حالياً.",
+    fr: "Impossible de creer la session pour le moment."
+  },
   "Could not create listing.": {
     ar: "تعذر إنشاء الإعلان.",
     fr: "Impossible de creer l'annonce."

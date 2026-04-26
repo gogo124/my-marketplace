@@ -1,5 +1,11 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  DashboardEmptyState,
+  DashboardHero,
+  DashboardMetricGrid,
+  DashboardQuickLinks,
+  DashboardSection
+} from "@/components/dashboard/dashboard-primitives";
 import { AgencyStatusActions } from "@/components/agency-status-actions";
 import { PartnershipManager } from "@/components/partnership-manager";
 import { StatusBadge } from "@/components/status-badge";
@@ -28,67 +34,67 @@ export default async function RenterDashboardPage({
     redirect(redirectPath);
   }
 
-  const labels =
-    locale === "ar"
-      ? {
-          title: "لوحة الكراء",
-          body: "الوصول السريع إلى العناصر وطلبات الكراء والمراجعات والشراكات.",
-          items: "العناصر",
-          rentalRequests: "طلبات الكراء",
-          reviews: "المراجعات"
-        }
-      : {
-          title: "Tableau location",
-          body: "Acces rapide aux articles, demandes location, avis et partenariats.",
-          items: "Articles",
-          rentalRequests: "Demandes location",
-          reviews: "Avis"
-        };
-
-  const cards = [
-    { href: "/renter/items", label: labels.items, value: dashboard.stats.itemsCount, note: locale === "ar" ? "إدارة العناصر" : "Manage items" },
-    { href: "/renter/dashboard", label: labels.rentalRequests, value: dashboard.stats.rentalRequestsCount, note: locale === "ar" ? "طلباتك الحالية" : "Your current requests" },
-    { href: "/renter/dashboard", label: labels.reviews, value: (dashboard.stats as any).reviewsCount || 0, note: locale === "ar" ? "مراجعات مرتبطة بالحساب" : "Account review history" }
-  ];
-
   return (
     <div className="space-y-8">
-      <section className="rounded-[2rem] bg-white p-6 shadow-card">
-        <h1 className="text-3xl font-black text-ink">{labels.title}</h1>
-        <p className="mt-3 text-sm text-ink/60">{labels.body}</p>
-      </section>
+      <DashboardHero
+        kicker={locale === "ar" ? "لوحة الكراء" : "Rental workspace"}
+        title={locale === "ar" ? "إدارة عناصر الكراء وطلبات الزبائن" : "Manage rental items and customer requests"}
+        body={locale === "ar" ? "الوصول السريع إلى العناصر وطلبات الكراء والمراجعات والشراكات." : "Quick access to items, requests, reviews, and partnerships."}
+        locale={locale}
+        chips={[
+          `${dashboard.stats.itemsCount} ${locale === "ar" ? "عنصر" : "items"}`,
+          `${dashboard.stats.rentalRequestsCount} ${locale === "ar" ? "طلب" : "requests"}`,
+          `${dashboard.stats.availableUnits} ${locale === "ar" ? "وحدة متاحة" : "available units"}`
+        ]}
+        actions={[
+          { href: "/renter/items", label: locale === "ar" ? "عناصري" : "My items" },
+          { href: "/messages", label: locale === "ar" ? "الرسائل" : "Messages" }
+        ]}
+      />
 
-      <section className="grid gap-6 md:grid-cols-3">
-        {cards.map((card) => (
-          <Link key={card.href} href={withLocale(card.href, locale)} className="rounded-[2rem] bg-white p-6 shadow-card">
-            <p className="text-sm text-ink/50">{card.label}</p>
-            <p className="mt-3 text-3xl font-black text-ink">{card.value || 0}</p>
-            <p className="mt-2 text-sm text-ink/60">{card.note}</p>
-          </Link>
-        ))}
-      </section>
+      <DashboardMetricGrid
+        locale={locale}
+        cards={[
+          { href: "/renter/items", label: locale === "ar" ? "العناصر" : "Items", value: dashboard.stats.itemsCount, note: locale === "ar" ? "كل العناصر المنشورة" : "All published items", tone: "forest" },
+          { href: "/renter/dashboard", label: locale === "ar" ? "النشطة" : "Active", value: dashboard.stats.activeItemsCount, note: locale === "ar" ? "جاهزة للحجز" : "Ready for requests", tone: "clay" },
+          { href: "/renter/dashboard", label: locale === "ar" ? "الطلبات" : "Requests", value: dashboard.stats.rentalRequestsCount, note: locale === "ar" ? "طلبات الكراء الحالية" : "Current rental requests", tone: "amber" },
+          { href: "/renter/dashboard", label: locale === "ar" ? "التقييمات" : "Reviews", value: dashboard.stats.reviewsCount, note: locale === "ar" ? "تقييمات حسابك" : "Account reviews", tone: "slate" }
+        ]}
+      />
+
+      <DashboardQuickLinks
+        locale={locale}
+        items={[
+          { href: "/renter/items", label: locale === "ar" ? "عناصري" : "My items", note: locale === "ar" ? "أدر معداتك" : "Manage your gear" },
+          { href: "/renter/profile", label: locale === "ar" ? "الملف" : "Profile", note: locale === "ar" ? "معلومات المزود" : "Provider details" },
+          { href: "/messages", label: locale === "ar" ? "الرسائل" : "Messages", note: locale === "ar" ? "رد على الزبائن" : "Reply to customers" }
+        ]}
+      />
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-[2rem] bg-white p-6 shadow-card">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <DashboardSection
+          title={locale === "ar" ? "طلبات الكراء" : "Rental requests"}
+          body={locale === "ar" ? "الكمية، المدة، الإجمالي، والحالة." : "Quantity, duration, total price, and status."}
+        >
+          <div className="flex items-center justify-between gap-3 rounded-[1.75rem] border border-slate-100 bg-slate-50/80 p-4">
             <div>
-              <h2 className="text-2xl font-black text-ink">{labels.rentalRequests}</h2>
-              <p className="mt-2 text-sm text-ink/60">{locale === "ar" ? "الكمية، المدة، الإجمالي، والحالة." : "Quantite, duree, total et statut."}</p>
+              <p className="text-sm text-slate-500">{locale === "ar" ? "المعدل" : "Average"}</p>
+              <p className="mt-2 text-3xl font-black text-slate-900">{(dashboard as any).reviewsSummary?.averageRating || 0}/5</p>
             </div>
-            <div className="rounded-[1.5rem] bg-sand px-5 py-4 text-right">
-              <p className="text-sm text-ink/50">{locale === "ar" ? "المعدل" : "Moyenne"}</p>
-              <p className="mt-2 text-3xl font-black text-clay">{(dashboard as any).reviewsSummary?.averageRating || 0}/5</p>
-            </div>
+            <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#0f3d2e] shadow-sm">
+              {locale === "ar" ? "مؤشر الرضا" : "Satisfaction"}
+            </span>
           </div>
+
           {dashboard.rentalRequests.length > 0 ? (
-            <div className="mt-6 grid gap-4">
+            <div className="mt-4 grid gap-4">
               {dashboard.rentalRequests.slice(0, 8).map((request: any) => (
-                <article key={request._id} className="rounded-[1.5rem] border border-ink/10 p-4">
+                <article key={request._id} className="rounded-[1.75rem] border border-slate-100 p-4 transition hover:-translate-y-0.5 hover:bg-slate-50">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-ink">{request.trip?.title || labels.rentalRequests}</p>
-                      <p className="mt-1 text-sm text-ink/60">{request.agency?.name || "-"} • {request.rentalItem?.title || "-"}</p>
-                      <p className="mt-1 text-sm text-ink/60">{request.quantity || 1} • {request.durationDays || 1} • {request.totalPrice || 0} DH</p>
+                      <p className="font-semibold text-slate-900">{request.trip?.title || (locale === "ar" ? "طلب كراء" : "Rental request")}</p>
+                      <p className="mt-1 text-sm text-slate-500">{request.agency?.name || "-"} • {request.rentalItem?.title || "-"}</p>
+                      <p className="mt-1 text-sm text-slate-500">{request.quantity || 1} • {request.durationDays || 1} • {request.totalPrice || 0} DH</p>
                     </div>
                     <StatusBadge kind="rental" status={request.status} locale={locale} />
                   </div>
@@ -105,24 +111,26 @@ export default async function RenterDashboardPage({
               ))}
             </div>
           ) : (
-            <p className="mt-6 text-sm text-ink/60">{locale === "ar" ? "لا توجد طلبات كراء بعد." : "Pas encore de demandes location."}</p>
+            <DashboardEmptyState
+              title={locale === "ar" ? "لا توجد طلبات كراء بعد" : "No rental requests yet"}
+              body={locale === "ar" ? "عندما يطلب الزبائن معداتك ستظهر هنا." : "Customer requests will appear here once your gear gets traction."}
+              href="/renter/items"
+              ctaLabel={locale === "ar" ? "عناصري" : "My items"}
+              locale={locale}
+            />
           )}
-        </section>
+        </DashboardSection>
 
-        <section className="rounded-[2rem] bg-white p-6 shadow-card">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-2xl font-black text-ink">{labels.reviews}</h2>
-            <span className="text-sm text-ink/50">{(dashboard as any).reviews?.length || 0}</span>
-          </div>
+        <DashboardSection title={locale === "ar" ? "المراجعات" : "Reviews"} body={locale === "ar" ? "التقييمات المرتبطة بالحساب." : "Reviews linked to your account."}>
           {(dashboard as any).reviews?.length > 0 ? (
-            <div className="mt-6 grid gap-4">
+            <div className="grid gap-4">
               {(dashboard as any).reviews.slice(0, 6).map((review: any) => (
-                <article key={review._id} className="rounded-[1.5rem] border border-ink/10 p-4">
+                <article key={review._id} className="rounded-[1.75rem] border border-slate-100 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-ink">{review.listing?.title || review.place?.name || labels.reviews}</p>
-                      <p className="mt-1 text-sm text-ink/60">{review.rating}/5</p>
-                      <p className="mt-2 text-sm text-ink/70 line-clamp-3">{review.comment}</p>
+                      <p className="font-semibold text-slate-900">{review.listing?.title || review.place?.name || (locale === "ar" ? "مراجعة" : "Review")}</p>
+                      <p className="mt-1 text-sm text-slate-500">{review.rating}/5</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-500 line-clamp-3">{review.comment}</p>
                     </div>
                     <StatusBadge kind="review" status={review.status} locale={locale} />
                   </div>
@@ -130,9 +138,15 @@ export default async function RenterDashboardPage({
               ))}
             </div>
           ) : (
-            <p className="mt-6 text-sm text-ink/60">{locale === "ar" ? "لا توجد مراجعات بعد." : "Pas encore d'avis."}</p>
+            <DashboardEmptyState
+              title={locale === "ar" ? "لا توجد مراجعات بعد" : "No reviews yet"}
+              body={locale === "ar" ? "ستظهر تقييمات العملاء هنا." : "Customer feedback will show up here."}
+              href="/renter/items"
+              ctaLabel={locale === "ar" ? "إدارة العناصر" : "Manage items"}
+              locale={locale}
+            />
           )}
-        </section>
+        </DashboardSection>
       </section>
 
       <PartnershipManager

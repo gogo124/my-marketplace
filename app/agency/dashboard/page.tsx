@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  DashboardHero,
+  DashboardQuickLinks
+} from "@/components/dashboard/dashboard-primitives";
 import { AgencyOverviewSection, AgencyReservationsSection, AgencyStatsGrid } from "@/components/agency-owner-sections";
 import { StatusBadge } from "@/components/status-badge";
 import { PartnershipManager } from "@/components/partnership-manager";
@@ -37,10 +41,21 @@ export default async function AgencyDashboardPage({
 
   return (
     <div dir={getDirection(locale)} className="space-y-8">
-      <section className="rounded-[2rem] bg-white p-6 shadow-card">
-        <h1 className="text-3xl font-black text-ink">{copy.agencyDashboardTitle}</h1>
-        <p className="mt-3 text-sm text-ink/60">{copy.agencyDashboardBody}</p>
-      </section>
+      <DashboardHero
+        kicker={locale === "ar" ? "لوحة الوكالة" : "Agency workspace"}
+        title={copy.agencyDashboardTitle}
+        body={copy.agencyDashboardBody}
+        locale={locale}
+        chips={[
+          `${dashboard.stats.tripsCount} ${locale === "ar" ? "رحلة" : "trips"}`,
+          `${dashboard.stats.reservationsCount} ${locale === "ar" ? "حجز" : "reservations"}`,
+          `${dashboard.stats.messagesCount || 0} ${locale === "ar" ? "رسالة" : "messages"}`
+        ]}
+        actions={[
+          { href: "/agency/trips", label: copy.trips },
+          { href: "/agency/reservations", label: copy.reservations }
+        ]}
+      />
 
       <section className="grid gap-6 md:grid-cols-3">
         {cards.map((card) => (
@@ -51,6 +66,16 @@ export default async function AgencyDashboardPage({
           </Link>
         ))}
       </section>
+
+      <DashboardQuickLinks
+        locale={locale}
+        items={[
+          { href: "/agency/trips", label: copy.trips, note: locale === "ar" ? "إدارة الرحلات" : "Manage trips" },
+          { href: "/agency/reservations", label: copy.reservations, note: locale === "ar" ? "متابعة الحجوزات" : "Track reservations" },
+          { href: "/agency/leads", label: copy.leads, note: locale === "ar" ? "طلبات التواصل" : "Contact leads" },
+          { href: "/agency/profile", label: copy.agencyProfile, note: locale === "ar" ? "الملف العام" : "Public profile" }
+        ]}
+      />
 
       <AgencyStatsGrid stats={dashboard.stats as any} locale={locale} />
       <AgencyOverviewSection

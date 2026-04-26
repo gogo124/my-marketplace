@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { TrackedExternalLink } from "@/components/tracked-external-link";
 import { formatShortDate } from "@/lib/utils";
 import { getDirection, resolveLocale, withLocale } from "@/lib/i18n";
 import { normalizeTripCode } from "@/lib/trip-code";
@@ -31,7 +32,7 @@ export default async function TripCodePage({
       locale === "ar"
         ? "هذه صفحة تعريفية عبر Trip Code لعرض الرحلة والمعدات المرتبطة بها قبل التواصل مع الوكالة."
         : "Page de presentation via Trip Code pour voir le voyage et les equipements associes.",
-    coverImage: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
+    coverImage: "/images/hero-main.jpg"
   };
   const agency = {
     name: locale === "ar" ? "Atlas Travel" : "Atlas Travel",
@@ -41,7 +42,7 @@ export default async function TripCodePage({
         ? "وكالة تنظم رحلات جماعية مع مواكبة قبل وأثناء الرحلة."
         : "Agence specialisee dans les voyages groupes avec accompagnement avant et pendant le sejour.",
     whatsapp: "212612345678",
-    logo: "https://images.unsplash.com/photo-1488646953014-85cb44e25828"
+    logo: "/images/agencies.jpg"
   };
   const rentalEquipment = [
     {
@@ -124,14 +125,16 @@ export default async function TripCodePage({
               <Link href={reservationLink} className="rounded-full bg-forest px-4 py-2 font-semibold text-white">
                 {locale === "ar" ? "الحجز" : "Reservation"}
               </Link>
-              <a
+              <TrackedExternalLink
                 href={`https://wa.me/${agencyWhatsappDigits}`}
                 target="_blank"
                 rel="noreferrer"
+                eventName="whatsapp_click"
+                eventData={{ surface: "trip_code", code: displayCode }}
                 className="rounded-full border border-ink/10 px-4 py-2 font-semibold text-ink"
               >
                 WhatsApp
-              </a>
+              </TrackedExternalLink>
             </div>
           </div>
         </div>

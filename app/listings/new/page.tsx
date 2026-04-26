@@ -6,15 +6,47 @@ import { getListingsPage } from "@/lib/data";
 import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
 import { logServerError } from "@/lib/server-log";
 
+type ListingsSearchParams = {
+  lang?: string;
+  page?: string;
+  q?: string;
+  category?: string;
+  location?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  sort?: string;
+};
+
+function parseNumber(value?: string) {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export default async function NewListingPage({
   searchParams
 }: {
-  searchParams: Promise<{ lang?: string; page?: string }>;
+  searchParams: Promise<ListingsSearchParams>;
 }) {
-  const { lang, page = "1" } = await searchParams;
+  const {
+    lang,
+    page = "1",
+    q = "",
+    category = "",
+    location = "",
+    minPrice = "",
+    maxPrice = "",
+    sort = "newest"
+  } = await searchParams;
   const locale = resolveLocale(lang);
   const copy = siteCopy[locale];
   const currentPage = Math.max(1, Number(page) || 1);
+  const priceMin = parseNumber(minPrice);
+  const priceMax = parseNumber(maxPrice);
   const session = await getAuthSession().catch((error) => {
     logServerError("page.new-listing.auth", error);
     return null;
@@ -22,14 +54,17 @@ export default async function NewListingPage({
   const { listings: saleListings, pagination } = await getListingsPage({
     type: "sale",
     page: currentPage,
-    pageSize: 12
+    pageSize: 24,
+    q: q || undefined,
+    category: category || undefined,
+    location: location || undefined
   }).catch((error) => {
     logServerError("page.new-listing.sale-listings", error, { page: currentPage });
     return {
       listings: [],
       pagination: {
         page: currentPage,
-        pageSize: 12,
+        pageSize: 24,
         total: 0,
         totalPages: 1,
         hasNextPage: false,
@@ -38,11 +73,53 @@ export default async function NewListingPage({
     };
   });
   const loginHref = withLocale("/login", locale);
+  const availableCategories = Array.from(
+    new Set(
+      saleListings
+        .map((listing: any) => (typeof listing.category === "string" ? listing.category.trim() : ""))
+        .filter(Boolean)
+    )
+  ).sort((left, right) => left.localeCompare(right, locale === "ar" ? "ar" : "fr"));
+  const filteredListings = [...saleListings]
+    .filter((listing: any) => {
+      const numericPrice = Number(listing.price || 0);
+
+      if (priceMin !== null && numericPrice < priceMin) {
+        return false;
+      }
+
+      if (priceMax !== null && numericPrice > priceMax) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((left: any, right: any) => {
+      if (sort === "price-asc") {
+        return Number(left.price || 0) - Number(right.price || 0);
+      }
+
+      if (sort === "price-desc") {
+        return Number(right.price || 0) - Number(left.price || 0);
+      }
+
+      if (sort === "popular") {
+        const leftVerified = Boolean(left.seller?.sellerVerificationStatus === "verified" || left.seller?.verified);
+        const rightVerified = Boolean(right.seller?.sellerVerificationStatus === "verified" || right.seller?.verified);
+
+        if (leftVerified !== rightVerified) {
+          return Number(rightVerified) - Number(leftVerified);
+        }
+      }
+
+      return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
+    });
+  const baseListingsHref = withLocale("/listings/new", locale);
 
   return (
     <main dir={getDirection(locale)} className="page-shell space-y-8">
       <section className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-        <section className="relative overflow-hidden rounded-[2.75rem] bg-forest px-8 py-10 text-white shadow-card">
+        <section className="image-surface relative overflow-hidden rounded-[2.75rem] px-8 py-10 text-white shadow-card">
           <div className="absolute left-0 top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
           <div className="space-y-5">
             <p className="section-kicker">{copy.sell}</p>
@@ -77,7 +154,7 @@ export default async function NewListingPage({
       </section>
 
       <section id="sale-products" className="space-y-5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-clay">{copy.marketplaceSearch}</p>
             <h2 className="text-3xl font-black text-ink">
@@ -85,18 +162,112 @@ export default async function NewListingPage({
             </h2>
             <p className="text-sm text-ink/60">
               {locale === "ar"
-                ? `عرض ${saleListings.length} من أصل ${pagination.total} إعلان نشط.`
-                : `${saleListings.length} annonces affichees sur ${pagination.total} actives.`}
+                ? `عرض ${filteredListings.length} من أصل ${pagination.total} إعلان نشط.`
+                : `${filteredListings.length} annonces affichees sur ${pagination.total} actives.`}
             </p>
           </div>
           <Link href={withLocale("/", locale)} className="hidden rounded-full border border-ink/10 px-4 py-2 font-semibold text-ink sm:inline-flex">
             {locale === "ar" ? "العودة إلى الرئيسية" : "Retour accueil"}
           </Link>
         </div>
-        {saleListings.length > 0 ? (
+
+        <form
+          action="/listings/new"
+          method="get"
+          className="sticky top-20 z-20 rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_24px_60px_rgba(15,61,46,0.08)] backdrop-blur-xl sm:p-5"
+        >
+          <input type="hidden" name="lang" value={locale} />
+          <input type="hidden" name="page" value="1" />
+          <div className="grid gap-3 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.6fr_0.6fr_0.7fr_auto]">
+            <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/50">
+              {locale === "ar" ? "بحث" : "Recherche"}
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder={locale === "ar" ? "ابحث عن منتج، اسم، أو وصف" : "Rechercher un produit, un titre, une description"}
+                className="rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-[#f97316]/40 focus:ring-4 focus:ring-[#f97316]/10"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/50">
+              {locale === "ar" ? "الفئة" : "Categorie"}
+              <select
+                name="category"
+                defaultValue={category}
+                className="rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-[#f97316]/40 focus:ring-4 focus:ring-[#f97316]/10"
+              >
+                <option value="">{locale === "ar" ? "كل الفئات" : "Toutes les categories"}</option>
+                {availableCategories.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/50">
+              {locale === "ar" ? "المدينة" : "Ville"}
+              <input
+                name="location"
+                defaultValue={location}
+                placeholder={locale === "ar" ? "الرباط، مراكش..." : "Rabat, Marrakech..."}
+                className="rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-[#f97316]/40 focus:ring-4 focus:ring-[#f97316]/10"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/50">
+              {locale === "ar" ? "أدنى سعر" : "Prix min"}
+              <input
+                name="minPrice"
+                type="number"
+                min="0"
+                defaultValue={minPrice}
+                placeholder="0"
+                className="rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-[#f97316]/40 focus:ring-4 focus:ring-[#f97316]/10"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/50">
+              {locale === "ar" ? "أقصى سعر" : "Prix max"}
+              <input
+                name="maxPrice"
+                type="number"
+                min="0"
+                defaultValue={maxPrice}
+                placeholder="0"
+                className="rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-[#f97316]/40 focus:ring-4 focus:ring-[#f97316]/10"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/50">
+              {locale === "ar" ? "الترتيب" : "Tri"}
+              <select
+                name="sort"
+                defaultValue={sort}
+                className="rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-[#f97316]/40 focus:ring-4 focus:ring-[#f97316]/10"
+              >
+                <option value="newest">{locale === "ar" ? "الأحدث" : "Nouveautes"}</option>
+                <option value="price-asc">{locale === "ar" ? "السعر: من الأقل" : "Prix: croissant"}</option>
+                <option value="price-desc">{locale === "ar" ? "السعر: من الأعلى" : "Prix: decroissant"}</option>
+                <option value="popular">{locale === "ar" ? "الأكثر تميزاً" : "Populaire"}</option>
+              </select>
+            </label>
+            <div className="flex items-end gap-2">
+              <button
+                type="submit"
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-forest px-5 py-3 font-semibold text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[#0b3225]"
+              >
+                {locale === "ar" ? "تصفية" : "Filtrer"}
+              </button>
+              <Link
+                href={baseListingsHref}
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-ink/10 bg-white px-5 py-3 font-semibold text-ink shadow-card transition hover:bg-sand/40"
+              >
+                {locale === "ar" ? "مسح" : "Effacer"}
+              </Link>
+            </div>
+          </div>
+        </form>
+
+        {filteredListings.length > 0 ? (
           <>
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-              {saleListings.map((listing: any) => (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {filteredListings.map((listing: any) => (
                 <ListingCard key={listing._id} listing={listing} locale={locale} />
               ))}
             </div>

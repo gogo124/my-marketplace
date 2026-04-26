@@ -4,6 +4,12 @@ const ConversationSchema = new Schema(
   {
     listing: { type: Schema.Types.ObjectId, ref: "Listing", required: true },
     participants: [{ type: Schema.Types.ObjectId, ref: "User", required: true }],
+    readState: [
+      {
+        user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        lastReadAt: { type: Date, default: null }
+      }
+    ],
     lastMessageAt: { type: Date, default: Date.now }
   },
   { timestamps: true }

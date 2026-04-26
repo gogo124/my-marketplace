@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { createRouteErrorResponse } from "@/lib/api-errors";
 import { connectToDatabase } from "@/lib/db";
+import { logServerError } from "@/lib/server-log";
 import { isTrustedOrigin, getUntrustedOriginResponse } from "@/lib/request-guard";
 import { checkRateLimit, getRequestIdentity } from "@/lib/rate-limit";
 import User from "@/models/User";
@@ -74,7 +75,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Password must contain letters and numbers." }, { status: 400 });
     }
 
-    await connectToDatabase();
+    try {
+      await connectToDatabase();
+    } catch (error) {
+      logServerError("api.register.db", error, {
+        email: normalizedEmail
+      });
+
+      return NextResponse.json({ error: "Authentication service is unavailable." }, { status: 503 });
+    }
 
     const existingUser = await User.findOne({ email: normalizedEmail });
 

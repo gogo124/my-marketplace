@@ -80,7 +80,7 @@ export default async function PlaceDetailsPage({
     <main dir={getDirection(locale)} className="page-shell grid gap-8 lg:grid-cols-[1.18fr_0.82fr]">
       <section className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
-          {(place.images?.length ? place.images : ["https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"]).map((image: string, index: number) => (
+          {(place.images?.length ? place.images : ["/images/camping.jpg"]).map((image: string, index: number) => (
             <div key={`${image}-${index}`} className="relative h-72 overflow-hidden rounded-[2rem] bg-white shadow-card">
               <Image src={image} alt={place.name} fill priority={index === 0} sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
             </div>

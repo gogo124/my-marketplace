@@ -29,8 +29,8 @@ export function AdminSidebar() {
   ];
 
   return (
-    <aside className="space-y-6">
-      <section className="rounded-[2rem] bg-forest p-6 text-white shadow-card">
+    <aside className="sticky top-6 space-y-6">
+      <section className="image-surface rounded-[2rem] p-6 text-white shadow-card">
         <p className="text-xs uppercase tracking-[0.25em] text-white/60">Admin</p>
         <h2 className="mt-3 text-2xl font-black">{copy.adminPlatformControl}</h2>
         <p className="mt-3 text-sm leading-7 text-white/75">
@@ -38,8 +38,8 @@ export function AdminSidebar() {
         </p>
       </section>
 
-      <nav className="rounded-[2rem] bg-white p-4 shadow-card">
-        <div className="space-y-2">
+      <nav className="rounded-[2rem] border border-slate-100 bg-white p-3 shadow-[0_12px_34px_rgba(15,61,46,0.08)]">
+        <div className="space-y-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
 
@@ -47,8 +47,8 @@ export function AdminSidebar() {
               <Link
                 key={item.href}
                 href={withLocale(item.href, locale)}
-                className={`block rounded-[1.25rem] px-4 py-3 font-semibold ${
-                  isActive ? "bg-clay text-white" : "text-ink hover:bg-sand"
+                className={`block rounded-[1.25rem] px-4 py-3 text-sm font-semibold transition ${
+                  isActive ? "bg-[#0f3d2e] text-white shadow-card" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
                 {item.label}

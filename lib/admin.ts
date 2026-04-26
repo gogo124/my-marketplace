@@ -19,6 +19,8 @@ import Place from "@/models/Place";
 import Report from "@/models/Report";
 import Review from "@/models/Review";
 import RentalRequest from "@/models/RentalRequest";
+import RentalItem from "@/models/RentalItem";
+import AnalyticsEvent from "@/models/AnalyticsEvent";
 import Story from "@/models/Story";
 import TravelPost from "@/models/TravelPost";
 import User from "@/models/User";
@@ -100,10 +102,16 @@ export async function getAdminDashboardData() {
     messagesCount,
     reportsCount,
     reservationsCount,
+    rentalItemsCount,
     leadsCount,
     verifiedAgenciesCount,
     verifiedSellersCount,
     activeListingsCount,
+    pendingReportsCount,
+    pendingReviewsCount,
+    pendingReservationsCount,
+    pendingRentalRequestsCount,
+    pendingAgenciesCount,
     recentUsers,
     recentAgencies,
     recentListings,
@@ -119,12 +127,18 @@ export async function getAdminDashboardData() {
     Message.countDocuments({}),
     Report.countDocuments({}),
     AgencyReservation.countDocuments({}),
+    RentalItem.countDocuments({}),
     Lead.countDocuments({}),
     AgencyProfile.countDocuments({ verificationStatus: "verified" }),
     User.countDocuments({
       $or: [{ sellerVerificationStatus: "verified" }, { verified: true }]
     }),
     Listing.countDocuments({ status: "active" }),
+    Report.countDocuments({ status: "pending" }),
+    Review.countDocuments({ status: "pending" }),
+    AgencyReservation.countDocuments({ status: "pending" }),
+    RentalRequest.countDocuments({ status: "pending" }),
+    AgencyProfile.countDocuments({ verificationStatus: { $ne: "verified" } }),
     User.find({}).sort({ createdAt: -1 }).limit(5).select("name email createdAt role").lean(),
     AgencyProfile.find({})
       .sort({ createdAt: -1 })
@@ -227,10 +241,18 @@ export async function getAdminDashboardData() {
       messagesCount,
       reportsCount,
       reservationsCount,
+      rentalItemsCount,
       leadsCount,
       verifiedAgenciesCount,
       verifiedSellersCount,
-      activeListingsCount
+      activeListingsCount,
+      pendingReportsCount,
+      pendingReviewsCount,
+      pendingReservationsCount,
+      pendingRentalRequestsCount,
+      pendingAgenciesCount,
+      pendingApprovalsCount:
+        pendingReportsCount + pendingReviewsCount + pendingReservationsCount + pendingRentalRequestsCount + pendingAgenciesCount
     },
     recentActivity: serializeDocument(recentActivity) as AdminRecentActivityItem[]
   };
@@ -365,6 +387,61 @@ export async function getAdminMessages() {
     .lean();
 
   return serializeDocument(messages);
+}
+
+export async function getAdminAnalyticsSummary() {
+  await connectToDatabase();
+
+  const since7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const since30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const events = await AnalyticsEvent.find({ timestamp: { $gte: since30Days } })
+    .sort({ timestamp: -1 })
+    .limit(250)
+    .lean();
+
+  const normalizedEvents = serializeDocument(events) as Array<{
+    _id: string;
+    type: string;
+    page: string;
+    timestamp: string | Date;
+  }>;
+
+  const counts = normalizedEvents.reduce<Record<string, number>>((summary, event) => {
+    summary[event.type] = (summary[event.type] || 0) + 1;
+    return summary;
+  }, {});
+
+  const recentWindow = normalizedEvents.filter((event) => new Date(event.timestamp).getTime() >= since7Days.getTime());
+  const topPagesMap = recentWindow.reduce<Record<string, number>>((summary, event) => {
+    summary[event.page] = (summary[event.page] || 0) + 1;
+    return summary;
+  }, {});
+
+  const topPages = Object.entries(topPagesMap)
+    .map(([page, count]) => ({ page, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
+  const pageViews = counts.page_view || 0;
+  const bookingClicks = counts.booking_click || 0;
+  const whatsappClicks = counts.whatsapp_click || 0;
+  const listingClicks = counts.listing_click || 0;
+  const reservationAttempts = counts.reservation_attempt || 0;
+  const reservationSuccess = counts.reservation_success || 0;
+
+  return {
+    totalEvents: normalizedEvents.length,
+    pageViews,
+    bookingClicks,
+    whatsappClicks,
+    listingClicks,
+    reservationAttempts,
+    reservationSuccess,
+    conversionRate: reservationAttempts > 0 ? Math.round((reservationSuccess / reservationAttempts) * 100) : 0,
+    recentEvents: normalizedEvents.slice(0, 12),
+    topPages
+  };
 }
 
 export async function getAdminPlaces() {

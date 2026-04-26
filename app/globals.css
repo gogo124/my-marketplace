@@ -4,9 +4,12 @@
 
 :root {
   color-scheme: light;
-  --surface: rgba(255, 255, 255, 0.82);
-  --surface-strong: rgba(255, 255, 255, 0.92);
-  --stroke: rgba(31, 41, 55, 0.08);
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-strong: rgba(255, 255, 255, 0.96);
+  --stroke: rgba(15, 61, 46, 0.08);
+  --brand-green: #0f3d2e;
+  --brand-orange: #f97316;
+  --surface-muted: #f8faf9;
 }
 
 html {
@@ -25,11 +28,10 @@ body {
   font-family: var(--font-alexandria), sans-serif;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 10% 0%, rgba(184, 138, 68, 0.22), transparent 24%),
-    radial-gradient(circle at 90% 10%, rgba(40, 75, 63, 0.16), transparent 26%),
-    radial-gradient(circle at 50% 100%, rgba(204, 120, 92, 0.14), transparent 24%),
-    linear-gradient(180deg, #f7f1e6 0%, #fcfaf5 48%, #f8f2e8 100%);
-  color: #1f2937;
+    radial-gradient(circle at 12% 0%, rgba(249, 115, 22, 0.14), transparent 22%),
+    radial-gradient(circle at 100% 8%, rgba(15, 61, 46, 0.14), transparent 24%),
+    linear-gradient(180deg, #f4f7f5 0%, #f8faf9 42%, #f3f5f4 100%);
+  color: #0f172a;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -61,7 +63,46 @@ canvas {
   @apply inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em];
 }
 
+.hero-fade-up {
+  animation: hero-fade-up 0.8s ease-out both;
+}
+
+.image-surface {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: #0f3d2e;
+  background-image: url("/images/hero-main.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.image-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.image-surface > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 ::selection {
-  background: rgba(204, 120, 92, 0.25);
-  color: #1f2937;
+  background: rgba(249, 115, 22, 0.22);
+  color: #0f172a;
 }

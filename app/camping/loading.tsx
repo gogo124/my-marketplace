@@ -2,7 +2,7 @@ export default function CampingLoading() {
   return (
     <main className="page-shell space-y-8" aria-busy="true" aria-live="polite">
       <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-[2.75rem] bg-forest px-6 py-10 text-white shadow-card sm:px-8">
+        <div className="image-surface rounded-[2.75rem] px-6 py-10 text-white shadow-card sm:px-8">
           <div className="h-4 w-40 rounded-full bg-white/20" />
           <div className="mt-4 h-10 w-72 rounded-full bg-white/20" />
           <div className="mt-4 h-4 max-w-2xl rounded-full bg-white/15" />

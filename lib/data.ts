@@ -134,7 +134,37 @@ export async function getConversationsForUser(userId: string) {
     .sort({ lastMessageAt: -1 })
     .lean();
 
-  return serializeDocument(conversations);
+  const normalizedConversations = serializeDocument(conversations) as any[];
+  const enrichedConversations = await Promise.all(
+    normalizedConversations.map(async (conversation) => {
+      const lastMessage = await Message.findOne({ conversation: conversation._id })
+        .populate("sender", "name email avatar")
+        .sort({ createdAt: -1 })
+        .lean();
+      const normalizedLastMessage = lastMessage ? (serializeDocument(lastMessage) as any) : null;
+      const readState = Array.isArray(conversation.readState) ? conversation.readState : [];
+      const lastReadEntry = readState.find((entry: any) => String(entry.user?._id || entry.user) === String(userId));
+      const lastReadAt = lastReadEntry?.lastReadAt ? new Date(lastReadEntry.lastReadAt) : null;
+      const unreadQuery: Record<string, unknown> = {
+        conversation: conversation._id,
+        sender: { $ne: userId }
+      };
+
+      if (lastReadAt) {
+        unreadQuery.createdAt = { $gt: lastReadAt };
+      }
+
+      const unreadCount = await Message.countDocuments(unreadQuery);
+
+      return {
+        ...conversation,
+        lastMessage: normalizedLastMessage,
+        unreadCount
+      };
+    })
+  );
+
+  return enrichedConversations;
 }
 
 export async function getMessagesForConversation(conversationId: string) {

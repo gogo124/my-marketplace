@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
 import { VerificationBadge } from "@/components/verification-badge";
 import { buildLoginPath } from "@/lib/auth-flow";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { SiteLocale, translateApiError } from "@/lib/i18n";
 
 type RentalItemCardProps = {
@@ -77,7 +78,7 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
 
   const images = Array.isArray(item.images) && item.images.length > 0
     ? item.images
-    : ["https://images.unsplash.com/photo-1517838277536-f5f99be501cd"];
+    : ["/images/rent-gear.jpg"];
   const availabilityLabel =
     item.availabilityStatus === "limited"
       ? labels.limited
@@ -123,6 +124,7 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
         const whatsappDigits = String(data.whatsapp).replace(/\D/g, "");
 
         if (whatsappDigits) {
+          trackAnalyticsEvent("whatsapp_click", { surface: "rental_item", rental_item_id: item._id });
           window.open(`https://wa.me/${whatsappDigits}`, "_blank", "noopener,noreferrer");
         }
       }
@@ -139,57 +141,53 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
   }
 
   return (
-    <article className="overflow-hidden rounded-[2rem] bg-white shadow-card">
-      <div className="space-y-3 p-4">
-        <div className="relative h-52 overflow-hidden rounded-[1.5rem] bg-sand">
-          <Image
-            src={images[0]}
-            alt={item.title || "Rental item"}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-            className="object-cover"
-          />
+    <article className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-[0_18px_45px_rgba(15,61,46,0.08)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_26px_60px_rgba(15,61,46,0.16)]">
+      <div className="relative h-60 overflow-hidden bg-slate-100">
+        <Image
+          src={images[0] || "/images/rent-gear.jpg"}
+          alt={item.title || "Rental item"}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+          className="object-cover object-center transition duration-700 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.05)_0%,rgba(15,61,46,0.2)_50%,rgba(0,0,0,0.72)_100%)] transition duration-500 group-hover:bg-[linear-gradient(180deg,rgba(15,23,42,0.12)_0%,rgba(15,61,46,0.28)_50%,rgba(0,0,0,0.82)_100%)]" />
+        <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+          <span className="rounded-full bg-black/40 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md">
+            {item.category || "Gear"}
+          </span>
+          <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-[#0f3d2e] backdrop-blur-md">
+            {availabilityLabel}
+          </span>
         </div>
-        {images.length > 1 ? (
-          <div className="grid grid-cols-4 gap-2">
-            {images.slice(1, 5).map((image, index) => (
-              <div key={`${item._id}-thumb-${index}`} className="relative h-16 overflow-hidden rounded-[1rem] bg-sand">
-                <Image src={image} alt={item.title || "Rental item"} fill sizes="64px" className="object-cover" />
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="space-y-4 px-5 pb-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-clay">{item.category || "Gear"}</p>
-            <h3 className="mt-2 text-2xl font-black text-ink">{item.title}</h3>
-            <p className="mt-2 text-sm text-ink/55">
+        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="line-clamp-2 text-2xl font-black leading-tight text-white">{item.title}</h3>
+            <p className="mt-2 text-sm text-white/80">
               {labels.by} {item.renter?.name || "Renter"} {item.renter?.city ? `• ${item.renter.city}` : item.city ? `• ${item.city}` : ""}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-black text-clay">{item.price || 0} DH</p>
-            <p className="text-sm text-ink/55">{labels.perDay}</p>
+          <div className="shrink-0 rounded-[1.25rem] bg-white/95 px-4 py-3 text-right shadow-sm">
+            <p className="text-2xl font-black text-[#f97316]">{item.price || 0} DH</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/50">{labels.perDay}</p>
           </div>
         </div>
+      </div>
 
+      <div className="flex flex-1 flex-col gap-4 p-5">
         <div className="flex flex-wrap items-center gap-2">
           <VerificationBadge type="renter" status={item.renter?.verificationStatus || "unverified"} locale={locale} />
-          <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold text-ink">
+          <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
             {labels.size}: {item.size || "-"}
           </span>
-          <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold text-ink">
+          <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
             {labels.availability}: {availabilityLabel}
             {typeof item.quantityAvailable === "number" ? ` • ${item.quantityAvailable}` : ""}
           </span>
         </div>
 
-        <p className="line-clamp-3 text-sm leading-7 text-ink/70">{item.description || labels.noDescription}</p>
+        <p className="line-clamp-3 text-sm leading-7 text-slate-600">{item.description || labels.noDescription}</p>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="mt-auto flex flex-col gap-3 sm:flex-row">
           <button
             type="button"
             onClick={() => {
@@ -198,6 +196,7 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
                 return;
               }
 
+              trackAnalyticsEvent("booking_click", { surface: "rental_item", rental_item_id: item._id });
               if (authorizedTripId) {
                 setActiveAction("request");
                 setError("");
@@ -208,7 +207,7 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
               setActiveAction("request");
               setError("");
             }}
-            className="inline-flex flex-1 items-center justify-center rounded-full bg-forest px-4 py-3 font-semibold text-white"
+            className="inline-flex flex-1 items-center justify-center rounded-full bg-forest px-4 py-3 font-semibold text-white transition hover:bg-[#14533f]"
           >
             {labels.request}
           </button>
@@ -220,6 +219,7 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
                 return;
               }
 
+              trackAnalyticsEvent("whatsapp_click", { surface: "rental_item", rental_item_id: item._id });
               if (authorizedTripId) {
                 setActiveAction("whatsapp");
                 setError("");
@@ -230,20 +230,20 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
               setActiveAction("whatsapp");
               setError("");
             }}
-            className="inline-flex flex-1 items-center justify-center rounded-full border border-ink/10 bg-white px-4 py-3 font-semibold text-ink"
+            className="inline-flex flex-1 items-center justify-center rounded-full border border-ink/10 bg-white px-4 py-3 font-semibold text-ink transition hover:bg-slate-50"
           >
             {labels.whatsapp}
           </button>
         </div>
         {activeAction && !authorizedTripId ? (
-          <div className="rounded-[1.5rem] border border-ink/10 bg-sand/40 p-4">
-            <p className="text-sm font-semibold text-ink">{labels.enterTripCode}</p>
-            <p className="mt-1 text-xs text-ink/60">{labels.unlockBody}</p>
+          <div className="rounded-[1.5rem] border border-ink/10 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900">{labels.enterTripCode}</p>
+            <p className="mt-1 text-xs text-slate-500">{labels.unlockBody}</p>
             <input
               value={tripCode}
               onChange={(event) => setTripCode(event.target.value.toUpperCase())}
               placeholder={labels.enterTripCode}
-              className="mt-3 w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
+              className="mt-3 w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none transition focus:border-[#f97316]/40 focus:ring-4 focus:ring-[#f97316]/10"
             />
             {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
             <div className="mt-3 flex flex-col gap-3 sm:flex-row">
@@ -253,7 +253,7 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
                   void unlockAction();
                 }}
                 disabled={loading}
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-clay px-4 py-3 font-semibold text-white disabled:opacity-60"
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-[#f97316] px-4 py-3 font-semibold text-white transition hover:bg-[#ea580c] disabled:opacity-60"
               >
                 {labels.unlock}
               </button>
@@ -264,7 +264,7 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
                   setTripCode("");
                   setError("");
                 }}
-                className="inline-flex flex-1 items-center justify-center rounded-full border border-ink/10 bg-white px-4 py-3 font-semibold text-ink"
+                className="inline-flex flex-1 items-center justify-center rounded-full border border-ink/10 bg-white px-4 py-3 font-semibold text-ink transition hover:bg-slate-50"
               >
                 {labels.cancel}
               </button>

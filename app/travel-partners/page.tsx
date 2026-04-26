@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { TravelPostCard } from "@/components/travel-post-card";
 import { TravelPostForm } from "@/components/travel-post-form";
@@ -14,88 +15,98 @@ export default async function TravelPartnersPage({
   const { lang, destination = "", date = "" } = await searchParams;
   const locale = resolveLocale(lang);
   const copy = siteCopy[locale];
-  const session = await getAuthSession();
+  const session = await getAuthSession().catch(() => null);
   const loginHref = buildLoginPath("/travel-partners", `lang=${locale}${destination ? `&destination=${encodeURIComponent(destination)}` : ""}${date ? `&date=${encodeURIComponent(date)}` : ""}`, locale);
   const posts = await getTravelPosts({ destination, date, userId: session?.user?.id }).catch(() => []);
 
   return (
     <main dir={locale === "ar" ? "rtl" : "ltr"} className="page-shell space-y-10">
       <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="relative overflow-hidden rounded-[2.75rem] bg-forest px-8 py-10 px-5 sm:px-8 text-white shadow-card">
-          <div className="absolute -left-10 top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute bottom-0 right-0 h-48 w-48 rounded-full bg-gold/20 blur-3xl" />
-          <div className="max-w-3xl space-y-6">
-            <span className="section-kicker">
-              Moroccan Trip
-            </span>
-            <h1 className="max-w-3xl text-4xl text-3xl font-black leading-[1.08] sm:text-5xl lg:text-6xl">
-              {copy.travelPageTitle}
-            </h1>
-            <p className="max-w-2xl text-base leading-8 text-white/75">
-              {locale === "ar"
-                ? "هذا المسار مخصص للناس اللي باغين يلقاو رفقة سفر أو ينسقو الطريق، بينما الرحلات المنظمة مع الوكالات تبقى المسار الرئيسي فالمنصة."
-                : "Ce parcours sert a trouver un compagnon de route ou coordonner le trajet, tandis que les voyages organises avec agences restent le parcours principal de la plateforme."}
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="#publish-form"
-                className="rounded-full bg-white px-5 py-3 font-semibold text-forest shadow-card"
-              >
-                {copy.publishTitle}
-              </Link>
-              <Link
-                href={withLocale("/", locale)}
-                className="rounded-full border border-white/20 px-5 py-3 font-semibold text-white"
-              >
-                {copy.heroSecondaryCta}
-              </Link>
+        <div className="relative overflow-hidden rounded-[2.75rem] shadow-[0_24px_70px_rgba(15,61,46,0.22)]">
+          <Image
+            src="/images/travel-partner.jpg"
+            alt={locale === "ar" ? "رفقاء سفر في المغرب" : "Compagnons de voyage au Maroc"}
+            fill
+            priority
+            sizes="(max-width: 1024px) 100vw, 60vw"
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(7,31,24,0.88),rgba(15,61,46,0.68),rgba(15,61,46,0.35))]" />
+          <div className="relative grid gap-6 px-6 py-10 text-white sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:px-10 lg:py-12">
+            <div className="space-y-5">
+              <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold tracking-[0.25em] text-white/85">
+                Moroccan Trip
+              </span>
+              <h1 className="text-4xl font-black leading-[1.08] sm:text-5xl lg:text-6xl">
+                {locale === "ar" ? "ابحث عن رفيق سفر" : copy.travelPageTitle}
+              </h1>
+              <p className="max-w-2xl text-sm leading-8 text-white/80 sm:text-base">
+                {locale === "ar"
+                  ? "تواصل مع مسافرين يشاركونك نفس الوجهة والاهتمام، وخططوا للرحلة بأمان ووضوح."
+                  : "Trouvez des voyageurs qui partagent la meme destination et les memes envies, puis planifiez votre trajet en toute confiance."}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link href="#publish-form" className="rounded-full bg-white px-5 py-3 font-semibold text-forest shadow-card">
+                  {copy.publishTitle}
+                </Link>
+                <Link href={withLocale("/", locale)} className="rounded-full border border-white/20 px-5 py-3 font-semibold text-white">
+                  {copy.heroSecondaryCta}
+                </Link>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[1.4rem] border border-white/10 bg-white/10 p-4 backdrop-blur">
+                  <p className="text-xs uppercase tracking-[0.25em] text-white/60">01</p>
+                  <p className="mt-2 font-bold">{locale === "ar" ? "أنشئ إعلانك" : "Creer une annonce"}</p>
+                </div>
+                <div className="rounded-[1.4rem] border border-white/10 bg-white/10 p-4 backdrop-blur">
+                  <p className="text-xs uppercase tracking-[0.25em] text-white/60">02</p>
+                  <p className="mt-2 font-bold">{locale === "ar" ? "حدد الوجهة والوقت" : "Fixer la destination"}</p>
+                </div>
+                <div className="rounded-[1.4rem] border border-white/10 bg-white/10 p-4 backdrop-blur">
+                  <p className="text-xs uppercase tracking-[0.25em] text-white/60">03</p>
+                  <p className="mt-2 font-bold">{locale === "ar" ? "تواصل بأمان" : "Echanger en securite"}</p>
+                </div>
+              </div>
             </div>
-            <div className="grid gap-4 pt-4 sm:grid-cols-3">
+            <div className="grid gap-3">
               <div className="rounded-[1.6rem] border border-white/10 bg-white/10 p-4 backdrop-blur">
-                <p className="text-xs uppercase tracking-[0.25em] text-white/60">01</p>
-                <p className="mt-3 text-lg font-bold">
-                  {locale === "ar" ? "ابحث حسب الوجهة" : "Cherchez par destination"}
-                </p>
+                <p className="text-xs uppercase tracking-[0.25em] text-white/60">{locale === "ar" ? "آمن" : "Securise"}</p>
+                <p className="mt-2 text-lg font-bold">{locale === "ar" ? "تواصل آمن" : "Contact securise"}</p>
               </div>
               <div className="rounded-[1.6rem] border border-white/10 bg-white/10 p-4 backdrop-blur">
-                <p className="text-xs uppercase tracking-[0.25em] text-white/60">02</p>
-                <p className="mt-3 text-lg font-bold">
-                  {locale === "ar" ? "حدد التاريخ" : "Filtrez par date"}
-                </p>
+                <p className="text-xs uppercase tracking-[0.25em] text-white/60">{locale === "ar" ? "اهتمامات" : "Interets"}</p>
+                <p className="mt-2 text-lg font-bold">{locale === "ar" ? "نفس الاهتمامات" : "Meme passion"}</p>
               </div>
               <div className="rounded-[1.6rem] border border-white/10 bg-white/10 p-4 backdrop-blur">
-                <p className="text-xs uppercase tracking-[0.25em] text-white/60">03</p>
-                <p className="mt-3 text-lg font-bold">
-                  {locale === "ar" ? "تواصل ونظم الرحلة" : "Contactez puis coordonnez"}
-                </p>
+                <p className="text-xs uppercase tracking-[0.25em] text-white/60">{locale === "ar" ? "مجتمع" : "Communaute"}</p>
+                <p className="mt-2 text-lg font-bold">{locale === "ar" ? "مجتمع مسافرين" : "Communaute voyageurs"}</p>
               </div>
             </div>
           </div>
 
-          <form action="/travel-partners" className="mt-10 grid gap-3 rounded-[2rem] border border-white/10 bg-white/10 p-4 shadow-card backdrop-blur sm:grid-cols-[1.2fr_0.9fr_auto_auto]">
+          <form action="/travel-partners" className="relative border-t border-white/10 bg-white/10 p-4 backdrop-blur sm:p-5">
             <input type="hidden" name="lang" value={locale} />
-            <input
-              type="text"
-              name="destination"
-              defaultValue={destination}
-              placeholder={copy.searchPlaceholder}
-              className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-ink outline-none shadow-card"
-            />
-            <input
-              type="date"
-              name="date"
-              defaultValue={date}
-              className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-ink outline-none shadow-card"
-            />
-            <button className="rounded-2xl bg-clay px-5 py-3 font-semibold text-white shadow-card">
-              {copy.search}
-            </button>
-            <Link
-              href={withLocale("/travel-partners", locale)}
-              className="rounded-2xl border border-white/20 px-5 py-3 text-center font-semibold text-white"
-            >
-              {copy.clear}
-            </Link>
+            <div className="grid gap-3 sm:grid-cols-[1fr_0.7fr_auto_auto]">
+              <input
+                type="text"
+                name="destination"
+                defaultValue={destination}
+                placeholder={copy.searchPlaceholder}
+                className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-ink outline-none shadow-card"
+              />
+              <input
+                type="date"
+                name="date"
+                defaultValue={date}
+                className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-ink outline-none shadow-card"
+              />
+              <button className="rounded-2xl bg-[#f97316] px-5 py-3 font-semibold text-white shadow-card">
+                {copy.search}
+              </button>
+              <Link href={withLocale("/travel-partners", locale)} className="rounded-2xl border border-white/20 px-5 py-3 text-center font-semibold text-white">
+                {copy.clear}
+              </Link>
+            </div>
           </form>
         </div>
 
@@ -110,10 +121,7 @@ export default async function TravelPartnersPage({
               </span>
               <h2 className="text-2xl font-black leading-tight text-ink">{copy.publishTitle}</h2>
               <p className="text-sm leading-7 text-ink/65">{copy.loginToPublish}</p>
-              <Link
-                href={loginHref}
-                className="inline-flex rounded-full bg-forest px-5 py-3 font-semibold text-white shadow-card"
-              >
+              <Link href={loginHref} className="inline-flex rounded-full bg-forest px-5 py-3 font-semibold text-white shadow-card">
                 {copy.login}
               </Link>
             </div>
@@ -121,17 +129,20 @@ export default async function TravelPartnersPage({
         </div>
       </section>
 
+      <section className="grid gap-4 md:grid-cols-3">
+        {[
+          locale === "ar" ? "خطة واضحة قبل الانطلاق" : "Plan clair avant depart",
+          locale === "ar" ? "تواصل مع مسافرين حقيقيين" : "Parlez a de vrais voyageurs",
+          locale === "ar" ? "رحلات منسقة بأمان" : "Trajets coordonnes en securite"
+        ].map((item) => (
+          <div key={item} className="rounded-[2rem] bg-white p-5 shadow-card">
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-clay">{locale === "ar" ? "ثقة" : "Confiance"}</p>
+            <p className="mt-3 text-lg font-black text-ink">{item}</p>
+          </div>
+        ))}
+      </section>
+
       <section className="space-y-5">
-        <div className="rounded-[2rem] bg-white p-5 shadow-card">
-          <p className="text-sm leading-7 text-ink/65">
-            {locale === "ar"
-              ? "إذا كنت باغي رحلة منظمة مع وكالة وكود رحلة واضح للكراء، الأفضل تبدأ من صفحة الوكالات."
-              : "Si vous cherchez un voyage organise avec agence et un acces clair a la location, commencez plutot par la page des agences."}
-          </p>
-          <Link href={withLocale("/agencies", locale)} className="mt-4 inline-flex rounded-full bg-forest px-4 py-2 font-semibold text-white">
-            {locale === "ar" ? "تصفح الوكالات" : "Voir les agences"}
-          </Link>
-        </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-3xl font-black text-ink">{copy.cardsTitle}</h2>

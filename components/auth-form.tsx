@@ -11,6 +11,30 @@ type AuthFormProps = {
   mode: "login" | "register";
 };
 
+function mapAuthResultError(error: string | null | undefined, status: number | undefined) {
+  if (!error && status && status >= 200 && status < 300) {
+    return "";
+  }
+
+  if (error === "CredentialsSignin" || status === 401) {
+    return "Invalid credentials.";
+  }
+
+  if (error === "Configuration") {
+    return "Authentication service is not configured.";
+  }
+
+  if (error === "AccessDenied") {
+    return "This account has been disabled.";
+  }
+
+  if (error === "Callback" || error === "CallbackRouteError" || (status && status >= 500)) {
+    return "Unable to sign in right now.";
+  }
+
+  return error || "Unable to sign in right now.";
+}
+
 export function AuthForm({ mode }: AuthFormProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,8 +80,14 @@ export function AuthForm({ mode }: AuthFormProps) {
         callbackUrl
       });
 
-      if (result?.error) {
-        throw new Error(result.error);
+      const authError = mapAuthResultError(result?.error, result?.status);
+
+      if (authError) {
+        throw new Error(authError);
+      }
+
+      if (!result?.url) {
+        throw new Error("Unable to create a session right now.");
       }
 
       const redirectTarget = normalizeInternalRedirect(result?.url || callbackUrl, withLocale("/", locale));

@@ -35,9 +35,12 @@ export function HomeTripCodeCard({ locale }: { locale: SiteLocale }) {
           }
         }}
         placeholder="دخل Trip Code"
-        className="w-full rounded-2xl border border-ink/10 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-clay/30"
+        className="w-full rounded-2xl border border-[#0f3d2e]/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0f3d2e]/30 focus:ring-2 focus:ring-[#0f3d2e]/15"
       />
-      <button type="submit" className="w-full rounded-full bg-clay px-5 py-2.5 font-semibold text-white sm:w-auto">
+      <button
+        type="submit"
+        className="w-full rounded-full bg-[#f97316] px-5 py-3 font-semibold text-white transition hover:bg-[#ea580c] sm:w-auto"
+      >
         دخول
       </button>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}

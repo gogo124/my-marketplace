@@ -1,6 +1,8 @@
 import { AdminMutationButton } from "@/components/admin-mutation-button";
 import { getAdminMessages } from "@/lib/admin";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminMessagesPage() {
   const messages = await getAdminMessages();
 
