@@ -197,6 +197,11 @@ export default async function NewListingPage({
             </h2>
             <p className="text-sm text-ink/60">
               {locale === "ar"
+                ? `${pagination.total} منتج متوفر حالياً.`
+                : `${pagination.total} produits disponibles actuellement.`}
+            </p>
+            <p className="text-sm text-ink/60">
+              {locale === "ar"
                 ? `عرض ${filteredListings.length} من أصل ${pagination.total} إعلان نشط.`
                 : `${filteredListings.length} annonces affichees sur ${pagination.total} actives.`}
             </p>

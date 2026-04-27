@@ -35,6 +35,14 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/"
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-48.png", sizes: "48x48", type: "image/png" }
+    ],
+    apple: "/apple-touch-icon.png"
+  },
   category: "travel",
   openGraph: {
     type: "website",

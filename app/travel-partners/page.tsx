@@ -12,16 +12,17 @@ import { getTravelPosts } from "@/lib/travel-posts";
 export async function generateMetadata({
   searchParams
 }: {
-  searchParams: Promise<{ lang?: string; destination?: string }>;
+  searchParams: Promise<{ lang?: string; destination?: string; city?: string; gender?: string }>;
 }): Promise<Metadata> {
-  const { lang, destination = "" } = await searchParams;
+  const { lang, destination = "", city = "", gender = "" } = await searchParams;
   const locale = resolveLocale(lang);
+  const suffix = [destination, city, gender].filter(Boolean).join(" - ");
 
   return buildPageMetadata({
     title:
       locale === "ar"
-        ? `رفيق سفر${destination ? ` - ${destination}` : ""}`
-        : `Partenaire de voyage${destination ? ` - ${destination}` : ""}`,
+        ? `رفيق سفر${suffix ? ` - ${suffix}` : ""}`
+        : `Partenaire de voyage${suffix ? ` - ${suffix}` : ""}`,
     description:
       locale === "ar"
         ? "اعثر على رفقاء سفر، أعلن عن وجهتك، وتواصل مع مؤشرات أوضح للثقة والسلامة."
@@ -34,14 +35,18 @@ export async function generateMetadata({
 export default async function TravelPartnersPage({
   searchParams
 }: {
-  searchParams: Promise<{ lang?: string; destination?: string; date?: string }>;
+  searchParams: Promise<{ lang?: string; destination?: string; city?: string; date?: string; gender?: string }>;
 }) {
-  const { lang, destination = "", date = "" } = await searchParams;
+  const { lang, destination = "", city = "", date = "", gender = "" } = await searchParams;
   const locale = resolveLocale(lang);
   const copy = siteCopy[locale];
   const session = await getAuthSession().catch(() => null);
-  const loginHref = buildLoginPath("/travel-partners", `lang=${locale}${destination ? `&destination=${encodeURIComponent(destination)}` : ""}${date ? `&date=${encodeURIComponent(date)}` : ""}`, locale);
-  const posts = await getTravelPosts({ destination, date, userId: session?.user?.id }).catch(() => []);
+  const loginHref = buildLoginPath(
+    "/travel-partners",
+    `lang=${locale}${destination ? `&destination=${encodeURIComponent(destination)}` : ""}${city ? `&city=${encodeURIComponent(city)}` : ""}${date ? `&date=${encodeURIComponent(date)}` : ""}${gender ? `&gender=${encodeURIComponent(gender)}` : ""}`,
+    locale
+  );
+  const posts = await getTravelPosts({ destination, city, date, gender, userId: session?.user?.id }).catch(() => []);
 
   return (
     <main dir={locale === "ar" ? "rtl" : "ltr"} className="page-shell space-y-10">
@@ -110,7 +115,7 @@ export default async function TravelPartnersPage({
 
           <form action="/travel-partners" className="relative border-t border-white/10 bg-white/10 p-4 backdrop-blur sm:p-5">
             <input type="hidden" name="lang" value={locale} />
-            <div className="grid gap-3 sm:grid-cols-[1fr_0.7fr_auto_auto]">
+            <div className="grid gap-3 lg:grid-cols-[1.1fr_0.8fr_0.7fr_0.7fr_auto_auto]">
               <input
                 type="text"
                 name="destination"
@@ -119,13 +124,29 @@ export default async function TravelPartnersPage({
                 className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-ink outline-none shadow-card"
               />
               <input
+                type="text"
+                name="city"
+                defaultValue={city}
+                placeholder={locale === "ar" ? "المدينة" : "Ville"}
+                className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-ink outline-none shadow-card"
+              />
+              <input
                 type="date"
                 name="date"
                 defaultValue={date}
                 className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-ink outline-none shadow-card"
               />
+              <select
+                name="gender"
+                defaultValue={gender}
+                className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-ink outline-none shadow-card"
+              >
+                <option value="">{locale === "ar" ? "الجنس اختياري" : "Genre optionnel"}</option>
+                <option value="male">{locale === "ar" ? "ذكر" : "Male"}</option>
+                <option value="female">{locale === "ar" ? "أنثى" : "Female"}</option>
+              </select>
               <button className="rounded-2xl bg-[#f97316] px-5 py-3 font-semibold text-white shadow-card">
-                {copy.search}
+                {locale === "ar" ? "ابحث عن رفيق سفر" : "Chercher un compagnon"}
               </button>
               <Link href={withLocale("/travel-partners", locale)} className="rounded-2xl border border-white/20 px-5 py-3 text-center font-semibold text-white">
                 {copy.clear}
@@ -180,7 +201,13 @@ export default async function TravelPartnersPage({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-3xl font-black text-ink">{copy.cardsTitle}</h2>
-            <p className="text-sm text-ink/60">{copy.cardsBody}</p>
+            <p className="text-sm text-ink/60">
+              {posts.length > 0
+                ? locale === "ar"
+                  ? `${posts.length} إعلان مطابق للفلتر الحالي مع وجهة، تاريخ، وإشارات ثقة أوضح.`
+                  : `${posts.length} annonces correspondent au filtre actuel avec destination, date et signaux de confiance plus clairs.`
+                : copy.cardsBody}
+            </p>
           </div>
           <p className="text-sm text-ink/55">
             {locale === "ar"

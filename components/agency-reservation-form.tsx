@@ -238,7 +238,7 @@ export function AgencyReservationForm({
         disabled={loading || remainingSeats < 1}
         className="w-full rounded-2xl bg-clay px-4 py-3 font-semibold text-white transition hover:brightness-105 disabled:opacity-60"
       >
-        {loading ? copy.saving : remainingSeats > 0 ? "تأكيد الحجز" : copy.tripFull}
+        {loading ? copy.saving : remainingSeats > 0 ? (locale === "ar" ? "تأكيد الحجز" : "Confirmer la reservation") : copy.tripFull}
       </button>
     </form>
   );

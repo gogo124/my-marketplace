@@ -16,6 +16,7 @@ const TravelPostSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     destination: { type: String, required: true, trim: true },
+    city: { type: String, required: true, trim: true },
     date: { type: Date, required: true },
     description: { type: String, required: true, trim: true },
     phoneNumber: { type: String, required: true, trim: true },
@@ -35,7 +36,7 @@ const TravelPostSchema = new Schema(
   }
 );
 
-TravelPostSchema.index({ destination: 1, date: 1, createdAt: -1 });
+TravelPostSchema.index({ destination: 1, city: 1, date: 1, createdAt: -1 });
 
 export type TravelPostDocument = InferSchemaType<typeof TravelPostSchema> & { _id: string };
 

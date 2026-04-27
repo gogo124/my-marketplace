@@ -31,11 +31,16 @@ export function buildPageMetadata({
     alternates: {
       canonical: path
     },
+    robots: {
+      index: true,
+      follow: true
+    },
     openGraph: {
       title,
       description,
       url: absoluteUrl(path),
       siteName: "Moroccan Trip",
+      locale: "fr_FR",
       type: "website",
       images: [
         {

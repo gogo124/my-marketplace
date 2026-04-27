@@ -459,7 +459,7 @@ export default async function AgencyProfilePage({
           </form>
         </div>
         {filteredTrips.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6">
             {filteredTrips.map((trip: any) => (
               <AgencyTripCard
                 key={trip._id}

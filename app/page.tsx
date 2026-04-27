@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ListingCard } from "@/components/listing-card";
@@ -7,9 +8,33 @@ import { VerificationBadge } from "@/components/verification-badge";
 import { getAgencyProfiles } from "@/lib/agency";
 import { getAuthSession } from "@/lib/auth";
 import { getPlaces } from "@/lib/camping";
-import { getListings } from "@/lib/data";
-import { formatLocaleNumber, getDirection, resolveLocale, withLocale } from "@/lib/i18n";
+import { getListingsPage } from "@/lib/data";
+import { formatLocaleDate, formatLocaleNumber, getDirection, resolveLocale, withLocale } from "@/lib/i18n";
 import { logServerError } from "@/lib/server-log";
+import { buildPageMetadata } from "@/lib/seo";
+import { getTravelPosts } from "@/lib/travel-posts";
+
+export async function generateMetadata({
+  searchParams
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}): Promise<Metadata> {
+  const { lang } = await searchParams;
+  const locale = resolveLocale(lang);
+
+  return buildPageMetadata({
+    title:
+      locale === "ar"
+        ? "Moroccan Trip | احجز الرحلة وكراء المعدات وابحث عن رفيق السفر"
+        : "Moroccan Trip | Voyages, equipements et compagnons de route au Maroc",
+    description:
+      locale === "ar"
+        ? "احجز الرحلة، كراء المعدات، وابحث عن رفيق السفر في منصة مغربية واحدة تجمع الوكالات الموثقة والمنتجات والخدمات."
+        : "Reservez un voyage, louez votre equipement et trouvez un compagnon de route sur une plateforme marocaine claire et fiable.",
+    path: "/",
+    image: "/images/hero-main.jpg"
+  });
+}
 
 export default async function HomePage({
   searchParams
@@ -23,27 +48,40 @@ export default async function HomePage({
     logServerError("page.home.auth", error);
     return null;
   });
-  const [agencies, saleListings, featuredCampingPlaces] = await Promise.all([
+  const [agencies, listingsPage, featuredCampingPlaces, travelPartnerPreview] = await Promise.all([
     getAgencyProfiles().catch((error) => {
       logServerError("page.home.agencies", error);
       return [];
     }),
-    getListings({ type: "sale", limit: 8 }).catch((error) => {
+    getListingsPage({ type: "sale", page: 1, pageSize: 4 }).catch((error) => {
       logServerError("page.home.listings", error);
-      return [];
+      return {
+        listings: [],
+        pagination: {
+          page: 1,
+          pageSize: 4,
+          total: 0,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false
+        }
+      };
     }),
     getPlaces({ userId: session?.user?.id, limit: 3 }).catch((error) => {
       logServerError("page.home.places", error);
       return [];
+    }),
+    getTravelPosts({ userId: session?.user?.id, limit: 3 }).catch((error) => {
+      logServerError("page.home.travel-posts", error);
+      return [];
     })
   ]);
 
-  const canCreateAgency = Boolean(session?.user?.canCreateAgency);
   const featuredAgencies = agencies.slice(0, 3);
-  const featuredSaleListings = saleListings.slice(0, 4);
+  const featuredSaleListings = listingsPage.listings.slice(0, 4);
   const totalTrips = agencies.reduce((sum: number, agency: any) => sum + Number(agency.stats?.tripsCount || 0), 0);
   const totalOpenSeats = agencies.reduce((sum: number, agency: any) => sum + Number(agency.stats?.openSeats || 0), 0);
-  const verifiedAgencies = agencies.filter((agency: any) => agency.verificationStatus === "verified").length;
+  const totalProducts = Number(listingsPage.pagination.total || 0);
 
   const homeStats = [
     {
@@ -59,8 +97,8 @@ export default async function HomePage({
       value: formatLocaleNumber(totalOpenSeats, locale)
     },
     {
-      label: isArabic ? "وكالات موثقة" : "Agences verifiees",
-      value: formatLocaleNumber(verifiedAgencies, locale)
+      label: isArabic ? "منتجات للبيع" : "Produits en vente",
+      value: formatLocaleNumber(totalProducts, locale)
     }
   ];
 
@@ -196,67 +234,100 @@ export default async function HomePage({
               </span>
               <div className="space-y-4">
                 <h1 className="max-w-3xl text-4xl font-black leading-[1.08] sm:text-5xl lg:text-6xl">
-                  {isArabic ? "احجز الرحلة، اكتشف الوكالة، ووصل للمعدات من مكان واحد" : "Trouvez votre voyage, votre agence et votre equipement depuis un seul endroit"}
+                  {isArabic ? "احجز الرحلة + كراء المعدات + رفيق السفر في منصة واحدة" : "Reservez le voyage, l'equipement et le compagnon de route depuis une seule plateforme"}
                 </h1>
                 <p className="max-w-2xl text-sm leading-8 text-white/85 sm:text-base">
                   {isArabic
-                    ? "Moroccan Trip كتجمع الرحلات المنظمة، الوكالات الموثقة، التخييم، وشراء أو كراء المعدات في تجربة أبسط وأسهل في الفهم."
-                    : "Moroccan Trip reunit voyages organises, agences verifiees, camping et equipements dans une experience plus simple a comprendre et a utiliser."}
+                    ? "Moroccan Trip تجمع الرحلات المنظمة، الوكالات الموثقة، كراء أو شراء المعدات، ورفيق السفر في تجربة أوضح وأسرع في اتخاذ القرار."
+                    : "Moroccan Trip reunit voyages organises, agences verifiees, equipements et compagnons de route dans un parcours plus clair et plus orienté action."}
                 </p>
               </div>
-              <form
-                action={withLocale("/agencies", locale)}
-                className="rounded-[1.75rem] border border-white/15 bg-white/95 p-3 shadow-2xl backdrop-blur sm:p-4"
-              >
-                <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="sr-only" htmlFor="search-query">
-                      {isArabic ? "ابحث عن رحلة" : "Recherche voyage"}
-                    </label>
-                    <input
-                      id="search-query"
-                      type="text"
-                      name="q"
-                      placeholder={isArabic ? "مثلاً: مرزوكة، إفران، توبقال" : "Exemple : Merzouga, Ifrane, Toubkal"}
-                      className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0f3d2e]/30 focus:ring-2 focus:ring-[#0f3d2e]/10"
-                    />
-                    <label className="sr-only" htmlFor="search-location">
-                      {isArabic ? "المدينة أو الوجهة" : "Ville ou destination"}
-                    </label>
-                    <input
-                      id="search-location"
-                      type="text"
-                      name="location"
-                      placeholder={isArabic ? "المدينة أو نقطة الانطلاق" : "Ville ou point de depart"}
-                      className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0f3d2e]/30 focus:ring-2 focus:ring-[#0f3d2e]/10"
-                    />
-                  </div>
-                  <button className="rounded-2xl bg-[#f97316] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ea580c]">
-                    {isArabic ? "استكشف الرحلات" : "Explorer les voyages"}
-                  </button>
-                </div>
-              </form>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link
                   href={withLocale("/agencies", locale)}
                   className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-[#0f3d2e] transition hover:-translate-y-0.5 hover:bg-slate-100"
                 >
-                  {isArabic ? "ابدأ بالرحلات" : "Commencer par les voyages"}
+                  {isArabic ? "استكشف الرحلات" : "Explorer les voyages"}
                 </Link>
                 <Link
-                  href={withLocale("/camping", locale)}
+                  href={withLocale("/agencies", locale)}
                   className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/20"
                 >
-                  {isArabic ? "اكتشف التخييم" : "Explorer le camping"}
+                  {isArabic ? "شوف الوكالات" : "Voir les agences"}
                 </Link>
-                {canCreateAgency ? (
-                  <Link
-                    href={withLocale("/agency/profile", locale)}
-                    className="inline-flex items-center justify-center rounded-full border border-white/20 bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-                  >
-                    {isArabic ? "إدارة الوكالة" : "Gerer l'agence"}
-                  </Link>
-                ) : null}
+                <Link
+                  href={withLocale("/travel-partners", locale)}
+                  className="inline-flex items-center justify-center rounded-full border border-white/20 bg-transparent px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  {isArabic ? "ابحث عن رفيق سفر" : "Chercher un compagnon"}
+                </Link>
+              </div>
+              <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+                <form
+                  action={withLocale("/agencies", locale)}
+                  className="rounded-[1.75rem] border border-white/15 bg-white/95 p-4 shadow-2xl backdrop-blur"
+                >
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
+                    {isArabic ? "ابحث عن الرحلة أو الوكالة" : "Chercher un voyage ou une agence"}
+                  </p>
+                  <div className="mt-3 grid gap-3">
+                    <input
+                      type="text"
+                      name="q"
+                      placeholder={isArabic ? "مثلاً: مرزوكة، توبقال، جبل" : "Ex: Merzouga, Toubkal, desert"}
+                      className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0f3d2e]/30 focus:ring-2 focus:ring-[#0f3d2e]/10"
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <input
+                        type="text"
+                        name="destination"
+                        placeholder={isArabic ? "الوجهة" : "Destination"}
+                        className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0f3d2e]/30 focus:ring-2 focus:ring-[#0f3d2e]/10"
+                      />
+                      <input
+                        type="text"
+                        name="city"
+                        placeholder={isArabic ? "المدينة" : "Ville"}
+                        className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0f3d2e]/30 focus:ring-2 focus:ring-[#0f3d2e]/10"
+                      />
+                    </div>
+                    <button className="rounded-2xl bg-[#f97316] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ea580c]">
+                      {isArabic ? "استكشف الرحلات" : "Explorer les voyages"}
+                    </button>
+                  </div>
+                </form>
+                <form
+                  action={withLocale("/travel-partners", locale)}
+                  className="rounded-[1.75rem] border border-white/15 bg-white/10 p-4 text-white backdrop-blur"
+                >
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/70">
+                    {isArabic ? "ابحث عن أشخاص يسافرون لنفس الوجهة" : "Trouver des voyageurs vers la meme destination"}
+                  </p>
+                  <div className="mt-3 grid gap-3">
+                    <input
+                      type="text"
+                      name="destination"
+                      placeholder={isArabic ? "الوجهة" : "Destination"}
+                      className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none"
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <input
+                        type="date"
+                        name="date"
+                        className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none"
+                      />
+                      <input
+                        type="text"
+                        name="city"
+                        placeholder={isArabic ? "المدينة" : "Ville"}
+                        className="rounded-2xl border border-white/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none"
+                      />
+                    </div>
+                    <button className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[#0f3d2e] transition hover:bg-slate-100">
+                      {isArabic ? "ابحث عن رفيق سفر" : "Chercher un compagnon"}
+                    </button>
+                  </div>
+                </form>
               </div>
               <div className="flex flex-wrap gap-3 text-xs font-semibold text-white/90">
                 <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">
@@ -276,12 +347,12 @@ export default async function HomePage({
                   {isArabic ? "من أين تبدأ؟" : "Par ou commencer"}
                 </p>
                 <h2 className="mt-3 text-2xl font-black">
-                  {isArabic ? "إذا كنت أول مرة هنا، ابدأ بالوكالات" : "Si vous decouvrez la plateforme, commencez par les agences"}
+                  {isArabic ? "اختر المسار حسب نيتك الحالية" : "Choisissez le bon parcours selon votre intention"}
                 </h2>
                 <p className="mt-3 text-sm leading-7 text-white/80">
                   {isArabic
-                    ? "ستفهم بسرعة الوجهات المتاحة، عدد المقاعد، والجهات الأكثر موثوقية."
-                    : "C'est le chemin le plus simple pour comprendre les destinations, les places disponibles et les acteurs les plus fiables."}
+                    ? "رحلة منظمة، معدات، أو رفيق سفر: كل مسار أصبح أوضح من البداية مع أرقام حقيقية من المنصة."
+                    : "Voyage organise, equipement ou compagnon de route : chaque parcours demarre avec des informations plus claires et des chiffres reels."}
                 </p>
                 <Link
                   href={withLocale("/agencies", locale)}
@@ -307,6 +378,55 @@ export default async function HomePage({
           </div>
         </div>
       </section>
+
+      {travelPartnerPreview.length > 0 ? (
+        <section className="-mt-2 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="section-card p-5 sm:p-6">
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#f97316]">
+              {isArabic ? "رفيق سفر" : "Partenaire de voyage"}
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-slate-900">
+              {isArabic ? "أشخاص يسافرون الآن إلى وجهات مشابهة" : "Des voyageurs partent deja vers des destinations similaires"}
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              {isArabic ? "إعلانات حقيقية من قاعدة البيانات مع الوجهة، التاريخ، والجاهزية للتواصل عبر واتساب." : "Des annonces reelles issues de la base de donnees avec destination, date et disponibilite pour un contact WhatsApp."}
+            </p>
+            <Link href={withLocale("/travel-partners", locale)} className="mt-5 inline-flex rounded-full bg-[#0f3d2e] px-5 py-3 text-sm font-semibold text-white">
+              {isArabic ? "استكشف كل الإعلانات" : "Voir toutes les annonces"}
+            </Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {travelPartnerPreview.map((post: any) => (
+              <Link
+                key={post._id}
+                href={withLocale(`/travel-partners?destination=${encodeURIComponent(post.destination)}${post.city ? `&city=${encodeURIComponent(post.city)}` : ""}`, locale)}
+                className="section-card flex flex-col gap-4 p-5 transition hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,61,46,0.12)]"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold text-ink">
+                    {post.city || (isArabic ? "بدون مدينة" : "Sans ville")}
+                  </span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">
+                    {formatLocaleDate(post.date, locale, { day: "2-digit", month: "short" })}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="line-clamp-2 text-lg font-black text-slate-900">{post.destination}</h3>
+                  <p className="mt-2 line-clamp-3 text-sm leading-7 text-slate-600">{post.description}</p>
+                </div>
+                <div className="mt-auto flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                  <span className="rounded-full bg-slate-50 px-3 py-1">
+                    {post.profileCompleteness || 0}% {isArabic ? "اكتمال" : "profil"}
+                  </span>
+                  <span className="rounded-full bg-slate-50 px-3 py-1">
+                    {post.hasVerifiedAccount ? (isArabic ? "حساب موثق" : "compte verifie") : isArabic ? "حساب ظاهر" : "profil visible"}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
         <div className="space-y-5">
@@ -532,7 +652,9 @@ export default async function HomePage({
               {isArabic ? "منتجات أوضح مع ثقة أكثر" : "Des produits plus clairs et plus rassurants"}
             </h2>
             <p className="text-sm leading-7 text-slate-600">
-              {isArabic ? "السعر، حالة المنتج، البائع، والتوثيق أصبحوا ظاهرين بشكل أفضل داخل البطاقات." : "Prix, etat du produit, vendeur et verification sont mieux visibles dans les cartes."}
+              {isArabic
+                ? `${formatLocaleNumber(totalProducts, locale)} منتج متوفر حالياً مع سعر أوضح، صور متوازنة، وثقة أفضل في البائع.`
+                : `${formatLocaleNumber(totalProducts, locale)} produits sont actuellement disponibles avec prix plus clair, images mieux cadrees et confiance vendeur plus visible.`}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">

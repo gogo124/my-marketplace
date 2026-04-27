@@ -16,6 +16,7 @@ type TravelPostCardProps = {
   post: {
     _id: string;
     destination: string;
+    city?: string;
     date: string;
     description: string;
     phoneNumber: string;
@@ -28,7 +29,12 @@ type TravelPostCardProps = {
       _id?: string;
       name?: string;
       avatar?: string;
+      sellerVerificationStatus?: string;
+      verified?: boolean;
     };
+    profileCompleteness?: number;
+    hasVerifiedAccount?: boolean;
+    hasPhoneContact?: boolean;
   };
 };
 
@@ -45,6 +51,7 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
   const whatsappDigits = phoneDigits.replace(/\D/g, "");
   const formattedDate = formatLocaleDate(post.date, locale, { dateStyle: "medium" });
   const destination = localizeRecordField(post as Record<string, any>, "destination", locale, post.destination);
+  const city = localizeRecordField(post as Record<string, any>, "city", locale, post.city || "");
   const description = localizeRecordField(post as Record<string, any>, "description", locale, post.description);
   const [authError, setAuthError] = useState("");
   const genderLabel =
@@ -61,6 +68,9 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
   const coverImage = post.coverImage || "/images/travel-partner.jpg";
   const [isInterested, setIsInterested] = useState(Boolean(post.isInterested));
   const [interestedCount, setInterestedCount] = useState(Number(post.interestedCount || 0));
+  const profileCompleteness = Number(post.profileCompleteness || 0);
+  const hasVerifiedAccount = Boolean(post.hasVerifiedAccount);
+  const hasPhoneContact = Boolean(post.hasPhoneContact);
 
   function requireSignIn(event: MouseEvent<HTMLAnchorElement>) {
     if (isSignedIn) {
@@ -79,7 +89,7 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,61,46,0.2)_45%,rgba(0,0,0,0.76)_100%)] transition duration-500 group-hover:bg-[linear-gradient(180deg,rgba(15,23,42,0.12)_0%,rgba(15,61,46,0.32)_45%,rgba(0,0,0,0.84)_100%)]" />
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
           <span className="rounded-full bg-black/40 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md">
-            {copy.destination}
+            {city || copy.destination}
           </span>
           <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-[#0f3d2e] backdrop-blur-md">
             {formattedDate}
@@ -104,11 +114,33 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
 
       <div className="flex flex-1 flex-col gap-4 p-5">
         <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+          {city ? <span className="rounded-full bg-slate-50 px-3 py-1">{city}</span> : null}
           <span className="rounded-full bg-slate-50 px-3 py-1">{formattedDate}</span>
           {genderLabel ? <span className="rounded-full bg-slate-50 px-3 py-1">{genderLabel}</span> : null}
           <span className="rounded-full bg-slate-50 px-3 py-1">
             {interestedCount} {locale === "ar" ? "مهتم" : "interesses"}
           </span>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-[1.2rem] bg-slate-50 p-3">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {locale === "ar" ? "الوجهة" : "Destination"}
+            </p>
+            <p className="mt-2 text-sm font-bold text-ink">{destination}</p>
+          </div>
+          <div className="rounded-[1.2rem] bg-slate-50 p-3">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {locale === "ar" ? "التاريخ" : "Date"}
+            </p>
+            <p className="mt-2 text-sm font-bold text-ink">{formattedDate}</p>
+          </div>
+          <div className="rounded-[1.2rem] bg-slate-50 p-3">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {locale === "ar" ? "الملف" : "Profil"}
+            </p>
+            <p className="mt-2 text-sm font-bold text-ink">{profileCompleteness}%</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 rounded-[1.4rem] bg-slate-50 p-4">
@@ -129,12 +161,14 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">{copy.destination}</span>
           <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-            {locale === "ar" ? "تواصل آمن" : "Contact securise"}
+            {locale === "ar" ? "نية الرحلة واضحة" : "Intention claire"}
           </span>
           <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-            {locale === "ar" ? "هدف الرحلة واضح" : "Intention claire"}
+            {hasVerifiedAccount ? (locale === "ar" ? "حساب موثق" : "Compte verifie") : locale === "ar" ? "حساب ظاهر" : "Profil visible"}
+          </span>
+          <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+            {hasPhoneContact ? (locale === "ar" ? "رقم متاح" : "Numero disponible") : locale === "ar" ? "تواصل محدود" : "Contact limite"}
           </span>
         </div>
 

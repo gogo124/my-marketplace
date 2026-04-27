@@ -696,6 +696,7 @@ export function validateRentalRequestStatus(status: unknown) {
 
 export function validateTravelPostPayload(payload: Record<string, unknown>) {
   const destination = trimText(payload.destination);
+  const city = trimText(payload.city);
   const description = trimText(payload.description);
   const phoneNumber = normalizePhoneNumber(payload.phoneNumber);
   const rawGender = trimText(payload.gender);
@@ -710,6 +711,10 @@ export function validateTravelPostPayload(payload: Record<string, unknown>) {
 
   if (destination.length < 2) {
     return { error: "Destination is required." };
+  }
+
+  if (city.length < 2) {
+    return { error: "City is required." };
   }
 
   if (description.length < 20) {
@@ -742,6 +747,7 @@ export function validateTravelPostPayload(payload: Record<string, unknown>) {
   return {
     data: {
       destination,
+      city,
       description,
       phoneNumber,
       date,

@@ -14,11 +14,17 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const destination = searchParams.get("destination")?.trim();
+    const city = searchParams.get("city")?.trim();
     const date = searchParams.get("date");
+    const gender = searchParams.get("gender")?.trim();
     const query: Record<string, unknown> = {};
 
     if (destination) {
       query.destination = { $regex: destination, $options: "i" };
+    }
+
+    if (city) {
+      query.city = { $regex: city, $options: "i" };
     }
 
     if (date) {
@@ -31,8 +37,12 @@ export async function GET(request: Request) {
       }
     }
 
+    if (gender === "male" || gender === "female") {
+      query.gender = gender;
+    }
+
     const posts = await TravelPost.find(query)
-      .populate("userId", "name email avatar")
+      .populate("userId", "name email avatar sellerVerificationStatus verified")
       .sort({ createdAt: -1 });
 
     return NextResponse.json({ posts });
@@ -65,6 +75,7 @@ export async function POST(request: Request) {
     const coverImages = getSubmittedImageUrls(formData, "coverImage");
     const payload = {
       destination: formData.get("destination"),
+      city: formData.get("city"),
       date: formData.get("date"),
       description: formData.get("description"),
       phoneNumber: formData.get("phoneNumber"),
@@ -112,6 +123,7 @@ export async function POST(request: Request) {
     const post = await TravelPost.create({
       userId: session.user.id,
       destination: validation.data.destination,
+      city: validation.data.city,
       date: validation.data.date,
       description: validation.data.description,
       phoneNumber: validation.data.phoneNumber,
@@ -121,7 +133,7 @@ export async function POST(request: Request) {
       interestedUserIds: []
     });
 
-    const populatedPost = await post.populate("userId", "name email avatar");
+    const populatedPost = await post.populate("userId", "name email avatar sellerVerificationStatus verified");
 
     return NextResponse.json({ post: populatedPost }, { status: 201 });
   } catch (error) {

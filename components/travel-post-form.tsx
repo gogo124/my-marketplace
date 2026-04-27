@@ -155,6 +155,17 @@ export function TravelPostForm() {
         </label>
         <label className="space-y-2">
           <span className="text-xs font-bold uppercase tracking-[0.25em] text-ink/45">
+            {locale === "ar" ? "المدينة" : "Ville"}
+          </span>
+          <input
+            name="city"
+            required
+            placeholder={locale === "ar" ? "مثال: الدار البيضاء، مراكش، أكادير" : "Ex: Casablanca, Marrakech, Agadir"}
+            className="w-full rounded-[1.4rem] border border-ink/10 bg-sand/70 px-4 py-3 outline-none ring-clay/30 focus:ring"
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-xs font-bold uppercase tracking-[0.25em] text-ink/45">
             {copy.travelDate}
           </span>
           <input
