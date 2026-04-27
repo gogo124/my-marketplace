@@ -17,15 +17,31 @@ const alexandria = Alexandria({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  title: "Moroccan Trip | Voyages organises, reservations et location liee au voyage",
+  title: {
+    default: "Moroccan Trip | Voyages, agences, camping et equipements au Maroc",
+    template: "%s | Moroccan Trip"
+  },
   description:
-    "Moroccan Trip aide les utilisateurs a reserver des voyages organises avec des agences, acceder a la location d'equipements liee au voyage et trouver des partenaires de route en option.",
+    "Moroccan Trip reunit voyages organises, agences verifiees, equipements, lieux de camping et partenaires de route dans une experience plus claire et plus fiable.",
+  keywords: [
+    "Moroccan Trip",
+    "voyage Maroc",
+    "agence voyage Maroc",
+    "camping Maroc",
+    "location equipement",
+    "trip code",
+    "partenaire voyage"
+  ],
+  alternates: {
+    canonical: "/"
+  },
+  category: "travel",
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    title: "Moroccan Trip | Voyages organises, reservations et location liee au voyage",
+    title: "Moroccan Trip | Voyages, agences, camping et equipements au Maroc",
     description:
-      "Une plateforme marocaine pour les voyages organises, la location d'equipement, les annonces et les partenaires de route.",
+      "Une plateforme marocaine plus claire pour decouvrir des agences, reserver des voyages, louer ou acheter du materiel et trouver les bons spots de camping.",
     siteName: "Moroccan Trip",
     images: [
       {
@@ -40,7 +56,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Moroccan Trip",
     description:
-      "Voyages organises, reservations, location d'equipements et partenaires de route au Maroc.",
+      "Agences verifiees, voyages organises, camping et equipements au Maroc.",
     images: ["/images/hero-main.jpg"]
   },
   robots: {
@@ -62,17 +78,37 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const locale = resolveLocale(
     requestHeaders.get("x-site-locale") || cookieStore.get(SITE_LOCALE_COOKIE)?.value
   );
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Moroccan Trip",
+    url: siteUrl,
+    logo: `${siteUrl}/logo.jpeg`,
+    sameAs: [],
+    description:
+      locale === "ar"
+        ? "منصة مغربية تجمع الرحلات المنظمة، الوكالات، التخييم والمعدات في تجربة أوضح وأسهل."
+        : "Plateforme marocaine qui reunit voyages organises, agences, camping et equipements dans une experience plus simple."
+  };
 
   return (
     <html lang={locale} dir={getDirection(locale)}>
-      <body className={alexandria.variable}>
+      <body className={`${alexandria.variable} bg-app text-slate-900`}>
+        <a href="#main-content" className="skip-link">
+          {locale === "ar" ? "تجاوز إلى المحتوى" : "Aller au contenu"}
+        </a>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
         <AuthProvider>
           <Suspense fallback={null}>
             <AnalyticsTracker />
             <LocaleDocumentSync />
             <Header />
           </Suspense>
-          {children}
+          <div id="main-content">{children}</div>
         </AuthProvider>
       </body>
     </html>

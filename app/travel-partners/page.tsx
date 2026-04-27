@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { TravelPostCard } from "@/components/travel-post-card";
@@ -5,7 +6,30 @@ import { TravelPostForm } from "@/components/travel-post-form";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/seo";
 import { getTravelPosts } from "@/lib/travel-posts";
+
+export async function generateMetadata({
+  searchParams
+}: {
+  searchParams: Promise<{ lang?: string; destination?: string }>;
+}): Promise<Metadata> {
+  const { lang, destination = "" } = await searchParams;
+  const locale = resolveLocale(lang);
+
+  return buildPageMetadata({
+    title:
+      locale === "ar"
+        ? `رفيق سفر${destination ? ` - ${destination}` : ""}`
+        : `Partenaire de voyage${destination ? ` - ${destination}` : ""}`,
+    description:
+      locale === "ar"
+        ? "اعثر على رفقاء سفر، أعلن عن وجهتك، وتواصل مع مؤشرات أوضح للثقة والسلامة."
+        : "Trouvez des compagnons de voyage, publiez votre destination et contactez avec de meilleurs signaux de confiance et de securite.",
+    path: "/travel-partners",
+    image: "/images/travel-partner.jpg"
+  });
+}
 
 export default async function TravelPartnersPage({
   searchParams
@@ -47,10 +71,10 @@ export default async function TravelPartnersPage({
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="#publish-form" className="rounded-full bg-white px-5 py-3 font-semibold text-forest shadow-card">
-                  {copy.publishTitle}
+                  {locale === "ar" ? "انشر رحلتك" : "Publier votre trajet"}
                 </Link>
-                <Link href={withLocale("/", locale)} className="rounded-full border border-white/20 px-5 py-3 font-semibold text-white">
-                  {copy.heroSecondaryCta}
+                <Link href="#travel-posts" className="rounded-full border border-white/20 px-5 py-3 font-semibold text-white">
+                  {locale === "ar" ? "استكشف الرفقاء" : "Explorer les annonces"}
                 </Link>
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -71,7 +95,7 @@ export default async function TravelPartnersPage({
             <div className="grid gap-3">
               <div className="rounded-[1.6rem] border border-white/10 bg-white/10 p-4 backdrop-blur">
                 <p className="text-xs uppercase tracking-[0.25em] text-white/60">{locale === "ar" ? "آمن" : "Securise"}</p>
-                <p className="mt-2 text-lg font-bold">{locale === "ar" ? "تواصل آمن" : "Contact securise"}</p>
+                <p className="mt-2 text-lg font-bold">{locale === "ar" ? "تواصل مع نية واضحة" : "Contact avec intention claire"}</p>
               </div>
               <div className="rounded-[1.6rem] border border-white/10 bg-white/10 p-4 backdrop-blur">
                 <p className="text-xs uppercase tracking-[0.25em] text-white/60">{locale === "ar" ? "اهتمامات" : "Interets"}</p>
@@ -131,18 +155,28 @@ export default async function TravelPartnersPage({
 
       <section className="grid gap-4 md:grid-cols-3">
         {[
-          locale === "ar" ? "خطة واضحة قبل الانطلاق" : "Plan clair avant depart",
-          locale === "ar" ? "تواصل مع مسافرين حقيقيين" : "Parlez a de vrais voyageurs",
-          locale === "ar" ? "رحلات منسقة بأمان" : "Trajets coordonnes en securite"
+          {
+            title: locale === "ar" ? "خطة واضحة قبل الانطلاق" : "Plan clair avant depart",
+            body: locale === "ar" ? "اظهر الوجهة والتاريخ والهدف من الإعلان خلال ثوانٍ." : "La destination, la date et l'intention sont visibles en quelques secondes."
+          },
+          {
+            title: locale === "ar" ? "تواصل مع مسافرين حقيقيين" : "Parlez a de vrais voyageurs",
+            body: locale === "ar" ? "بطاقات أوضح مع اسم، تاريخ، وعدد المهتمين." : "Des cartes plus claires avec nom, date et nombre d'interesses."
+          },
+          {
+            title: locale === "ar" ? "إحساس أفضل بالأمان" : "Meilleure perception de securite",
+            body: locale === "ar" ? "إشارات الثقة والتبليغ والوصول إلى التواصل بشكل منظم." : "Des signaux de confiance, des options de signalement et un acces au contact plus structure."
+          }
         ].map((item) => (
-          <div key={item} className="rounded-[2rem] bg-white p-5 shadow-card">
+          <div key={item.title} className="rounded-[2rem] bg-white p-5 shadow-card">
             <p className="text-sm font-bold uppercase tracking-[0.24em] text-clay">{locale === "ar" ? "ثقة" : "Confiance"}</p>
-            <p className="mt-3 text-lg font-black text-ink">{item}</p>
+            <p className="mt-3 text-lg font-black text-ink">{item.title}</p>
+            <p className="mt-2 text-sm leading-7 text-ink/60">{item.body}</p>
           </div>
         ))}
       </section>
 
-      <section className="space-y-5">
+      <section id="travel-posts" className="space-y-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-3xl font-black text-ink">{copy.cardsTitle}</h2>

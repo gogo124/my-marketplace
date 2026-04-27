@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 type HomeServiceCardProps = {
@@ -28,11 +29,12 @@ export function HomeServiceCard({
       className="group relative flex min-h-[340px] overflow-hidden rounded-[2rem] bg-slate-900 shadow-[0_18px_45px_rgba(15,61,46,0.14)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_70px_rgba(15,61,46,0.22)]"
     >
       <div className="absolute inset-0">
-        <img
+        <Image
           src={image}
           alt={title}
-          loading="lazy"
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+          fill
+          sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+          className="object-cover transition duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.16)_0%,rgba(0,0,0,0.2)_40%,rgba(0,0,0,0.78)_100%)] transition duration-500 group-hover:bg-[linear-gradient(180deg,rgba(0,0,0,0.24)_0%,rgba(0,0,0,0.34)_40%,rgba(0,0,0,0.88)_100%)]" />
       </div>

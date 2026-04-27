@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -8,7 +9,40 @@ import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getAgencyProfileById, getAgencyTrips } from "@/lib/agency";
 import { formatLocaleDate, getDirection, resolveLocale, siteCopy, translateApiError, withLocale } from "@/lib/i18n";
+import { absoluteUrl, buildPageMetadata } from "@/lib/seo";
 import { getAgencyVerificationLabel } from "@/lib/trust";
+
+export async function generateMetadata({
+  params,
+  searchParams
+}: {
+  params: Promise<{ agencyId: string }>;
+  searchParams: Promise<{ lang?: string }>;
+}): Promise<Metadata> {
+  const { agencyId } = await params;
+  const { lang } = await searchParams;
+  const locale = resolveLocale(lang);
+  const profile = await getAgencyProfileById(agencyId);
+
+  if (!profile) {
+    return buildPageMetadata({
+      title: locale === "ar" ? "الوكالة غير موجودة" : "Agence introuvable",
+      description: locale === "ar" ? "تعذر العثور على هذه الوكالة." : "Impossible de trouver cette agence.",
+      path: `/agencies/${agencyId}`,
+      image: "/images/agencies.jpg"
+    });
+  }
+
+  return buildPageMetadata({
+    title: locale === "ar" ? `${profile.name} | وكالة ورحلات` : `${profile.name} | Agence et voyages`,
+    description:
+      locale === "ar"
+        ? `${profile.name} في ${profile.city || "المغرب"}: رحلات منشورة، تقييمات، وسائل تواصل، ومقاعد متاحة.`
+        : `${profile.name} a ${profile.city || "Maroc"} : voyages publies, note, contacts et places disponibles.`,
+    path: `/agencies/${agencyId}`,
+    image: profile.coverImage || "/images/agencies.jpg"
+  });
+}
 
 export default async function AgencyProfilePage({
   params,
@@ -109,9 +143,31 @@ export default async function AgencyProfilePage({
           "Contact direct via WhatsApp ou telephone",
           `${profile.stats?.tripsCount || trips.length} voyages publies`
         ];
+  const travelAgencySchema = {
+    "@context": "https://schema.org",
+    "@type": "TravelAgency",
+    name: profile.name,
+    description: profile.description,
+    address: profile.city,
+    telephone: profile.phone || undefined,
+    image: absoluteUrl(coverImage),
+    url: absoluteUrl(`/agencies/${agencyId}`),
+    aggregateRating:
+      rating > 0
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: rating.toFixed(1),
+            reviewCount: Math.max(Number(profile.stats?.reservationsCount || 0), 1)
+          }
+        : undefined
+  };
 
   return (
     <main dir={getDirection(locale)} className="page-shell space-y-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(travelAgencySchema) }}
+      />
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-[1.75rem] bg-white px-5 py-4 shadow-card">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-ink/45">{copy.travelSide}</p>
@@ -169,7 +225,7 @@ export default async function AgencyProfilePage({
               </div>
               <div className="flex flex-wrap gap-3">
                 <a href="#agency-trips" className="rounded-full bg-clay px-4 py-2 font-semibold text-white transition hover:brightness-105">
-                  {locale === "ar" ? "شاهد الرحلات" : "Voir les voyages"}
+                  {locale === "ar" ? "احجز رحلة" : "Explorer les voyages"}
                 </a>
                 {session?.user ? (
                   <>
@@ -181,7 +237,7 @@ export default async function AgencyProfilePage({
                         data-analytics-event="whatsapp_click"
                         className="rounded-full bg-forest px-4 py-2 font-semibold text-white transition hover:bg-forest/90"
                       >
-                        {copy.contactAction}
+                        {locale === "ar" ? "تواصل عبر واتساب" : "Contacter sur WhatsApp"}
                       </a>
                     ) : null}
                     {profile.phone ? (
@@ -189,7 +245,7 @@ export default async function AgencyProfilePage({
                         href={`tel:${String(profile.phone).replace(/\s+/g, "")}`}
                         className="rounded-full border border-ink/10 px-4 py-2 font-semibold text-ink transition hover:border-clay hover:text-clay"
                       >
-                        {copy.callAction}
+                        {locale === "ar" ? "اتصال سريع" : "Appeler"}
                       </a>
                     ) : null}
                   </>
@@ -248,6 +304,39 @@ export default async function AgencyProfilePage({
                 0
               )}
           </p>
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] border border-[#f97316]/10 bg-[linear-gradient(180deg,#fff7ed,#ffffff)] p-6 shadow-card">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-sm uppercase tracking-[0.25em] text-[#c2410c]">
+              {locale === "ar" ? "الخطوة التالية" : "Prochaine action"}
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-ink">
+              {locale === "ar" ? "شوف الرحلات المتاحة ثم انتقل مباشرة إلى الحجز أو التواصل" : "Consultez les voyages ouverts puis passez directement a la reservation ou au contact"}
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-ink/70">
+              {locale === "ar"
+                ? "هذه الصفحة صممت لتقارن أولاً، ثم تختار الرحلة، ثم تتخذ الإجراء المناسب بدون تشتيت."
+                : "Cette page est pensee pour comparer d'abord, choisir le bon voyage ensuite, puis agir sans friction."}
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <a href="#agency-trips" className="inline-flex items-center justify-center rounded-full bg-[#f97316] px-5 py-3 font-semibold text-white">
+              {locale === "ar" ? "استكشف الرحلات" : "Explorer les voyages"}
+            </a>
+            {whatsappDigits ? (
+              <a
+                href={`https://wa.me/${whatsappDigits}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-ink/10 bg-white px-5 py-3 font-semibold text-ink"
+              >
+                {locale === "ar" ? "تواصل مع الوكالة" : "Contacter l'agence"}
+              </a>
+            ) : null}
+          </div>
         </div>
       </section>
 

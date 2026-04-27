@@ -25,7 +25,11 @@ export function HomeTripCodeCard({ locale }: { locale: SiteLocale }) {
 
   return (
     <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+      <label htmlFor="trip-code-input" className="block text-sm font-semibold text-slate-700">
+        {locale === "ar" ? "Trip Code" : "Code voyage"}
+      </label>
       <input
+        id="trip-code-input"
         type="text"
         value={tripCode}
         onChange={(event) => {
@@ -34,16 +38,23 @@ export function HomeTripCodeCard({ locale }: { locale: SiteLocale }) {
             setError("");
           }
         }}
-        placeholder="دخل Trip Code"
+        placeholder={locale === "ar" ? "مثال: MTB-2048" : "Exemple : MTB-2048"}
+        autoCapitalize="characters"
+        autoCorrect="off"
         className="w-full rounded-2xl border border-[#0f3d2e]/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0f3d2e]/30 focus:ring-2 focus:ring-[#0f3d2e]/15"
       />
+      <p className="text-sm leading-6 text-slate-500">
+        {locale === "ar"
+          ? "أدخل الكود الذي أرسلته لك الوكالة للوصول إلى تفاصيل رحلتك."
+          : "Saisissez le code partage par votre agence pour acceder a votre voyage."}
+      </p>
       <button
         type="submit"
         className="w-full rounded-full bg-[#f97316] px-5 py-3 font-semibold text-white transition hover:bg-[#ea580c] sm:w-auto"
       >
-        دخول
+        {locale === "ar" ? "الدخول إلى الرحلة" : "Acceder au voyage"}
       </button>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p aria-live="polite" className="text-sm text-red-600">{error}</p> : null}
     </form>
   );
 }

@@ -37,11 +37,14 @@ export default async function HomePage({
       return [];
     })
   ]);
+
   const canCreateAgency = Boolean(session?.user?.canCreateAgency);
   const featuredAgencies = agencies.slice(0, 3);
   const featuredSaleListings = saleListings.slice(0, 4);
   const totalTrips = agencies.reduce((sum: number, agency: any) => sum + Number(agency.stats?.tripsCount || 0), 0);
   const totalOpenSeats = agencies.reduce((sum: number, agency: any) => sum + Number(agency.stats?.openSeats || 0), 0);
+  const verifiedAgencies = agencies.filter((agency: any) => agency.verificationStatus === "verified").length;
+
   const homeStats = [
     {
       label: isArabic ? "وكالات نشيطة" : "Agences actives",
@@ -56,63 +59,20 @@ export default async function HomePage({
       value: formatLocaleNumber(totalOpenSeats, locale)
     },
     {
-      label: isArabic ? "معدات للبيع" : "Produits",
-      value: formatLocaleNumber(featuredSaleListings.length, locale)
+      label: isArabic ? "وكالات موثقة" : "Agences verifiees",
+      value: formatLocaleNumber(verifiedAgencies, locale)
     }
   ];
+
   const services = [
     {
-      badgeLabel: isArabic ? "رفقاء" : "Compagnons",
-      title: isArabic ? "رفيق سفر" : "Partenaire de voyage",
-      description: isArabic ? "لقى ناس بنفس اهتماماتك وسافر معهم." : "Trouvez des voyageurs qui partagent la meme passion.",
-      href: withLocale("/travel-partners", locale),
-      image: "/images/travel-partner.jpg",
-      ctaLabel: isArabic ? "اكتشف" : "Voir plus",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M7 18v-1a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4v1" />
-          <circle cx="12" cy="8" r="3" />
-          <path d="M4 18v-1a3 3 0 0 1 2-2.8" />
-          <path d="M20 18v-1a3 3 0 0 0-2-2.8" />
-        </svg>
-      )
-    },
-    {
-      badgeLabel: isArabic ? "كراء" : "Location",
-      title: isArabic ? "كراء معدات" : "Location de materiel",
-      description: isArabic ? "كري معدات التخييم والسفر بسهولة." : "Louez le materiel qu'il vous faut pour votre trip.",
-      href: withLocale("/rentals", locale),
-      image: "/images/rent-gear.jpg",
-      ctaLabel: isArabic ? "اكتشف" : "Voir plus",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M7 7h10l1.5 6.5H5.5L7 7Z" />
-          <path d="M8 13.5V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-3.5" />
-          <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
-        </svg>
-      )
-    },
-    {
-      badgeLabel: isArabic ? "شراء" : "Acheter",
-      title: isArabic ? "شراء معدات" : "Acheter du materiel",
-      description: isArabic ? "شري معدات جديدة أو مستعملة." : "Parcourez les produits neufs ou d'occasion.",
-      href: withLocale("/listings/new#sale-products", locale),
-      image: "/images/buy-gear.jpg",
-      ctaLabel: isArabic ? "اكتشف" : "Voir plus",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M5 7h14l-1 11H6L5 7Z" />
-          <path d="M9 10V8a3 3 0 0 1 6 0v2" />
-        </svg>
-      )
-    },
-    {
-      badgeLabel: isArabic ? "وكالات" : "Agences",
-      title: isArabic ? "وكالات السفر" : "Agences",
-      description: isArabic ? "رحلات منظمة مع وكالات موثوقة." : "Decouvrez des voyages organises par des agences fiables.",
+      badgeLabel: isArabic ? "الأكثر طلباً" : "Populaire",
+      title: isArabic ? "رحلات مع وكالات" : "Voyages avec agences",
+      description: isArabic ? "قارن بين وكالات موثقة، البرامج، والمقاعد المتاحة بسرعة." : "Comparez rapidement les agences verifiees, les programmes et les places disponibles.",
       href: withLocale("/agencies", locale),
       image: "/images/agencies.jpg",
-      ctaLabel: isArabic ? "اكتشف" : "Voir plus",
+      ctaLabel: isArabic ? "استكشف الرحلات" : "Explorer",
+      accent: "#0f3d2e",
       icon: (
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
           <rect x="3" y="5" width="18" height="14" rx="2.5" />
@@ -122,12 +82,44 @@ export default async function HomePage({
       )
     },
     {
+      badgeLabel: isArabic ? "معدات" : "Equipement",
+      title: isArabic ? "كراء المعدات" : "Louer du materiel",
+      description: isArabic ? "استأجر تجهيزات السفر والتخييم بسهولة عندما تحتاجها." : "Accedez au materiel de voyage et de camping quand vous en avez besoin.",
+      href: withLocale("/rentals", locale),
+      image: "/images/rent-gear.jpg",
+      ctaLabel: isArabic ? "شوف العروض" : "Voir les offres",
+      accent: "#14532d",
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M7 7h10l1.5 6.5H5.5L7 7Z" />
+          <path d="M8 13.5V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-3.5" />
+          <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
+        </svg>
+      )
+    },
+    {
+      badgeLabel: isArabic ? "متجر" : "Boutique",
+      title: isArabic ? "شراء معدات" : "Acheter du materiel",
+      description: isArabic ? "اكتشف منتجات جديدة ومستعملة من بائعين موثقين داخل المنصة." : "Decouvrez des produits neufs ou d'occasion proposes par des vendeurs verifies.",
+      href: withLocale("/listings/new#sale-products", locale),
+      image: "/images/buy-gear.jpg",
+      ctaLabel: isArabic ? "تصفح المتجر" : "Voir la boutique",
+      accent: "#f97316",
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M5 7h14l-1 11H6L5 7Z" />
+          <path d="M9 10V8a3 3 0 0 1 6 0v2" />
+        </svg>
+      )
+    },
+    {
       badgeLabel: "Camping",
-      title: isArabic ? "أماكن التخييم" : "Camping",
-      description: isArabic ? "اكتشف أفضل أماكن التخييم في المغرب." : "Explorez les plus beaux spots pour camper.",
+      title: isArabic ? "أماكن التخييم" : "Lieux de camping",
+      description: isArabic ? "اعثر على أماكن موصى بها مع صور، تفاصيل، وتقييمات أوضح." : "Trouvez des spots recommandes avec photos, details et signaux de confiance plus clairs.",
       href: withLocale("/camping", locale),
       image: "/images/camping.jpg",
-      ctaLabel: isArabic ? "اكتشف" : "Voir plus",
+      ctaLabel: isArabic ? "اكتشف الأماكن" : "Decouvrir",
+      accent: "#0f3d2e",
       icon: (
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
           <path d="M12 4v16" />
@@ -135,44 +127,52 @@ export default async function HomePage({
           <path d="M8.5 12.5h7" />
         </svg>
       )
-    },
-    {
-      badgeLabel: "Trip Code",
-      title: "Trip Code",
-      description: isArabic ? "دخل الكود وشوف تفاصيل رحلتك." : "Entrez votre code pour acceder aux details du voyage.",
-      href: `${withLocale("/", locale)}#trip-code`,
-      image: "/images/trip-code.jpg",
-      ctaLabel: isArabic ? "اكتشف" : "Voir plus",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <rect x="4" y="6" width="16" height="12" rx="2.5" />
-          <path d="M8 10h8" />
-          <path d="M8 14h5" />
-        </svg>
-      )
     }
   ];
-  const trustPoints = [
-    { label: isArabic ? "منصة آمنة" : "Plateforme sure" },
-    { label: isArabic ? "تقييمات حقيقية" : "Avis reels" },
-    { label: isArabic ? "دعم مستمر" : "Support continu" },
-    { label: isArabic ? "مجتمع مسافرين" : "Communaute de voyageurs" }
+
+  const supportTools = [
+    {
+      title: "Trip Code",
+      description: isArabic ? "دخول مباشر إلى تفاصيل الرحلة بعد تأكيد الحجز." : "Acces direct aux details du voyage apres confirmation.",
+      href: `${withLocale("/", locale)}#trip-code`
+    },
+    {
+      title: isArabic ? "رفيق سفر" : "Partenaire de voyage",
+      description: isArabic ? "ابحث عن شخص يشاركك نفس الوجهة أو نفس الاهتمامات." : "Trouvez quelqu'un qui partage votre destination ou votre style de voyage.",
+      href: withLocale("/travel-partners", locale)
+    }
   ];
+
+  const trustPoints = [
+    {
+      title: isArabic ? "وكالات وبائعون موثقون" : "Agences et vendeurs verifies",
+      description: isArabic ? "إشارات التوثيق ظاهرة من البداية لتقليل التردد." : "Les signaux de verification apparaissent plus tot pour reduire l'hesitation."
+    },
+    {
+      title: isArabic ? "تقييمات ومراجعات" : "Notes et avis",
+      description: isArabic ? "المستخدم يقدر يقارن بسرعة قبل ما يتواصل أو يحجز." : "Les utilisateurs peuvent comparer plus vite avant de contacter ou reserver."
+    },
+    {
+      title: isArabic ? "خطوات واضحة" : "Parcours plus clair",
+      description: isArabic ? "كل صفحة عندها هدف واضح: استكشاف، مقارنة، أو دخول مباشر." : "Chaque page sert mieux une intention claire : explorer, comparer ou acceder."
+    }
+  ];
+
   const steps = [
     {
       number: "1",
-      title: isArabic ? "اختار الخدمة" : "Choisissez le service",
-      description: isArabic ? "رحلات، معدات، تخييم أو رفيق سفر حسب الحاجة ديالك." : "Voyage, materiel, camping ou compagnon selon votre besoin."
+      title: isArabic ? "اختار المسار المناسب" : "Choisissez le bon parcours",
+      description: isArabic ? "رحلات، معدات، تخييم أو شريك سفر من الواجهة الرئيسية مباشرة." : "Voyages, equipements, camping ou partenaire de route directement depuis l'accueil."
     },
     {
       number: "2",
-      title: isArabic ? "تواصل أو احجز" : "Contactez ou reservez",
-      description: isArabic ? "وصل بسرعة للوكالة أو البائع أو الشريك المناسب." : "Contactez rapidement la bonne agence, le bon vendeur ou partenaire."
+      title: isArabic ? "قارن قبل ما تقرر" : "Comparez avant d'agir",
+      description: isArabic ? "شوف التوثيق، التقييم، المدينة، والمقاعد أو السعر في ثوانٍ." : "Verification, note, ville, places ou prix sont plus lisibles en quelques secondes."
     },
     {
       number: "3",
-      title: isArabic ? "سافر واستمتع" : "Voyagez et profitez",
-      description: isArabic ? "كلشي منظم فواجهة واحدة باش تبقى الرحلة أسهل." : "Tout est centralise pour rendre l'experience plus simple."
+      title: isArabic ? "تواصل أو ادخل مباشرة" : "Contactez ou accedez directement",
+      description: isArabic ? "انطلق نحو الحجز، التفاصيل، أو الرسائل بدون لف ودوران." : "Passez plus vite a la reservation, au detail ou a la messagerie."
     }
   ];
 
@@ -188,64 +188,66 @@ export default async function HomePage({
             sizes="100vw"
             className="absolute inset-0 object-cover"
           />
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(7,31,24,0.88),rgba(15,61,46,0.72),rgba(15,61,46,0.35))]" />
-          <div className="relative grid gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1.25fr_0.75fr] lg:px-10 lg:py-12">
-            <div className="hero-fade-up space-y-5 text-white">
-              <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold tracking-[0.25em] text-white/85">
-                {isArabic ? "Moroccan Trip" : "Moroccan Trip"}
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(7,31,24,0.9),rgba(15,61,46,0.76),rgba(15,61,46,0.42))]" />
+          <div className="relative grid gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1.2fr_0.8fr] lg:px-10 lg:py-12">
+            <div className="hero-fade-up space-y-6 text-white">
+              <span className="inline-flex w-fit rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold tracking-[0.25em] text-white/85">
+                {isArabic ? "منصة سفر أوضح وأسهل" : "Une plateforme voyage plus claire"}
               </span>
-              <div className="space-y-3">
-                <h1 className="max-w-3xl text-4xl font-black leading-[1.1] sm:text-5xl lg:text-6xl">
-                  كل رحلتك تبدأ من هنا
+              <div className="space-y-4">
+                <h1 className="max-w-3xl text-4xl font-black leading-[1.08] sm:text-5xl lg:text-6xl">
+                  {isArabic ? "احجز الرحلة، اكتشف الوكالة، ووصل للمعدات من مكان واحد" : "Trouvez votre voyage, votre agence et votre equipement depuis un seul endroit"}
                 </h1>
                 <p className="max-w-2xl text-sm leading-8 text-white/85 sm:text-base">
-                  رحلات، وكالات، معدات، تخييم ورفقاء سفر في مكان واحد
+                  {isArabic
+                    ? "Moroccan Trip كتجمع الرحلات المنظمة، الوكالات الموثقة، التخييم، وشراء أو كراء المعدات في تجربة أبسط وأسهل في الفهم."
+                    : "Moroccan Trip reunit voyages organises, agences verifiees, camping et equipements dans une experience plus simple a comprendre et a utiliser."}
                 </p>
               </div>
-
               <form
                 action={withLocale("/agencies", locale)}
                 className="rounded-[1.75rem] border border-white/15 bg-white/95 p-3 shadow-2xl backdrop-blur sm:p-4"
               >
                 <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
                   <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="sr-only" htmlFor="search-query">
+                      {isArabic ? "ابحث عن رحلة" : "Recherche voyage"}
+                    </label>
                     <input
+                      id="search-query"
                       type="text"
                       name="q"
-                      placeholder={isArabic ? "فين بغيتي تمشي؟" : "Ou voulez-vous partir ?"}
+                      placeholder={isArabic ? "مثلاً: مرزوكة، إفران، توبقال" : "Exemple : Merzouga, Ifrane, Toubkal"}
                       className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0f3d2e]/30 focus:ring-2 focus:ring-[#0f3d2e]/10"
                     />
+                    <label className="sr-only" htmlFor="search-location">
+                      {isArabic ? "المدينة أو الوجهة" : "Ville ou destination"}
+                    </label>
                     <input
+                      id="search-location"
                       type="text"
                       name="location"
-                      placeholder={isArabic ? "مدينة أو وجهة" : "Ville ou destination"}
+                      placeholder={isArabic ? "المدينة أو نقطة الانطلاق" : "Ville ou point de depart"}
                       className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0f3d2e]/30 focus:ring-2 focus:ring-[#0f3d2e]/10"
                     />
                   </div>
                   <button className="rounded-2xl bg-[#f97316] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ea580c]">
-                    {isArabic ? "ابحث دابا" : "Rechercher"}
+                    {isArabic ? "استكشف الرحلات" : "Explorer les voyages"}
                   </button>
                 </div>
               </form>
-
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link
                   href={withLocale("/agencies", locale)}
                   className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-[#0f3d2e] transition hover:-translate-y-0.5 hover:bg-slate-100"
                 >
-                  اكتشف الرحلات
+                  {isArabic ? "ابدأ بالرحلات" : "Commencer par les voyages"}
                 </Link>
                 <Link
-                  href={withLocale("/rentals", locale)}
+                  href={withLocale("/camping", locale)}
                   className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/20"
                 >
-                  كراء المعدات
-                </Link>
-                <Link
-                  href={withLocale("/travel-partners", locale)}
-                  className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/20"
-                >
-                  رفيق سفر
+                  {isArabic ? "اكتشف التخييم" : "Explorer le camping"}
                 </Link>
                 {canCreateAgency ? (
                   <Link
@@ -256,76 +258,128 @@ export default async function HomePage({
                   </Link>
                 ) : null}
               </div>
+              <div className="flex flex-wrap gap-3 text-xs font-semibold text-white/90">
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">
+                  {isArabic ? "وكالات موثقة" : "Agences verifiees"}
+                </span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">
+                  {isArabic ? "تقييمات ومراجعات" : "Notes et avis"}
+                </span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">
+                  {isArabic ? "دخول سريع عبر Trip Code" : "Acces rapide par Trip Code"}
+                </span>
+              </div>
             </div>
-
-            <div className="hero-fade-up grid gap-4 self-end sm:grid-cols-2 lg:grid-cols-1">
-              {homeStats.map((item, index) => (
-                <div
-                  key={item.label}
-                  className={`${index === homeStats.length - 1 ? "bg-[#f97316] text-white" : "bg-white/12 text-white"} rounded-[1.5rem] border border-white/10 p-5 backdrop-blur`}
+            <div className="hero-fade-up grid gap-4 self-end">
+              <div className="rounded-[1.75rem] border border-white/10 bg-white/12 p-5 text-white backdrop-blur">
+                <p className="text-xs font-bold tracking-[0.24em] text-white/70">
+                  {isArabic ? "من أين تبدأ؟" : "Par ou commencer"}
+                </p>
+                <h2 className="mt-3 text-2xl font-black">
+                  {isArabic ? "إذا كنت أول مرة هنا، ابدأ بالوكالات" : "Si vous decouvrez la plateforme, commencez par les agences"}
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-white/80">
+                  {isArabic
+                    ? "ستفهم بسرعة الوجهات المتاحة، عدد المقاعد، والجهات الأكثر موثوقية."
+                    : "C'est le chemin le plus simple pour comprendre les destinations, les places disponibles et les acteurs les plus fiables."}
+                </p>
+                <Link
+                  href={withLocale("/agencies", locale)}
+                  className="mt-5 inline-flex rounded-full bg-[#f97316] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#ea580c]"
                 >
-                  <p className={`${index === homeStats.length - 1 ? "text-white/80" : "text-white/70"} text-xs font-bold tracking-[0.24em]`}>
-                    {item.label}
-                  </p>
-                  <p className="mt-3 text-3xl font-black">{item.value}</p>
-                </div>
-              ))}
+                  {isArabic ? "شوف الوكالات" : "Voir les agences"}
+                </Link>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+                {homeStats.map((item, index) => (
+                  <div
+                    key={item.label}
+                    className={`${index === homeStats.length - 1 ? "bg-[#f97316] text-white" : "bg-white/12 text-white"} rounded-[1.5rem] border border-white/10 p-5 backdrop-blur`}
+                  >
+                    <p className={`${index === homeStats.length - 1 ? "text-white/80" : "text-white/70"} text-xs font-bold tracking-[0.24em]`}>
+                      {item.label}
+                    </p>
+                    <p className="mt-3 text-3xl font-black">{item.value}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="space-y-5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+        <div className="space-y-5">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#f97316]">
-              {isArabic ? "الخدمات الرئيسية" : "Services"}
+              {isArabic ? "المسارات الرئيسية" : "Parcours principaux"}
             </p>
             <h2 className="mt-2 text-3xl font-black text-slate-900">
-              {isArabic ? "كلشي اللي محتاج للسفر فواجهة وحدة" : "Tout ce qu'il faut pour voyager"}
+              {isArabic ? "اختار بسرعة الخدمة اللي تناسبك" : "Choisissez rapidement le bon point d'entree"}
             </h2>
-            <p className="mt-2 text-sm leading-7 text-slate-600">
-              {isArabic ? "خدمات واضحة، صور جذابة، ووصول سريع لكل قسم مهم." : "Acces direct aux sections les plus importantes de la plateforme."}
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
+              {isArabic ? "قسمنا البداية إلى مسارات واضحة باش المستخدم يفهم المنصة خلال أول ثواني." : "L'accueil est organise autour de parcours clairs pour etre compris en quelques secondes."}
             </p>
           </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {services.map((service) => (
+              <HomeServiceCard
+                key={service.title}
+                title={service.title}
+                description={service.description}
+                href={service.href}
+                image={service.image}
+                icon={service.icon}
+                badgeLabel={service.badgeLabel}
+                ctaLabel={service.ctaLabel}
+                accent={service.accent}
+              />
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-          {services.map((service) => (
-            <HomeServiceCard
-              key={service.title}
-              title={service.title}
-              description={service.description}
-              href={service.href}
-              image={service.image}
-              icon={service.icon}
-              badgeLabel={service.badgeLabel}
-              ctaLabel={service.ctaLabel}
-              accent="#0f3d2e"
-            />
-          ))}
-        </div>
+        <aside className="section-card p-5 sm:p-6">
+          <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#f97316]">
+            {isArabic ? "أدوات مفيدة" : "Outils utiles"}
+          </p>
+          <div className="mt-4 space-y-4">
+            {supportTools.map((tool) => (
+              <Link
+                key={tool.title}
+                href={tool.href}
+                className="block rounded-[1.5rem] border border-slate-100 bg-slate-50 p-4 transition hover:border-[#0f3d2e]/15 hover:bg-white hover:shadow-sm"
+              >
+                <h3 className="text-lg font-black text-slate-900">{tool.title}</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600">{tool.description}</p>
+              </Link>
+            ))}
+          </div>
+        </aside>
       </section>
 
-      <section className="rounded-[2rem] bg-white p-5 shadow-[0_18px_45px_rgba(15,61,46,0.08)] sm:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <section className="section-card p-5 sm:p-7">
+        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#f97316]">
-              {isArabic ? "الثقة أولاً" : "Confiance"}
+              {isArabic ? "الثقة والوضوح" : "Confiance et clarte"}
             </p>
             <h2 className="mt-2 text-2xl font-black text-slate-900">
-              {isArabic ? "منصة مبنية على الوضوح والثقة" : "Une experience plus fiable"}
+              {isArabic ? "المنصة كتبيّن لك إشارات الثقة قبل ما تطلب أي خطوة" : "La plateforme montre les bons signaux avant chaque action"}
             </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              {isArabic ? "التوثيق، التقييم، والهدف من كل صفحة أصبح ظاهر أكثر لتسهيل القرار وتقليل التردد." : "Verification, notes et intention de page sont mis en avant pour faciliter la decision et reduire les frictions."}
+            </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-3">
             {trustPoints.map((point) => (
-              <div key={point.label} className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0f3d2e] text-white">
+              <article key={point.title} className="rounded-[1.5rem] bg-slate-50 p-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0f3d2e] text-white">
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m5 13 4 4L19 7" />
                   </svg>
-                </span>
-                <span className="text-sm font-semibold text-slate-800">{point.label}</span>
-              </div>
+                </div>
+                <h3 className="mt-4 text-lg font-black text-slate-900">{point.title}</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600">{point.description}</p>
+              </article>
             ))}
           </div>
         </div>
@@ -333,7 +387,7 @@ export default async function HomePage({
 
       <section className="grid gap-4 lg:grid-cols-3">
         {steps.map((step) => (
-          <article key={step.number} className="rounded-[1.75rem] bg-white p-6 shadow-[0_18px_45px_rgba(15,61,46,0.08)]">
+          <article key={step.number} className="section-card p-6">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0f3d2e] text-lg font-black text-white">
               {step.number}
             </div>
@@ -349,28 +403,30 @@ export default async function HomePage({
       >
         <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="relative min-h-[260px]">
-            <img
-              src="/images/hero-main.jpg"
+            <Image
+              src="/images/trip-code.jpg"
               alt="Trip Code"
-              className="absolute inset-0 h-full w-full object-cover"
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
             <div className="relative flex h-full flex-col justify-end p-6 text-white sm:p-8">
               <p className="text-sm font-bold uppercase tracking-[0.24em] text-white/80">Trip Code</p>
               <h2 className="mt-2 text-3xl font-black">
-                {isArabic ? "دخل الكود وكمّل الرحلة بثقة" : "Accedez rapidement a votre voyage"}
+                {isArabic ? "دخول سريع إلى تفاصيل الرحلة" : "Accedez rapidement aux details du voyage"}
               </h2>
               <p className="mt-3 max-w-lg text-sm leading-7 text-white/80">
                 {isArabic
-                  ? "من بعد تأكيد الحجز، الوكالة كتقدر تعطيك Trip Code باش توصل لتفاصيل الرحلة والمعدات المرتبطة بها."
-                  : "Apres confirmation, l'agence peut partager un code pour acceder aux details du voyage et du materiel associe."}
+                  ? "من بعد تأكيد الحجز، الوكالة تقدر تعطيك Trip Code باش تدخل مباشرة للرحلة والمعلومات المرتبطة بها."
+                  : "Apres confirmation, l'agence peut partager un Trip Code pour ouvrir directement votre voyage et les informations associees."}
               </p>
             </div>
           </div>
           <div className="p-6 sm:p-8">
             <div className="rounded-[1.75rem] bg-slate-50 p-5 sm:p-6">
               <p className="text-sm font-semibold text-slate-500">
-                {isArabic ? "طريقة سريعة للوصول للتفاصيل" : "Acces rapide"}
+                {isArabic ? "طريقة سريعة وواضحة" : "Acces rapide et simple"}
               </p>
               <HomeTripCodeCard locale={locale} />
             </div>
@@ -378,93 +434,110 @@ export default async function HomePage({
         </div>
       </section>
 
-        <section className="space-y-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#f97316]">
-                {isArabic ? "مختارات مميزة" : "Selection"}
+      <section className="space-y-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#f97316]">
+              {isArabic ? "وكالات مختارة" : "Agences a la une"}
             </p>
             <h2 className="mt-2 text-3xl font-black text-slate-900">
-              {isArabic ? "وكالات نشيطة ورحلات جاهزة" : "Agences et voyages a decouvrir"}
+              {isArabic ? "ابدأ بجهات أكثر وضوحاً وثقة" : "Commencez par des agences plus claires et plus fiables"}
             </h2>
+            <p className="mt-2 text-sm leading-7 text-slate-600">
+              {isArabic ? "عدد الرحلات، المقاعد، التوثيق، والتقييم ظاهر من البداية باش القرار يكون أسرع." : "Trips, places, verification et confiance apparaissent plus tot pour aider la decision."}
+            </p>
           </div>
           <Link
             href={withLocale("/agencies", locale)}
             className="inline-flex rounded-full bg-[#0f3d2e] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#14533f]"
-            >
-              {isArabic ? "اكتشف الرحلات" : "Decouvrir"}
-            </Link>
+          >
+            {isArabic ? "عرض كل الوكالات" : "Voir toutes les agences"}
+          </Link>
+        </div>
+        {featuredAgencies.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {featuredAgencies.map((agency: any) => {
+              const logo = agency.logo || "/images/agencies.jpg";
+              const coverImage = agency.coverImage || "/images/agencies.jpg";
+              const rating = Number(agency.rating || 0);
+              const profileCompleteness = Number(agency.profileCompleteness || 0);
+
+              return (
+                <article
+                  key={agency._id}
+                  className="group overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-[0_18px_45px_rgba(15,61,46,0.08)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_26px_60px_rgba(15,61,46,0.16)]"
+                >
+                  <div className="relative h-52 overflow-hidden">
+                    <Image
+                      src={coverImage}
+                      alt={agency.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover object-center transition duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.06)_0%,rgba(15,61,46,0.2)_50%,rgba(0,0,0,0.76)_100%)]" />
+                    <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-black/40 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md">
+                        {isArabic ? "وكالة" : "Agence"}
+                      </span>
+                      <VerificationBadge type="agency" status={agency.verificationStatus} locale={locale} />
+                    </div>
+                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-2xl font-black text-white">{agency.name}</h3>
+                        <p className="mt-2 text-sm text-white/80">{agency.city}</p>
+                      </div>
+                      <div className="relative h-14 w-14 overflow-hidden rounded-full border border-white/30 bg-white/20 backdrop-blur">
+                        <Image src={logo} alt={agency.name} fill sizes="56px" className="object-cover" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4 p-5">
+                    <p className="line-clamp-3 text-sm leading-7 text-slate-600">{agency.description}</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="rounded-[1.4rem] bg-slate-50 p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{isArabic ? "الرحلات" : "Trips"}</p>
+                        <p className="mt-2 text-2xl font-black text-slate-900">{agency.stats?.tripsCount || 0}</p>
+                      </div>
+                      <div className="rounded-[1.4rem] bg-slate-50 p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{isArabic ? "التقييم" : "Note"}</p>
+                        <p className="mt-2 text-2xl font-black text-slate-900">{rating > 0 ? rating.toFixed(1) : "4.8"}</p>
+                      </div>
+                      <div className="rounded-[1.4rem] bg-slate-50 p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{isArabic ? "الملف" : "Profil"}</p>
+                        <p className="mt-2 text-2xl font-black text-slate-900">{profileCompleteness}%</p>
+                      </div>
+                    </div>
+                    <Link
+                      href={withLocale(`/agencies/${agency._id}`, locale)}
+                      className="inline-flex rounded-full bg-[#0f3d2e] px-4 py-3 font-semibold text-white transition hover:bg-[#14533f]"
+                    >
+                      {isArabic ? "عرض الوكالة" : "Voir l'agence"}
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
           </div>
-          {featuredAgencies.length > 0 ? (
-            <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {featuredAgencies.map((agency: any) => {
-                const logo = agency.logo || "/images/agencies.jpg";
-                const coverImage = agency.coverImage || "/images/agencies.jpg";
+        ) : null}
+      </section>
 
-                return (
-                  <article
-                    key={agency._id}
-                    className="group overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-[0_18px_45px_rgba(15,61,46,0.08)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_26px_60px_rgba(15,61,46,0.16)]"
-                  >
-                    <div className="relative h-52 overflow-hidden">
-                      <Image src={coverImage} alt={agency.name} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover object-center transition duration-700 group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.06)_0%,rgba(15,61,46,0.2)_50%,rgba(0,0,0,0.76)_100%)]" />
-                      <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-black/40 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md">
-                          {isArabic ? "وكالة" : "Agence"}
-                        </span>
-                        <VerificationBadge type="agency" status={agency.verificationStatus} locale={locale} />
-                      </div>
-                      <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className="truncate text-2xl font-black text-white">{agency.name}</h3>
-                          <p className="mt-2 text-sm text-white/80">{agency.city}</p>
-                        </div>
-                        <div className="relative h-14 w-14 overflow-hidden rounded-full border border-white/30 bg-white/20 backdrop-blur">
-                          <Image src={logo} alt={agency.name} fill sizes="56px" className="object-cover" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-4 p-5">
-                      <p className="line-clamp-3 text-sm leading-7 text-slate-600">{agency.description}</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-[1.4rem] bg-slate-50 p-4">
-                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{isArabic ? "الرحلات" : "Trips"}</p>
-                          <p className="mt-2 text-2xl font-black text-slate-900">{agency.stats?.tripsCount || 0}</p>
-                        </div>
-                        <div className="rounded-[1.4rem] bg-slate-50 p-4">
-                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{isArabic ? "المقاعد" : "Seats"}</p>
-                          <p className="mt-2 text-2xl font-black text-slate-900">{agency.stats?.openSeats || 0}</p>
-                        </div>
-                      </div>
-                      <Link
-                        href={withLocale(`/agencies/${agency._id}`, locale)}
-                        className="inline-flex rounded-full bg-[#0f3d2e] px-4 py-3 font-semibold text-white transition hover:bg-[#14533f]"
-                      >
-                        {isArabic ? "عرض الوكالة" : "Voir l'agence"}
-                      </Link>
-                    </div>
-                  </article>
-                );
-              })}
-            </section>
-          ) : null}
-        </section>
-
-        <section className="space-y-5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <section className="space-y-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#f97316]">{isArabic ? "المتجر" : "Boutique"}</p>
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#f97316]">
+              {isArabic ? "المتجر" : "Boutique"}
+            </p>
             <h2 className="text-3xl font-black text-slate-900">
-              {isArabic ? "معدات ومنتجات جاهزة للبيع" : "Produits a vendre"}
+              {isArabic ? "منتجات أوضح مع ثقة أكثر" : "Des produits plus clairs et plus rassurants"}
             </h2>
             <p className="text-sm leading-7 text-slate-600">
-              {isArabic ? "نماذج من العروض المنشورة داخل المنصة." : "Quelques offres actives publiees sur la plateforme."}
+              {isArabic ? "السعر، حالة المنتج، البائع، والتوثيق أصبحوا ظاهرين بشكل أفضل داخل البطاقات." : "Prix, etat du produit, vendeur et verification sont mieux visibles dans les cartes."}
             </p>
           </div>
-          <div className="hidden items-center gap-3 sm:flex">
+          <div className="flex flex-wrap items-center gap-3">
             <Link href={withLocale("/listings/new#sale-products", locale)} className="rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700">
-              {isArabic ? "عرض الكل" : "Voir tous"}
+              {isArabic ? "تصفح العروض" : "Voir les offres"}
             </Link>
             <Link href={withLocale("/listings/new", locale)} className="rounded-full bg-[#f97316] px-4 py-2 font-semibold text-white">
               {isArabic ? "نشر إعلان" : "Publier"}
@@ -478,17 +551,10 @@ export default async function HomePage({
             ))}
           </div>
         ) : (
-          <div className="rounded-[2rem] bg-white p-6 text-sm text-slate-600 shadow-card">
-            {isArabic
-              ? "لا توجد حالياً منتجات بيع منشورة."
-              : "Aucun produit en vente publie pour le moment."}
+          <div className="section-card p-6 text-sm text-slate-600">
+            {isArabic ? "لا توجد حالياً منتجات بيع منشورة." : "Aucun produit en vente publie pour le moment."}
           </div>
         )}
-        <div className="sm:hidden">
-          <Link href={withLocale("/listings/new#sale-products", locale)} className="inline-flex rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700">
-            {isArabic ? "عرض الكل" : "Voir tous"}
-          </Link>
-        </div>
       </section>
 
       <section className="space-y-5">
@@ -496,14 +562,14 @@ export default async function HomePage({
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#f97316]">Camping</p>
             <h2 className="text-3xl font-black text-slate-900">
-              {isArabic ? "أماكن تخييم تستاهل الزيارة" : "Spots de camping"}
+              {isArabic ? "أماكن تخييم تستاهل الزيارة" : "Des spots de camping qui valent le detour"}
             </h2>
             <p className="text-sm leading-7 text-slate-600">
-              {isArabic ? "مختارات سريعة من أماكن التخييم النشطة داخل المنصة." : "Une selection legere des lieux de camping actifs."}
+              {isArabic ? "واجهة أوضح لاكتشاف الأماكن النشطة مع إشارات جودة إضافية." : "Une presentation plus lisible pour explorer les lieux actifs avec plus de signaux de qualite."}
             </p>
           </div>
-          <Link href={withLocale("/camping", locale)} className="hidden rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700 sm:inline-flex">
-            {isArabic ? "عرض جميع أماكن التخييم" : "Voir tous les lieux de camping"}
+          <Link href={withLocale("/camping", locale)} className="inline-flex rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700">
+            {isArabic ? "عرض جميع أماكن التخييم" : "Voir tous les lieux"}
           </Link>
         </div>
         {featuredCampingPlaces.length > 0 ? (
@@ -514,7 +580,13 @@ export default async function HomePage({
                 className="group overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-[0_18px_45px_rgba(15,61,46,0.08)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_26px_60px_rgba(15,61,46,0.16)]"
               >
                 <div className="relative h-56 overflow-hidden">
-                  <Image src={place.images?.[0] || "/images/camping.jpg"} alt={place.name} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover object-center transition duration-700 group-hover:scale-105" />
+                  <Image
+                    src={place.images?.[0] || "/images/camping.jpg"}
+                    alt={place.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover object-center transition duration-700 group-hover:scale-105"
+                  />
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.06)_0%,rgba(15,61,46,0.18)_50%,rgba(0,0,0,0.76)_100%)]" />
                   <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                     <span className="rounded-full bg-black/40 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md">
@@ -529,55 +601,73 @@ export default async function HomePage({
                 </div>
                 <div className="space-y-4 p-5">
                   <p className="line-clamp-3 text-sm leading-7 text-slate-600">{place.description}</p>
+                  <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                    {place.ratingAverage ? (
+                      <span className="rounded-full bg-slate-50 px-3 py-2">
+                        {isArabic ? "التقييم" : "Note"}: {place.ratingAverage}/5
+                      </span>
+                    ) : null}
+                    {place.reviewCount ? (
+                      <span className="rounded-full bg-slate-50 px-3 py-2">
+                        {place.reviewCount} {isArabic ? "مراجعات" : "avis"}
+                      </span>
+                    ) : null}
+                  </div>
                   <Link href={withLocale(`/camping/${place._id}`, locale)} className="inline-flex rounded-full bg-[#0f3d2e] px-4 py-3 font-semibold text-white transition hover:bg-[#14533f]">
-                    {isArabic ? "عرض التفاصيل" : "Voir details"}
+                    {isArabic ? "عرض التفاصيل" : "Voir les details"}
                   </Link>
                 </div>
               </article>
             ))}
           </div>
         ) : (
-          <div className="rounded-[2rem] bg-white p-6 text-sm text-slate-600 shadow-card">
-            {isArabic
-              ? "لا توجد أماكن تخييم منشورة حالياً."
-              : "Aucun lieu de camping publie pour le moment."}
+          <div className="section-card p-6 text-sm text-slate-600">
+            {isArabic ? "لا توجد أماكن تخييم منشورة حالياً." : "Aucun lieu de camping publie pour le moment."}
           </div>
         )}
-        <div className="sm:hidden">
-          <Link href={withLocale("/camping", locale)} className="inline-flex rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700">
-            {isArabic ? "عرض جميع أماكن التخييم" : "Voir tous les lieux de camping"}
-          </Link>
-        </div>
       </section>
 
       <section className="overflow-hidden rounded-[2rem] shadow-[0_22px_60px_rgba(15,61,46,0.16)]">
         <div className="relative">
-          <img
+          <Image
             src="/images/camping.jpg"
             alt={isArabic ? "منظر طبيعي بالمغرب" : "Paysage du Maroc"}
-            className="absolute inset-0 h-full w-full object-cover"
+            fill
+            sizes="100vw"
+            className="absolute inset-0 object-cover"
           />
           <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(15,61,46,0.88),rgba(15,61,46,0.65),rgba(15,61,46,0.48))]" />
           <div className="relative flex flex-col gap-4 px-6 py-10 text-white sm:px-8 sm:py-12 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm font-bold uppercase tracking-[0.24em] text-white/75">
-                {isArabic ? "ابدأ اليوم" : "Commencez"}
+                {isArabic ? "ابدأ اليوم" : "Commencez aujourd'hui"}
               </p>
               <h2 className="mt-3 text-3xl font-black sm:text-4xl">
-                المغرب عامر بلايص تستاهل تكتاشف
+                {isArabic ? "المغرب عامر وجهات وتجارب تستاهل تكتاشف" : "Le Maroc regorge de destinations et d'experiences a explorer"}
               </h2>
+              <p className="mt-3 text-sm leading-7 text-white/80">
+                {isArabic ? "اختر رحلتك، تعرف على الوكالة، وخلّي باقي الخطوات أوضح وأسهل." : "Choisissez votre voyage, identifiez la bonne agence et avancez plus vite vers l'action utile."}
+              </p>
             </div>
-            <Link
-              href={withLocale("/agencies", locale)}
-              className="inline-flex w-fit items-center justify-center rounded-full bg-[#f97316] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#ea580c]"
-            >
-              ابدأ الآن
-            </Link>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                href={withLocale("/agencies", locale)}
+                className="inline-flex w-fit items-center justify-center rounded-full bg-[#f97316] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#ea580c]"
+              >
+                {isArabic ? "استكشف الرحلات" : "Explorer les voyages"}
+              </Link>
+              <Link
+                href={withLocale("/register", locale)}
+                className="inline-flex w-fit items-center justify-center rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/20"
+              >
+                {isArabic ? "إنشاء حساب" : "Creer un compte"}
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      <footer className="rounded-[2rem] bg-white px-5 py-6 shadow-[0_18px_45px_rgba(15,61,46,0.08)] sm:px-7">
+      <footer className="section-card px-5 py-6 sm:px-7">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h3 className="text-xl font-black text-slate-900">Moroccan Trip</h3>
@@ -598,15 +688,6 @@ export default async function HomePage({
             <Link href={withLocale("/travel-partners", locale)} className="rounded-full bg-slate-50 px-4 py-2 transition hover:bg-slate-100">
               {isArabic ? "رفيق سفر" : "Partenaires"}
             </Link>
-          </div>
-          <div className="flex items-center gap-3">
-            {["M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.8 6.8h-1.5c-.2-1-.5-1.9-.9-2.8a8 8 0 0 1 2.4 2.8ZM12 4.1c.5.7 1.2 2.1 1.6 4H10.4c.4-1.9 1.1-3.3 1.6-4ZM9.2 6c-.4.9-.7 1.8-.9 2.8H6.8A8 8 0 0 1 9.2 6Zm-3 4.8h1.7a16 16 0 0 0 0 2.4H6.2a8 8 0 0 1 0-2.4Zm.6 4.4h1.5c.2 1 .5 1.9.9 2.8a8 8 0 0 1-2.4-2.8ZM12 19.9c-.5-.7-1.2-2.1-1.6-4h3.2c-.4 1.9-1.1 3.3-1.6 4Zm2.4-5.9h-4.8a14 14 0 0 1 0-2.4h4.8a14 14 0 0 1 0 2.4Zm-.1-3.9h-4.6c.4-1.8 1-3.1 1.5-3.8.5.7 1.1 2 1.5 3.8Zm.5 7.2c.4-.9.7-1.8.9-2.8h1.5a8 8 0 0 1-2.4 2.8Zm1.3-4.1a16 16 0 0 0 0-2.4h1.7a8 8 0 0 1 0 2.4h-1.7Z", "M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4A5.8 5.8 0 0 1 16.2 22H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2Zm8.1 1.7H8.1A4.4 4.4 0 0 0 3.7 8.1v7.8a4.4 4.4 0 0 0 4.4 4.4h7.8a4.4 4.4 0 0 0 4.4-4.4V8.1a4.4 4.4 0 0 0-4.4-4.4Zm-3.9 3.2A5.1 5.1 0 1 1 6.9 12 5.1 5.1 0 0 1 12 6.9Zm0 1.7A3.4 3.4 0 1 0 15.4 12 3.4 3.4 0 0 0 12 8.6Zm5.4-2.3a1.2 1.2 0 1 1-1.2 1.2 1.2 1.2 0 0 1 1.2-1.2Z", "M20 4H4a2 2 0 0 0-2 2v12l4-3h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"].map((path, index) => (
-              <span key={index} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-[#0f3d2e]">
-                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
-                  <path d={path} />
-                </svg>
-              </span>
-            ))}
           </div>
         </div>
       </footer>

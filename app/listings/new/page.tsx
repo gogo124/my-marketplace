@@ -1,10 +1,34 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ListingCard } from "@/components/listing-card";
 import { NewListingForm } from "@/components/new-listing-form";
 import { getAuthSession } from "@/lib/auth";
 import { getListingsPage } from "@/lib/data";
 import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/seo";
 import { logServerError } from "@/lib/server-log";
+
+export async function generateMetadata({
+  searchParams
+}: {
+  searchParams: Promise<{ lang?: string; category?: string; location?: string }>;
+}): Promise<Metadata> {
+  const { lang, category = "", location = "" } = await searchParams;
+  const locale = resolveLocale(lang);
+
+  return buildPageMetadata({
+    title:
+      locale === "ar"
+        ? `سوق المعدات والمنتجات${category ? ` - ${category}` : ""}${location ? ` - ${location}` : ""}`
+        : `Marketplace equipements et produits${category ? ` - ${category}` : ""}${location ? ` - ${location}` : ""}`,
+    description:
+      locale === "ar"
+        ? "تصفح منتجات ومعدات السفر المعروضة للبيع، قارن الأسعار والبائعين، واتخذ القرار بسرعة."
+        : "Parcourez les equipements et produits de voyage en vente, comparez prix et vendeurs, puis passez a l'action rapidement.",
+    path: "/listings/new",
+    image: "/images/buy-gear.jpg"
+  });
+}
 
 type ListingsSearchParams = {
   lang?: string;
@@ -125,6 +149,17 @@ export default async function NewListingPage({
             <p className="section-kicker">{copy.sell}</p>
             <h1 className="text-5xl font-black leading-[1.08]">{copy.listingCreateSaleTitle}</h1>
             <p className="max-w-lg leading-8 text-white/75">{copy.listingCreateSaleBody}</p>
+            <div className="flex flex-wrap gap-3 text-xs font-semibold text-white/90">
+              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">
+                {locale === "ar" ? "بائعون موثقون" : "Vendeurs verifies"}
+              </span>
+              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">
+                {locale === "ar" ? "مقارنة أسهل للأسعار" : "Comparaison de prix plus claire"}
+              </span>
+              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-2">
+                {locale === "ar" ? "تواصل مباشر" : "Contact direct"}
+              </span>
+            </div>
             {!session?.user ? (
               <div className="rounded-[1.8rem] border border-white/15 bg-white/10 p-5">
                 <p className="text-sm leading-7 text-white/80">
@@ -170,6 +205,36 @@ export default async function NewListingPage({
             {locale === "ar" ? "العودة إلى الرئيسية" : "Retour accueil"}
           </Link>
         </div>
+
+        <section className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-[1.75rem] bg-white p-5 shadow-card">
+            <p className="text-xs uppercase tracking-[0.2em] text-ink/45">{locale === "ar" ? "الهدف" : "But"}</p>
+            <p className="mt-2 text-lg font-black text-ink">{locale === "ar" ? "اختيار أسرع" : "Choix plus rapide"}</p>
+            <p className="mt-2 text-sm leading-7 text-ink/60">
+              {locale === "ar"
+                ? "البطاقات توضّح السعر والحالة والثقة من أول نظرة."
+                : "Les cartes montrent mieux le prix, l'etat et la confiance au premier regard."}
+            </p>
+          </div>
+          <div className="rounded-[1.75rem] bg-white p-5 shadow-card">
+            <p className="text-xs uppercase tracking-[0.2em] text-ink/45">{locale === "ar" ? "الثقة" : "Confiance"}</p>
+            <p className="mt-2 text-lg font-black text-ink">{locale === "ar" ? "إشارات أوضح" : "Signaux plus clairs"}</p>
+            <p className="mt-2 text-sm leading-7 text-ink/60">
+              {locale === "ar"
+                ? "نوضح البائع الموثق والمنتجات الحديثة لخفض التردد."
+                : "Les vendeurs verifies et les annonces recentes sont plus visibles pour reduire l'hesitation."}
+            </p>
+          </div>
+          <div className="rounded-[1.75rem] bg-white p-5 shadow-card">
+            <p className="text-xs uppercase tracking-[0.2em] text-ink/45">{locale === "ar" ? "الإجراء" : "Action"}</p>
+            <p className="mt-2 text-lg font-black text-ink">{locale === "ar" ? "تفاصيل ثم تواصل" : "Detail puis contact"}</p>
+            <p className="mt-2 text-sm leading-7 text-ink/60">
+              {locale === "ar"
+                ? "كل منتج يقود بوضوح إلى صفحة التفاصيل ثم التواصل مع البائع."
+                : "Chaque produit mene clairement a la page detail puis au contact vendeur."}
+            </p>
+          </div>
+        </section>
 
         <form
           action="/listings/new"

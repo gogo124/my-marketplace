@@ -1,15 +1,40 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { VerificationBadge } from "@/components/verification-badge";
 import { getAgencyProfiles } from "@/lib/agency";
 import { formatLocaleNumber, getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/seo";
+
+export async function generateMetadata({
+  searchParams
+}: {
+  searchParams: Promise<{ lang?: string; city?: string }>;
+}): Promise<Metadata> {
+  const { lang, city = "" } = await searchParams;
+  const locale = resolveLocale(lang);
+  const cityLabel = city ? ` - ${city}` : "";
+
+  return buildPageMetadata({
+    title:
+      locale === "ar"
+        ? `وكالات السفر والرحلات المنظمة${cityLabel}`
+        : `Agences de voyage et voyages organises${cityLabel}`,
+    description:
+      locale === "ar"
+        ? "اكتشف وكالات سفر موثقة، قارن الرحلات والمقاعد المتاحة، وانتقل بسرعة إلى الحجز أو التواصل."
+        : "Decouvrez des agences verifiees, comparez les voyages et les places disponibles, puis passez rapidement a la reservation ou au contact.",
+    path: "/agencies",
+    image: "/images/agencies.jpg"
+  });
+}
 
 export default async function AgenciesPage({
   searchParams
 }: {
-  searchParams: Promise<{ lang?: string; q?: string; city?: string; destination?: string; verified?: string }>;
+  searchParams: Promise<{ lang?: string; q?: string; city?: string; destination?: string; verified?: string; rating?: string; sort?: string }>;
 }) {
-  const { lang, q = "", city = "", destination = "", verified = "" } = await searchParams;
+  const { lang, q = "", city = "", destination = "", verified = "", rating = "", sort = "recommended" } = await searchParams;
   const locale = resolveLocale(lang);
   const copy = siteCopy[locale];
   let agencies: any[] = [];
@@ -25,6 +50,7 @@ export default async function AgenciesPage({
   const normalizedCity = city.trim().toLowerCase();
   const normalizedDestination = destination.trim().toLowerCase();
   const showVerifiedOnly = verified === "1" || verified === "true";
+  const minimumRating = Math.max(0, Number(rating) || 0);
   const filteredAgencies = agencies.filter((agency: any) => {
     const haystack = [
       agency.name,
@@ -41,11 +67,34 @@ export default async function AgenciesPage({
     const matchesDestination =
       !normalizedDestination || String(agency.description || "").toLowerCase().includes(normalizedDestination);
     const matchesVerification = !showVerifiedOnly || agency.verificationStatus === "verified";
+    const matchesRating = Number(agency.rating || 0) >= minimumRating;
 
-    return matchesQuery && matchesCity && matchesDestination && matchesVerification;
+    return matchesQuery && matchesCity && matchesDestination && matchesVerification && matchesRating;
+  }).sort((left: any, right: any) => {
+    if (sort === "rating") {
+      return Number(right.rating || 0) - Number(left.rating || 0);
+    }
+
+    if (sort === "trips") {
+      return Number(right.stats?.tripsCount || 0) - Number(left.stats?.tripsCount || 0);
+    }
+
+    if (sort === "latest") {
+      return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
+    }
+
+    const leftVerified = left.verificationStatus === "verified";
+    const rightVerified = right.verificationStatus === "verified";
+
+    if (leftVerified !== rightVerified) {
+      return Number(rightVerified) - Number(leftVerified);
+    }
+
+    return Number(right.rating || 0) - Number(left.rating || 0);
   });
 
   const statLabel = locale === "ar" ? "رحلات" : "voyages";
+  const verifiedCount = filteredAgencies.filter((agency: any) => agency.verificationStatus === "verified").length;
 
   return (
     <main dir={getDirection(locale)} className="page-shell space-y-8">
@@ -77,10 +126,10 @@ export default async function AgenciesPage({
                 {filteredAgencies.length} {copy.agenciesCount}
               </div>
               <div className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90">
-                {locale === "ar" ? "حجز مباشر" : "Reservation directe"}
+                {verifiedCount} {locale === "ar" ? "موثقة" : "verifiees"}
               </div>
               <div className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90">
-                {locale === "ar" ? "وكالات موثوقة" : "Agences verifiees"}
+                {locale === "ar" ? "رحلات مع مقاعد متاحة" : "Voyages avec places ouvertes"}
               </div>
             </div>
           </div>
@@ -107,7 +156,7 @@ export default async function AgenciesPage({
             {formatLocaleNumber(filteredAgencies.length, locale)} {copy.agenciesCount}
           </p>
         </div>
-        <form action="/agencies" className="sticky top-4 z-20 mt-5 grid gap-3 rounded-[1.75rem] border border-ink/10 bg-sand/25 p-4 shadow-sm backdrop-blur lg:grid-cols-[1.2fr_0.8fr_0.8fr_auto_auto]">
+        <form action="/agencies" className="sticky top-4 z-20 mt-5 grid gap-3 rounded-[1.75rem] border border-ink/10 bg-sand/25 p-4 shadow-sm backdrop-blur lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.6fr_0.8fr_auto_auto]">
           <input type="hidden" name="lang" value={locale} />
           <input
             type="text"
@@ -134,6 +183,27 @@ export default async function AgenciesPage({
             <input type="checkbox" name="verified" value="1" defaultChecked={showVerifiedOnly} className="h-4 w-4 rounded border-ink/20" />
             <span>{locale === "ar" ? "الموثقة فقط" : "Verifiees seulement"}</span>
           </label>
+          <select
+            name="rating"
+            defaultValue={rating}
+            className="rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:ring-2 focus:ring-clay/30"
+            aria-label={locale === "ar" ? "الحد الأدنى للتقييم" : "Note minimum"}
+          >
+            <option value="">{locale === "ar" ? "كل التقييمات" : "Toutes les notes"}</option>
+            <option value="4">4.0+</option>
+            <option value="4.5">4.5+</option>
+          </select>
+          <select
+            name="sort"
+            defaultValue={sort}
+            className="rounded-2xl border border-ink/10 bg-white px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:ring-2 focus:ring-clay/30"
+            aria-label={locale === "ar" ? "ترتيب النتائج" : "Trier les resultats"}
+          >
+            <option value="recommended">{locale === "ar" ? "الأكثر توصية" : "Recommandees"}</option>
+            <option value="rating">{locale === "ar" ? "الأعلى تقييماً" : "Mieux notees"}</option>
+            <option value="trips">{locale === "ar" ? "الأكثر رحلات" : "Plus de voyages"}</option>
+            <option value="latest">{locale === "ar" ? "الأحدث" : "Plus recentes"}</option>
+          </select>
           <button className="rounded-2xl bg-clay px-5 py-3 font-semibold text-white transition hover:brightness-105">{copy.search}</button>
           <Link href={withLocale("/agencies", locale)} className="rounded-2xl border border-ink/10 px-5 py-3 text-center font-semibold text-ink">
             {copy.clear}
@@ -252,6 +322,9 @@ export default async function AgenciesPage({
                     >
                       {copy.viewAgency}
                     </Link>
+                    <span className="rounded-full bg-[#fff7ed] px-4 py-2 text-sm font-semibold text-[#c2410c]">
+                      {Number(agency.stats?.openSeats || 0)} {locale === "ar" ? "مقاعد مفتوحة" : "places ouvertes"}
+                    </span>
                     {agency.whatsapp ? (
                       <a
                         href={`https://wa.me/${String(agency.whatsapp).replace(/\D/g, "")}`}

@@ -51,12 +51,13 @@ export function SiteHeader({ session }: SiteHeaderProps) {
   const primaryNavigation = [
     { href: withLocale("/", locale), label: copy.home },
     { href: withLocale("/agencies", locale), label: copy.agencies, emphasize: true },
-    { href: withLocale("/camping", locale), label: locale === "ar" ? "أماكن التخييم" : "Camping" }
+    { href: withLocale("/camping", locale), label: locale === "ar" ? "أماكن التخييم" : "Camping" },
+    { href: withLocale("/rentals", locale), label: copy.rent }
   ];
   const secondaryNavigation = [
     { href: withLocale("/travel-partners", locale), label: copy.travelPartners },
     { href: withLocale("/listings/new", locale), label: copy.sell },
-    { href: withLocale("/rentals", locale), label: copy.rent }
+    { href: `${withLocale("/", locale)}#trip-code`, label: "Trip Code" }
   ];
 
   useEffect(() => {
@@ -65,6 +66,11 @@ export function SiteHeader({ session }: SiteHeaderProps) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl">
+      <div className="border-b border-forest/10 bg-[#0f3d2e] px-4 py-2 text-center text-xs font-semibold text-white/90 sm:px-6">
+        {locale === "ar"
+          ? "وكالات موثقة، رحلات أوضح، ودخول سريع عبر Trip Code"
+          : "Agences verifiees, voyages plus clairs et acces rapide avec Trip Code"}
+      </div>
       <div dir={getDirection(locale)} className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between gap-3 min-w-0">
           <div className="flex items-center gap-2 min-w-0 sm:gap-3">
@@ -208,10 +214,10 @@ export function SiteHeader({ session }: SiteHeaderProps) {
                   {copy.login}
                 </Link>
                 <Link href={withLocale("/agencies", locale)} className="w-full rounded-full border border-forest/20 bg-sand/70 px-4 py-2 text-center font-semibold text-forest shadow-card xl:w-auto">
-                  {copy.heroPrimaryCta}
+                  {locale === "ar" ? "اكتشف الرحلات" : "Explorer les voyages"}
                 </Link>
                 <Link href={withLocale("/register", locale)} className="w-full rounded-full bg-forest px-4 py-2 text-center text-white shadow-card xl:w-auto">
-                  {copy.register}
+                  {locale === "ar" ? "ابدأ الآن" : "Creer un compte"}
                 </Link>
               </>
             )}

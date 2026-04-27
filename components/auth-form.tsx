@@ -124,17 +124,28 @@ export function AuthForm({ mode }: AuthFormProps) {
         <span className="inline-flex rounded-full bg-forest px-3 py-1 text-xs font-bold uppercase tracking-[0.25em] text-white">
           Moroccan Trip
         </span>
-        <h1 className="text-3xl font-black text-ink">
+        <h2 className="text-3xl font-black text-ink">
           {mode === "login" ? copy.welcomeBack : copy.createSellerAccount}
-        </h1>
+        </h2>
         <p className="text-sm leading-7 text-ink/65">
           {mode === "login"
             ? copy.loginFormBody
             : copy.registerFormBody}
         </p>
+        <div className="flex flex-wrap gap-2 text-xs font-semibold text-ink/60">
+          <span className="rounded-full bg-sand px-3 py-1">
+            {locale === "ar" ? "آمن ومحمي" : "Securise"}
+          </span>
+          <span className="rounded-full bg-sand px-3 py-1">
+            {locale === "ar" ? "بدون خطوات غير ضرورية" : "Sans etapes inutiles"}
+          </span>
+        </div>
       </div>
       {mode === "register" ? (
         <>
+          <label className="block text-sm font-semibold text-ink">
+            {copy.fullName}
+          </label>
           <input
             name="name"
             placeholder={copy.fullName}
@@ -151,6 +162,9 @@ export function AuthForm({ mode }: AuthFormProps) {
           />
         </>
       ) : null}
+      <label className="block text-sm font-semibold text-ink">
+        {copy.emailAddress}
+      </label>
       <input
         name="email"
         type="email"
@@ -158,6 +172,9 @@ export function AuthForm({ mode }: AuthFormProps) {
         required
         className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
+      <label className="block text-sm font-semibold text-ink">
+        {copy.password}
+      </label>
       <input
         name="password"
         type="password"
@@ -166,6 +183,13 @@ export function AuthForm({ mode }: AuthFormProps) {
         minLength={8}
         className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
+      {mode === "register" ? (
+        <p className="text-sm text-ink/60">
+          {locale === "ar"
+            ? "كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حروف وأرقام."
+            : "Le mot de passe doit contenir au moins 8 caracteres, avec lettres et chiffres."}
+        </p>
+      ) : null}
       <button
         type="button"
         onClick={handleGoogleSignIn}
@@ -175,7 +199,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         {googleLoading ? copy.connectingGoogle : copy.continueWithGoogle}
       </button>
       <p className="text-center text-xs uppercase tracking-[0.2em] text-ink/40">{copy.or}</p>
-      {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+      {error ? <p aria-live="polite" className="text-sm font-medium text-red-600">{error}</p> : null}
       <button
         type="submit"
         disabled={loading || googleLoading}
@@ -183,6 +207,15 @@ export function AuthForm({ mode }: AuthFormProps) {
       >
         {loading ? copy.pleaseWait : mode === "login" ? copy.login : copy.register}
       </button>
+      <p className="text-center text-sm text-ink/55">
+        {mode === "login"
+          ? locale === "ar"
+            ? "سجّل الدخول للوصول إلى الرسائل والحجوزات وإدارة نشاطك."
+            : "Connectez-vous pour retrouver vos messages, reservations et activites."
+          : locale === "ar"
+            ? "بإنشاء الحساب، يمكنك استكشاف الرحلات، التواصل، والنشر داخل المنصة."
+            : "En creant un compte, vous pouvez explorer, contacter et publier sur la plateforme."}
+      </p>
     </form>
   );
 }

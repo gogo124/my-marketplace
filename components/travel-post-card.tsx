@@ -133,6 +133,9 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
           <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
             {locale === "ar" ? "تواصل آمن" : "Contact securise"}
           </span>
+          <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+            {locale === "ar" ? "هدف الرحلة واضح" : "Intention claire"}
+          </span>
         </div>
 
         <div className="mt-auto grid gap-3 sm:grid-cols-2">
@@ -159,7 +162,7 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
             aria-disabled={!whatsappDigits}
             className="inline-flex w-full items-center justify-center rounded-full bg-forest px-4 py-3 font-semibold text-white shadow-card transition hover:bg-[#14533f] disabled:opacity-60"
           >
-            {copy.contactAction}
+            {locale === "ar" ? "تواصل عبر واتساب" : "Contacter sur WhatsApp"}
           </a>
           <a
             href={phoneDigits ? `tel:${phoneDigits}` : "#"}
@@ -167,7 +170,7 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
             aria-disabled={!phoneDigits}
             className="inline-flex w-full items-center justify-center rounded-full border border-ink/10 bg-white px-4 py-3 font-semibold text-ink transition hover:bg-slate-50 disabled:opacity-60 sm:col-span-2"
           >
-            {copy.callAction}
+            {locale === "ar" ? "اتصال سريع" : "Appeler"}
           </a>
         </div>
 

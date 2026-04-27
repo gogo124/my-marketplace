@@ -44,6 +44,13 @@ export function ListingCard({ listing, locale = "ar" }: ListingCardProps) {
   const condition = deriveCondition(title, description, safeLocale);
   const isRecent = listing.createdAt ? Date.now() - new Date(listing.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000 : false;
   const verified = Boolean(listing.seller?.sellerVerificationStatus === "verified" || listing.seller?.verified);
+  const trustLine = verified
+    ? safeLocale === "ar"
+      ? "بائع موثق"
+      : "Vendeur verifie"
+    : safeLocale === "ar"
+      ? "تواصل مباشر"
+      : "Contact direct";
 
   return (
     <Link
@@ -77,7 +84,12 @@ export function ListingCard({ listing, locale = "ar" }: ListingCardProps) {
       <div className="flex flex-1 flex-col gap-4 p-5">
         <div className="flex items-start justify-between gap-4">
           <h3 className="line-clamp-2 text-xl font-black leading-tight text-slate-900">{title}</h3>
-          <span className="shrink-0 text-2xl font-black text-[#f97316]">{formatPrice(listing.price, safeLocale)}</span>
+          <div className="shrink-0 text-right">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+              {safeLocale === "ar" ? "السعر" : "Prix"}
+            </p>
+            <span className="text-2xl font-black text-[#f97316]">{formatPrice(listing.price, safeLocale)}</span>
+          </div>
         </div>
         <div className="flex items-center justify-between text-sm text-slate-500">
           <span className="truncate">{location}</span>
@@ -97,9 +109,12 @@ export function ListingCard({ listing, locale = "ar" }: ListingCardProps) {
             />
           ) : null}
         </div>
+        <div className="rounded-2xl bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600">
+          {trustLine}
+        </div>
         <div className="mt-auto flex items-center justify-between pt-2">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#0f3d2e] transition duration-300 group-hover:translate-x-1">
-            {safeLocale === "ar" ? "عرض التفاصيل" : "Voir détail"}
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-white transition duration-300 group-hover:translate-x-1">
+            {safeLocale === "ar" ? "عرض التفاصيل" : "Voir le detail"}
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14" />
               <path d="m12 5 7 7-7 7" />

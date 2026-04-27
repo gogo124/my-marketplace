@@ -1,10 +1,35 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { formatShortDate } from "@/lib/utils";
 import { getDirection, resolveLocale, withLocale } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/seo";
 import { normalizeTripCode } from "@/lib/trip-code";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+  searchParams
+}: {
+  params: Promise<{ code: string }>;
+  searchParams: Promise<{ lang?: string }>;
+}): Promise<Metadata> {
+  const { code } = await params;
+  const { lang } = await searchParams;
+  const locale = resolveLocale(lang);
+  const normalizedCode = normalizeTripCode(code);
+
+  return buildPageMetadata({
+    title: locale === "ar" ? `Trip Code ${normalizedCode}` : `Trip Code ${normalizedCode}`,
+    description:
+      locale === "ar"
+        ? "ادخل عبر Trip Code للوصول إلى تفاصيل الرحلة والمعدات والخطوة التالية بسرعة."
+        : "Accedez via Trip Code aux details du voyage, aux equipements et a la prochaine action rapidement.",
+    path: `/trip/${normalizedCode}`,
+    image: "/images/trip-code.jpg"
+  });
+}
 
 export default async function TripCodePage({
   params,
@@ -104,6 +129,9 @@ export default async function TripCodePage({
               <span className="rounded-full bg-sand px-3 py-1">{trip.destination}</span>
               <span className="rounded-full bg-sand px-3 py-1">{trip.city}</span>
               <span className="rounded-full bg-sand px-3 py-1">{trip.code}</span>
+              <span className="rounded-full bg-[#fff7ed] px-3 py-1 font-semibold text-[#c2410c]">
+                {trip.seatsLeft} {locale === "ar" ? "مقاعد متبقية" : "places restantes"}
+              </span>
             </div>
           </div>
           <div className="rounded-[2rem] bg-sand p-5">
@@ -122,7 +150,7 @@ export default async function TripCodePage({
             <p className="mt-4 text-sm leading-7 text-ink/65">{agency.description}</p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link href={reservationLink} className="rounded-full bg-forest px-4 py-2 font-semibold text-white">
-                {locale === "ar" ? "الحجز" : "Reservation"}
+                {locale === "ar" ? "احجز الآن" : "Reserver"}
               </Link>
               <a
                 href={`https://wa.me/${agencyWhatsappDigits}`}
@@ -131,10 +159,29 @@ export default async function TripCodePage({
                 data-analytics-event="whatsapp_click"
                 className="rounded-full border border-ink/10 px-4 py-2 font-semibold text-ink"
               >
-                WhatsApp
+                {locale === "ar" ? "تواصل مع الوكالة" : "Contacter l'agence"}
               </a>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] border border-[#f97316]/10 bg-[linear-gradient(180deg,#fff7ed,#ffffff)] p-6 shadow-card">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-sm uppercase tracking-[0.25em] text-[#c2410c]">Trip Code</p>
+            <h2 className="mt-2 text-2xl font-black text-ink">
+              {locale === "ar" ? "هذه الصفحة تختصر لك الرحلة ثم تقودك مباشرة إلى الحجز أو المعدات" : "Cette page resume le voyage puis vous mene directement vers la reservation ou les equipements"}
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-ink/70">
+              {locale === "ar"
+                ? "استعمل Trip Code لفهم الرحلة أولاً ثم انتقل بسرعة إلى المعدات المناسبة أو تواصل مع الوكالة."
+                : "Utilisez le Trip Code pour comprendre le voyage, puis passez rapidement aux equipements adaptes ou au contact agence."}
+            </p>
+          </div>
+          <a href={`https://wa.me/${agencyWhatsappDigits}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-full bg-[#f97316] px-5 py-3 font-semibold text-white">
+            {locale === "ar" ? "اطلب التأكيد عبر واتساب" : "Demander confirmation sur WhatsApp"}
+          </a>
         </div>
       </section>
 

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -12,8 +13,41 @@ import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getListingById, getReviewsForListing } from "@/lib/data";
 import { formatLocaleDate, getDirection, resolveLocale, siteCopy } from "@/lib/i18n";
+import { absoluteUrl, buildPageMetadata } from "@/lib/seo";
 import { canUserReviewListing } from "@/lib/reviews";
 import { formatPrice } from "@/lib/utils";
+
+export async function generateMetadata({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ lang?: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { lang } = await searchParams;
+  const locale = resolveLocale(lang);
+  const listing = await getListingById(id);
+
+  if (!listing) {
+    return buildPageMetadata({
+      title: locale === "ar" ? "المنتج غير موجود" : "Produit introuvable",
+      description: locale === "ar" ? "تعذر العثور على هذا المنتج." : "Impossible de trouver ce produit.",
+      path: `/listings/${id}`,
+      image: "/images/buy-gear.jpg"
+    });
+  }
+
+  return buildPageMetadata({
+    title: locale === "ar" ? `${listing.title} | سوق المعدات` : `${listing.title} | Marketplace`,
+    description:
+      locale === "ar"
+        ? `${listing.title} في ${listing.location || "المغرب"} بسعر ${listing.price} DH. قارن، راجع الثقة، ثم تواصل مع البائع.`
+        : `${listing.title} a ${listing.location || "Maroc"} au prix de ${listing.price} DH. Comparez, verifiez la confiance puis contactez le vendeur.`,
+    path: `/listings/${id}`,
+    image: listing.images?.[0] || "/images/buy-gear.jpg"
+  });
+}
 
 export default async function ListingDetailsPage({
   params,
@@ -64,9 +98,36 @@ export default async function ListingDetailsPage({
     session?.user?.id && !isSeller && reviewEligibility && !reviewEligibility.allowed
       ? reviewEligibility.reason
       : "";
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: listing.title,
+    description: listing.description,
+    image: images.map((image: string) => absoluteUrl(image)),
+    brand: seller?.name || "Moroccan Trip",
+    offers: {
+      "@type": "Offer",
+      availability: "https://schema.org/InStock",
+      priceCurrency: "MAD",
+      price: Number(listing.price || 0),
+      url: absoluteUrl(`/listings/${id}`)
+    },
+    aggregateRating:
+      averageRating > 0
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: averageRating.toFixed(1),
+            reviewCount: reviews.length
+          }
+        : undefined
+  };
 
   return (
     <main dir={getDirection(locale)} className="page-shell grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
       <section className="space-y-6">
         <div className="overflow-hidden rounded-[2.75rem] bg-white shadow-card">
           <div className="relative h-[520px]">
@@ -242,6 +303,19 @@ export default async function ListingDetailsPage({
         </section>
       </section>
       <aside className="space-y-6 xl:sticky xl:top-24 xl:self-start">
+        <div className="rounded-[2rem] border border-[#f97316]/10 bg-[linear-gradient(180deg,#fff7ed,#ffffff)] p-6 shadow-card">
+          <p className="text-sm uppercase tracking-[0.25em] text-[#c2410c]">
+            {locale === "ar" ? "الإجراء التالي" : "Prochaine action"}
+          </p>
+          <h2 className="mt-2 text-2xl font-black text-ink">
+            {locale === "ar" ? "راجع الثقة ثم تواصل مباشرة مع البائع" : "Verifiez la confiance puis contactez directement le vendeur"}
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-ink/70">
+            {locale === "ar"
+              ? "أضف المنتج للمحفوظات، راجع التقييمات، ثم استخدم واتساب أو الاتصال لاتخاذ القرار بسرعة."
+              : "Ajoutez le produit a vos favoris, verifiez les avis puis utilisez WhatsApp ou l'appel pour agir plus vite."}
+          </p>
+        </div>
         <div className="rounded-[2rem] bg-white p-6 shadow-card">
           <p className="text-sm uppercase tracking-[0.25em] text-ink/45">{copy.seller}</p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
