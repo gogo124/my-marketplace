@@ -7,6 +7,7 @@ import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { Header } from "@/components/header";
 import { LocaleDocumentSync } from "@/components/locale-document-sync";
 import { getDirection, resolveLocale, SITE_LOCALE_COOKIE } from "@/lib/i18n";
+import { getSiteUrl } from "@/lib/seo";
 import "./globals.css";
 
 const alexandria = Alexandria({
@@ -16,7 +17,7 @@ const alexandria = Alexandria({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب",
     template: "%s | Moroccan Trip"
@@ -91,7 +92,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const locale = resolveLocale(
     requestHeaders.get("x-site-locale") || cookieStore.get(SITE_LOCALE_COOKIE)?.value
   );
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = getSiteUrl();
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
