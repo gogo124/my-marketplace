@@ -11,6 +11,7 @@ type HomeServiceCardProps = {
   badgeLabel: string;
   ctaLabel: string;
   accent?: string;
+  priority?: "primary" | "secondary";
 };
 
 export function HomeServiceCard({
@@ -21,12 +22,17 @@ export function HomeServiceCard({
   icon,
   badgeLabel,
   ctaLabel,
-  accent = "#0f3d2e"
+  accent = "#0f3d2e",
+  priority = "secondary"
 }: HomeServiceCardProps) {
+  const isPrimary = priority === "primary";
+
   return (
     <Link
       href={href}
-      className="group relative flex min-h-[340px] overflow-hidden rounded-[2rem] bg-slate-900 shadow-[0_18px_45px_rgba(15,61,46,0.14)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_70px_rgba(15,61,46,0.22)]"
+      className={`group relative flex overflow-hidden rounded-[2rem] bg-slate-900 shadow-[0_18px_45px_rgba(15,61,46,0.14)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_70px_rgba(15,61,46,0.22)] ${
+        isPrimary ? "min-h-[360px]" : "min-h-[320px]"
+      }`}
     >
       <div className="absolute inset-0">
         <Image
@@ -56,7 +62,13 @@ export function HomeServiceCard({
           <p className="max-w-[90%] text-sm leading-7 text-white/80 sm:text-[0.95rem]">
             {description}
           </p>
-          <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#f97316] transition duration-300 group-hover:translate-x-1 group-hover:text-white">
+          <span
+            className={`inline-flex w-fit items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition duration-300 group-hover:translate-x-1 ${
+              isPrimary
+                ? "bg-[#f97316] text-white group-hover:bg-white group-hover:text-[#0f3d2e]"
+                : "border border-white/20 bg-white/10 text-white group-hover:bg-white group-hover:text-[#0f3d2e]"
+            }`}
+          >
             {ctaLabel}
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14" />

@@ -23,13 +23,14 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    if (!getUserPermissions(user).canAccessAgencyWorkspace) {
-      return NextResponse.json({ error: "Access denied." }, { status: 403 });
-    }
-
     await connectToDatabase();
 
-    const profile = await AgencyProfile.findOne({ user: user.id });
+    const profile = await AgencyProfile.findOne({ user: user.id }).select("_id");
+    const permissions = getUserPermissions(user, { hasAgencyProfile: Boolean(profile?._id) });
+
+    if (!permissions.canAccessAgencyWorkspace) {
+      return NextResponse.json({ error: "Access denied." }, { status: 403 });
+    }
 
     if (!profile) {
       return NextResponse.json({ trips: [] });
@@ -50,10 +51,6 @@ export async function POST(request: Request) {
 
     if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
-
-    if (!getUserPermissions(user).canAccessAgencyWorkspace) {
-      return NextResponse.json({ error: "Access denied." }, { status: 403 });
     }
 
     const formData = await request.formData();
@@ -99,7 +96,12 @@ export async function POST(request: Request) {
 
     await connectToDatabase();
 
-    const profile = await AgencyProfile.findOne({ user: user.id });
+    const profile = await AgencyProfile.findOne({ user: user.id }).select("_id");
+    const permissions = getUserPermissions(user, { hasAgencyProfile: Boolean(profile?._id) });
+
+    if (!permissions.canAccessAgencyWorkspace) {
+      return NextResponse.json({ error: "Access denied." }, { status: 403 });
+    }
 
     if (!profile) {
       return NextResponse.json({ error: "Create your agency profile first." }, { status: 400 });

@@ -499,12 +499,12 @@ export function AgencyTripManager({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-semibold text-ink">
-                {safeLocale === "ar" ? "رمز الرحلة للوصول إلى الكراء" : "Trip Code for rental access"}
+                {safeLocale === "ar" ? "دخول مساحة التريب للكراء" : "Trip Space access for rental flow"}
               </label>
               <input
                 value={form.tripCode}
                 onChange={(event) => setForm((current) => ({ ...current, tripCode: event.target.value.toUpperCase() }))}
-                placeholder={safeLocale === "ar" ? "أدخل رمز الرحلة" : "Enter trip code"}
+                placeholder={safeLocale === "ar" ? "أدخل دخول مساحة التريب" : "Enter Trip Space access"}
                 className="w-full rounded-2xl border border-ink/10 px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
               />
             </div>
@@ -689,7 +689,7 @@ export function AgencyTripManager({
                       </span>
                       {trip.tripCode ? (
                         <span className="rounded-full bg-forest px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white">
-                          Trip Code
+                          Trip Space
                         </span>
                       ) : null}
                     </div>
@@ -740,7 +740,7 @@ export function AgencyTripManager({
                       {trip.region ? <p>{trip.region}</p> : null}
                       {trip.tripCode ? (
                         <p className="font-semibold text-forest">
-                          {safeLocale === "ar" ? "رمز الرحلة للوصول إلى الكراء" : "Trip Code for rental access"}: {trip.tripCode}
+                          {safeLocale === "ar" ? "دخول مساحة التريب للكراء" : "Trip Space access for rental flow"}: {trip.tripCode}
                         </p>
                       ) : null}
                       {Array.isArray(trip.equipmentRequirements) && trip.equipmentRequirements.length > 0 ? (

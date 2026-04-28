@@ -45,7 +45,7 @@ export function AdminTripManager({ trips }: { trips: AdminTrip[] }) {
       const data = await parseApiResponse(response);
 
       if (!response.ok) {
-        throw new Error(translateApiError(getApiError(data, "Could not update trip code."), "fr"));
+        throw new Error(translateApiError(getApiError(data, "Could not update Trip Space access."), "fr"));
       }
 
       setTripCodes((current) => ({
@@ -85,7 +85,7 @@ export function AdminTripManager({ trips }: { trips: AdminTrip[] }) {
               </p>
             </div>
             <div className="w-full max-w-md space-y-3">
-              <label className="block text-sm font-semibold text-ink">Trip Code for rental access</label>
+              <label className="block text-sm font-semibold text-ink">Trip Space access for rental flow</label>
               <input
                 value={tripCodes[trip._id] || ""}
                 onChange={(event) =>
@@ -102,7 +102,7 @@ export function AdminTripManager({ trips }: { trips: AdminTrip[] }) {
                 disabled={savingId === trip._id}
                 className="rounded-full bg-forest px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
-                {savingId === trip._id ? "Saving..." : "Save trip code"}
+                {savingId === trip._id ? "Saving..." : "Save Trip Space access"}
               </button>
             </div>
           </div>

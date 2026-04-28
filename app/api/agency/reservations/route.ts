@@ -124,21 +124,22 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    if (!getUserPermissions(user).canAccessAgencyWorkspace) {
+    const userId = user.id as string;
+
+    await connectToDatabase();
+
+    const profile = await AgencyProfile.findOne({ user: userId }).select("_id");
+    const permissions = getUserPermissions(user, { hasAgencyProfile: Boolean(profile?._id) });
+
+    if (!permissions.canAccessAgencyWorkspace) {
       return NextResponse.json({ error: "Access denied." }, { status: 403 });
     }
-
-    const userId = user.id as string;
 
     const { reservationId, status } = await request.json();
 
     if (!reservationId || !validateReservationStatus(status)) {
       return NextResponse.json({ error: "Invalid reservation status update." }, { status: 400 });
     }
-
-    await connectToDatabase();
-
-    const profile = await AgencyProfile.findOne({ user: userId }).select("_id");
 
     if (!profile) {
       return NextResponse.json({ error: "Agency profile not found." }, { status: 404 });

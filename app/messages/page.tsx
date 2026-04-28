@@ -44,7 +44,7 @@ export default async function MessagesPage({
               ? (locale === "ar" ? "اختر محادثة من القائمة لعرض التفاصيل." : "Select a conversation from the list to see the thread.")
               : copy.noConversations
           }
-          href="/listings"
+          href="/agencies"
           ctaLabel={locale === "ar" ? "تصفح الإعلانات" : "Browse listings"}
           secondaryHref="/travel-partners"
           secondaryLabel={locale === "ar" ? "رفقاء السفر" : "Travel partners"}

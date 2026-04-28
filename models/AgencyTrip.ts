@@ -31,6 +31,7 @@ const AgencyTripSchema = new Schema(
 );
 
 AgencyTripSchema.index({ agency: 1, createdAt: -1 });
+AgencyTripSchema.index({ agency: 1, status: 1, startDate: 1 });
 
 export type AgencyTripDocument = InferSchemaType<typeof AgencyTripSchema> & { _id: string };
 

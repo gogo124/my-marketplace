@@ -27,6 +27,7 @@ export function AgencyStatusActions({
   const [value, setValue] = useState(status);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const canConfirmReservation = endpoint === "/api/agency/reservations" && value !== "confirmed" && allowedStatuses.includes("confirmed");
 
   async function handleUpdate(nextStatus: string) {
     setValue(nextStatus);
@@ -61,6 +62,16 @@ export function AgencyStatusActions({
 
   return (
     <div className="space-y-2">
+      {canConfirmReservation ? (
+        <button
+          type="button"
+          onClick={() => handleUpdate("confirmed")}
+          disabled={loading}
+          className="inline-flex rounded-full bg-[#0f3d2e] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#14533f] disabled:opacity-60"
+        >
+          {locale === "ar" ? "تأكيد الحجز" : "Confirm reservation"}
+        </button>
+      ) : null}
       <select
         value={value}
         onChange={(event) => handleUpdate(event.target.value)}

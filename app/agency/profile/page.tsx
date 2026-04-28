@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import { AgencyProfileForm } from "@/components/agency-profile-form";
+import { WorkspaceAccessState } from "@/components/workspace-access-state";
 import { getAuthSession } from "@/lib/auth";
 import { getAgencyDashboardData } from "@/lib/agency";
 import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
@@ -16,14 +16,38 @@ export default async function AgencyProfilePage({
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
-    redirect(withLocale("/login", locale));
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "خاصك تسجل الدخول" : "Connexion requise"}
+        body={locale === "ar" ? "سجل الدخول باش تكمل ملف الوكالة." : "Connectez-vous pour completer le profil agence."}
+        primaryHref="/login"
+        primaryLabel={locale === "ar" ? "تسجيل الدخول" : "Se connecter"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
   }
 
   const dashboard = await getAgencyDashboardData(session.user.id);
   const permissions = getUserPermissions(getSessionUser(session), { hasAgencyProfile: Boolean(dashboard.profile?._id) });
 
   if (!permissions.canOpenAgencyProfile) {
-    redirect(withLocale("/", locale));
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "الحساب ديالك باقي ما مفعلش كوكالة" : "Acces agence non active"}
+        body={
+          locale === "ar"
+            ? "الإدارة خاصها تفعل ليك صلاحية الوكالة أولاً قبل ما تقدر تنشئ ملف الوكالة."
+            : "L'administration doit d'abord activer l'acces agence avant la creation du profil."
+        }
+        primaryHref="/dashboard"
+        primaryLabel={locale === "ar" ? "رجع للوحة المستخدم" : "Aller au tableau utilisateur"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
   }
 
   return (

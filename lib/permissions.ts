@@ -3,6 +3,7 @@ import type { SiteLocale } from "@/lib/i18n";
 import { withLocale } from "@/lib/i18n";
 
 export type AppRole = "user" | "agency" | "renter" | "admin";
+export type WorkspaceType = "agency" | "renter" | "admin";
 
 type UserLike = {
   id?: string | null;
@@ -77,6 +78,10 @@ export function getUserPermissions(
   const basePermissions = ROLE_PERMISSIONS[role];
   const hasAgencyProfile = Boolean(options?.hasAgencyProfile);
   const hasRenterProfile = Boolean(options?.hasRenterProfile);
+  const agencyAccessEnabled =
+    role !== "renter" && (role === "agency" || Boolean(user?.canCreateAgency) || hasAgencyProfile);
+  const renterAccessEnabled =
+    role !== "agency" && (role === "renter" || Boolean(user?.canCreateRenter) || hasRenterProfile);
 
   return {
     role,
@@ -87,15 +92,34 @@ export function getUserPermissions(
     canReserveTrips: basePermissions.canReserveTrips,
     canRequestRentals: basePermissions.canRequestRentals,
     canValidateTripCodes: basePermissions.canValidateTripCodes,
-    canOpenAgencyProfile:
-      role !== "renter" && (role === "agency" || Boolean(user?.canCreateAgency) || hasAgencyProfile),
-    canOpenRenterProfile:
-      role !== "agency" && (hasRenterProfile || role === "renter" || Boolean(user?.canCreateRenter)),
-    canAccessAgencyWorkspace: basePermissions.canAccessAgencyWorkspace,
-    canAccessRenterWorkspace:
-      role !== "agency" && (hasRenterProfile || basePermissions.canAccessRenterWorkspace),
+    canOpenAgencyProfile: agencyAccessEnabled,
+    canOpenRenterProfile: renterAccessEnabled,
+    canAccessAgencyWorkspace: agencyAccessEnabled && hasAgencyProfile,
+    canAccessRenterWorkspace: renterAccessEnabled && hasRenterProfile,
     canAccessAdminWorkspace: basePermissions.canAccessAdminWorkspace
   };
+}
+
+export function canAccessRenterDashboard(
+  user: UserLike,
+  options?: {
+    hasRenterProfile?: boolean;
+  }
+) {
+  return getUserPermissions(user, { hasRenterProfile: options?.hasRenterProfile }).canAccessRenterWorkspace;
+}
+
+export function canAccessAgencyDashboard(
+  user: UserLike,
+  options?: {
+    hasAgencyProfile?: boolean;
+  }
+) {
+  return getUserPermissions(user, { hasAgencyProfile: options?.hasAgencyProfile }).canAccessAgencyWorkspace;
+}
+
+export function isAdmin(user: UserLike) {
+  return getUserPermissions(user).isAdmin;
 }
 
 export function getForbiddenResponse(message = "Access denied.") {

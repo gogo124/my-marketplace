@@ -27,11 +27,17 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    if (!getUserPermissions(user).canAccessAgencyWorkspace) {
+    const { id } = await context.params;
+
+    await connectToDatabase();
+
+    const profile = await AgencyProfile.findOne({ user: user.id }).select("_id");
+    const permissions = getUserPermissions(user, { hasAgencyProfile: Boolean(profile?._id) });
+
+    if (!permissions.canAccessAgencyWorkspace) {
       return NextResponse.json({ error: "Access denied." }, { status: 403 });
     }
 
-    const { id } = await context.params;
     const formData = await request.formData();
     const imageUrls = getSubmittedImageUrls(formData, "images");
     const payload = {
@@ -59,10 +65,6 @@ export async function PATCH(request: Request, context: RouteContext) {
       status: formData.get("status")
     };
     const status = payload.status;
-
-    await connectToDatabase();
-
-    const profile = await AgencyProfile.findOne({ user: user.id });
 
     if (!profile) {
       return NextResponse.json({ error: "Agency profile not found." }, { status: 404 });
@@ -175,15 +177,16 @@ export async function DELETE(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    if (!getUserPermissions(user).canAccessAgencyWorkspace) {
-      return NextResponse.json({ error: "Access denied." }, { status: 403 });
-    }
-
     const { id } = await context.params;
 
     await connectToDatabase();
 
-    const profile = await AgencyProfile.findOne({ user: user.id });
+    const profile = await AgencyProfile.findOne({ user: user.id }).select("_id");
+    const permissions = getUserPermissions(user, { hasAgencyProfile: Boolean(profile?._id) });
+
+    if (!permissions.canAccessAgencyWorkspace) {
+      return NextResponse.json({ error: "Access denied." }, { status: 403 });
+    }
 
     if (!profile) {
       return NextResponse.json({ error: "Agency profile not found." }, { status: 404 });

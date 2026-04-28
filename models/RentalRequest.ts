@@ -27,6 +27,8 @@ const RentalRequestSchema = new Schema(
 
 RentalRequestSchema.index({ agency: 1, createdAt: -1 });
 RentalRequestSchema.index({ trip: 1, createdAt: -1 });
+RentalRequestSchema.index({ user: 1, createdAt: -1 });
+RentalRequestSchema.index({ renter: 1, createdAt: -1 });
 
 export type RentalRequestDocument = InferSchemaType<typeof RentalRequestSchema> & { _id: string };
 

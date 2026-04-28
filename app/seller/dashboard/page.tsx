@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -111,7 +112,7 @@ export default async function SellerDashboardPage({
                 return (
                   <article key={listing._id} className="flex flex-col gap-4 rounded-[1.75rem] border border-slate-100 p-4 transition hover:-translate-y-0.5 hover:bg-slate-50 sm:flex-row">
                     <div className="relative aspect-square w-full overflow-hidden rounded-[1.5rem] bg-slate-100 sm:w-28 sm:flex-none">
-                      <img src={image} alt={listing.title} className="h-full w-full object-cover object-center" loading="lazy" />
+                      <Image src={image} alt={listing.title} fill sizes="112px" className="object-cover object-center" />
                       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,61,46,0.24)_100%)]" />
                     </div>
                     <div className="min-w-0 flex-1">

@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { RentalItemCard } from "@/components/rental-item-card";
-import { RentalTripAccessForm } from "@/components/rental-trip-access-form";
 import { getAuthSession } from "@/lib/auth";
 import { getPublicRentalItems } from "@/lib/renter";
 import { formatLocaleNumber, getDirection, resolveLocale, withLocale } from "@/lib/i18n";
@@ -24,7 +23,7 @@ export default async function RentalsPage({
           kicker: "معدات الكراء",
           title: "كراء معدات الرحلات المنظمة",
           body: "هذه الخدمة مخصصة للمستخدمين المشاركين في رحلات منظمة مع وكالات سياحية.",
-          notice: "باش تستافد من الكراء، خاصك تكون حاجز رحلة منظمة وعندك كود الرحلة من الوكالة.",
+          notice: "باش تستافد من الكراء، خاصك تكون حاجز رحلة منظمة ومؤكد عند الوكالة.",
           search: "ابحث عن معدات أو مقاس",
           city: "المدينة",
           category: "الفئة",
@@ -37,10 +36,6 @@ export default async function RentalsPage({
           newest: "الأحدث",
           priceAsc: "السعر: من الأقل",
           priceDesc: "السعر: من الأعلى",
-          tripCodeLabel: "أدخل كود الرحلة",
-          tripCodePlaceholder: "أدخل كود الرحلة",
-          openTrip: "عرض المعدات المرتبطة بالرحلة",
-          invalidTripCode: "رمز الرحلة غير صالح.",
           empty: "لا توجد معدات مطابقة حالياً.",
           manage: "إدارة عناصرك"
         }
@@ -60,10 +55,6 @@ export default async function RentalsPage({
           newest: "Nouveautes",
           priceAsc: "Prix: croissant",
           priceDesc: "Prix: decroissant",
-          tripCodeLabel: "Code voyage",
-          tripCodePlaceholder: "Entrez le code voyage",
-          openTrip: "Ouvrir les locations du voyage",
-          invalidTripCode: "Invalid trip code",
           empty: "Aucun equipement ne correspond pour le moment.",
           manage: "Gerer vos articles"
         };
@@ -135,7 +126,7 @@ export default async function RentalsPage({
             </div>
             <div className="rounded-[1.6rem] border border-white/10 bg-white/10 p-4 backdrop-blur">
               <p className="text-xs uppercase tracking-[0.25em] text-white/60">{locale === "ar" ? "رحلة" : "Voyage"}</p>
-              <p className="mt-2 text-lg font-bold">{locale === "ar" ? "أدخل كود الرحلة عند الحاجة" : "Code voyage si necessaire"}</p>
+              <p className="mt-2 text-lg font-bold">{locale === "ar" ? "ادخل لمساحة التريب بعد تأكيد الحجز" : "Entrez dans l'Espace Trip apres confirmation"}</p>
             </div>
           </div>
         </div>
@@ -147,12 +138,19 @@ export default async function RentalsPage({
             <p className="text-sm font-semibold text-ink">{labels.notice}</p>
           </div>
         ) : null}
-        <RentalTripAccessForm
-          label={labels.tripCodeLabel}
-          placeholder={labels.tripCodePlaceholder}
-          buttonLabel={labels.openTrip}
-          invalidLabel={labels.invalidTripCode}
-        />
+        <div className="mb-5 rounded-[1.5rem] border border-dashed border-forest/15 bg-sand/20 p-4">
+          <p className="text-sm font-semibold text-ink">
+            {locale === "ar" ? "الدخول للكراء كيمر من مساحة التريب" : "L'acces aux locations passe par l'Espace Trip"}
+          </p>
+          <p className="mt-1 text-xs leading-6 text-ink/60">
+            {locale === "ar"
+              ? "من بعد تأكيد الحجز، كتلقى زر الدخول فلوحة الحساب وكتفتح المعدات المرتبطة مباشرة."
+              : "Apres confirmation, le bouton d'entree apparait dans votre tableau de bord et ouvre directement les articles lies."}
+          </p>
+          <Link href={withLocale("/dashboard", locale)} className="mt-3 inline-flex rounded-full bg-forest px-4 py-2 text-sm font-semibold text-white">
+            {locale === "ar" ? "ادخل لمساحة التريب" : "Ouvrir l'Espace Trip"}
+          </Link>
+        </div>
         <form action="/rentals" className="grid gap-3 lg:grid-cols-[1.15fr_0.8fr_0.8fr_0.8fr_0.7fr_auto]">
           <input type="hidden" name="lang" value={locale} />
           <input

@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
 import { AgencyRentalRequestsSection, AgencyStatsGrid } from "@/components/agency-owner-sections";
+import { WorkspaceAccessState } from "@/components/workspace-access-state";
 import { getAuthSession } from "@/lib/auth";
 import { getAgencyDashboardData } from "@/lib/agency";
 import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
-import { getAgencyWorkspaceRedirectPath, getSessionUser } from "@/lib/permissions";
+import { getSessionUser, getUserPermissions } from "@/lib/permissions";
 
 export default async function AgencyRentalRequestsPage({
   searchParams
@@ -16,14 +16,48 @@ export default async function AgencyRentalRequestsPage({
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
-    redirect(withLocale("/login", locale));
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "خاصك تسجل الدخول" : "Connexion requise"}
+        body={locale === "ar" ? "سجل الدخول باش تشوف طلبات الكراء المرتبطة برحلاتك." : "Connectez-vous pour voir les demandes location liees a vos voyages."}
+        primaryHref="/login"
+        primaryLabel={locale === "ar" ? "تسجيل الدخول" : "Se connecter"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
   }
 
   const dashboard = await getAgencyDashboardData(session.user.id);
-  const redirectPath = getAgencyWorkspaceRedirectPath(getSessionUser(session), locale, Boolean(dashboard.profile?._id));
+  const permissions = getUserPermissions(getSessionUser(session), { hasAgencyProfile: Boolean(dashboard.profile?._id) });
 
-  if (redirectPath) {
-    redirect(redirectPath);
+  if (!permissions.canOpenAgencyProfile) {
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "الحساب ديالك باقي ما مفعلش كوكالة" : "Acces agence non active"}
+        body={locale === "ar" ? "صلاحية الوكالة مازال ما تفعّلاتش فهاد الحساب." : "L'acces agence n'est pas encore active pour ce compte."}
+        primaryHref="/dashboard"
+        primaryLabel={locale === "ar" ? "رجع للوحة المستخدم" : "Aller au tableau utilisateur"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
+  }
+
+  if (!dashboard.profile?._id) {
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "خاصك تكمل ملف الوكالة" : "Profil agence requis"}
+        body={locale === "ar" ? "قبل ما تشوف طلبات الكراء، خاصك تكمل ملف الوكالة ديالك." : "Avant de consulter les demandes location, vous devez completer votre profil agence."}
+        primaryHref="/agency/profile"
+        primaryLabel={locale === "ar" ? "كمل ملف الوكالة" : "Completer le profil"}
+        secondaryHref="/agency/dashboard"
+        secondaryLabel={locale === "ar" ? "لوحة الوكالة" : "Tableau agence"}
+      />
+    );
   }
 
   return (

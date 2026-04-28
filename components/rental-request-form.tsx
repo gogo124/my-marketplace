@@ -179,12 +179,11 @@ export function RentalRequestForm({
         className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
       />
       {!hideTripCodeInput ? (
-        <input
-          value={tripCodeValue}
-          onChange={(event) => setTripCodeValue(event.target.value.toUpperCase())}
-          placeholder={locale === "ar" ? "أدخل رمز الرحلة" : "Entrez votre code voyage"}
-          className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
-        />
+        <div className="rounded-[1.25rem] border border-dashed border-ink/15 bg-white px-4 py-3 text-sm text-ink/70">
+          {locale === "ar"
+            ? "طلب الكراء كيتفعل من داخل مساحة التريب بعد تأكيد الحجز."
+            : "La demande de location se fait depuis l'Espace Trip apres confirmation."}
+        </div>
       ) : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <input

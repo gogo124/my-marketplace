@@ -40,6 +40,7 @@ const RentalItemSchema = new Schema(
 );
 
 RentalItemSchema.index({ renter: 1, createdAt: -1 });
+RentalItemSchema.index({ renter: 1, status: 1, availabilityStatus: 1, createdAt: -1 });
 RentalItemSchema.index({ city: 1, region: 1, status: 1 });
 
 export type RentalItemDocument = InferSchemaType<typeof RentalItemSchema> & { _id: string };

@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
 import { RentalItemCard } from "@/components/rental-item-card";
 import { RentalRequestForm } from "@/components/rental-request-form";
 import { getAuthSession } from "@/lib/auth";
 import { getRentalTripPageData } from "@/lib/renter";
-import { RENTAL_ACCESS_COOKIE, resolveAuthorizedRentalTrip } from "@/lib/rental-access";
+import { resolveAuthorizedRentalTrip } from "@/lib/rental-access";
 import { formatLocaleDate, formatLocaleNumber, getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -28,11 +27,9 @@ export default async function RentalTripPage({
     redirect(withLocale("/login", locale));
   }
 
-  const cookieStore = await cookies();
   const access = await resolveAuthorizedRentalTrip({
     userId: session.user.id,
-    tripId,
-    cookieValue: cookieStore.get(RENTAL_ACCESS_COOKIE)?.value
+    tripId
   });
 
   if ("error" in access) {

@@ -17,7 +17,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     const { id } = await context.params;
-    const { sellerVerificationStatus, accountStatus, canCreateAgency, canCreateRenter } = await request.json();
+    const { sellerVerificationStatus, accountStatus, canCreateAgency, canCreateRenter, role } = await request.json();
     const update: Record<string, unknown> = {};
 
     if (sellerVerificationStatus !== undefined) {
@@ -53,6 +53,25 @@ export async function PATCH(request: Request, context: RouteContext) {
       update.canCreateRenter = canCreateRenter;
     }
 
+    if (role !== undefined) {
+      if (!["user", "agency", "renter", "admin"].includes(role)) {
+        return NextResponse.json({ error: "Invalid role value." }, { status: 400 });
+      }
+
+      update.role = role;
+
+      if (role === "agency") {
+        update.canCreateAgency = true;
+        update.canCreateRenter = false;
+      } else if (role === "renter") {
+        update.canCreateRenter = true;
+        update.canCreateAgency = false;
+      } else if (role === "admin") {
+        update.canCreateAgency = false;
+        update.canCreateRenter = false;
+      }
+    }
+
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ error: "No valid admin update provided." }, { status: 400 });
     }
@@ -63,7 +82,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       id,
       { $set: update },
       { new: true, runValidators: true }
-    ).select("name email sellerVerificationStatus verified accountStatus canCreateAgency canCreateRenter");
+    ).select("name email role sellerVerificationStatus verified accountStatus canCreateAgency canCreateRenter");
 
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });

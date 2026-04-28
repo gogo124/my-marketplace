@@ -18,19 +18,24 @@ const alexandria = Alexandria({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: {
-    default: "Moroccan Trip | Voyages, agences, camping et equipements au Maroc",
+    default: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب",
     template: "%s | Moroccan Trip"
   },
   description:
-    "Moroccan Trip reunit voyages organises, agences verifiees, equipements, lieux de camping et partenaires de route dans une experience plus claire et plus fiable.",
+    "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.",
   keywords: [
     "Moroccan Trip",
+    "trip Morocco",
+    "camping Morocco",
+    "تخييم المغرب",
+    "رحلات منظمة المغرب",
+    "كراء معدات التخييم",
+    "أماكن التخييم في المغرب",
+    "رفيق سفر المغرب",
     "voyage Maroc",
-    "agence voyage Maroc",
     "camping Maroc",
-    "location equipement",
-    "trip code",
-    "partenaire voyage"
+    "location equipement camping",
+    "trip space"
   ],
   alternates: {
     canonical: "/"
@@ -47,9 +52,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    title: "Moroccan Trip | Voyages, agences, camping et equipements au Maroc",
+    title: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب",
     description:
-      "Une plateforme marocaine plus claire pour decouvrir des agences, reserver des voyages, louer ou acheter du materiel et trouver les bons spots de camping.",
+      "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.",
     siteName: "Moroccan Trip",
     images: [
       {
@@ -62,9 +67,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Moroccan Trip",
+    title: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب",
     description:
-      "Agences verifiees, voyages organises, camping et equipements au Maroc.",
+      "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.",
     images: ["/images/hero-main.jpg"]
   },
   robots: {
@@ -96,8 +101,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     sameAs: [],
     description:
       locale === "ar"
-        ? "منصة مغربية تجمع الرحلات المنظمة، الوكالات، التخييم والمعدات في تجربة أوضح وأسهل."
-        : "Plateforme marocaine qui reunit voyages organises, agences, camping et equipements dans une experience plus simple."
+        ? "منصة مغربية للرحلات المنظمة، التخييم، كراء وشراء المعدات، ورفيق السفر."
+        : "Plateforme marocaine pour voyages organises, camping, location et achat de materiel, et compagnon de voyage."
   };
 
   return (

@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
 import { VerificationBadge } from "@/components/verification-badge";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { trackAnalyticsEvent } from "@/lib/analytics";
-import { SiteLocale, translateApiError } from "@/lib/i18n";
+import { SiteLocale, translateApiError, withLocale } from "@/lib/i18n";
 
 type RentalItemCardProps = {
   item: {
@@ -34,8 +35,6 @@ type RentalItemCardProps = {
 };
 
 export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTripId }: RentalItemCardProps) {
-  const [activeAction, setActiveAction] = useState<"request" | "whatsapp" | null>(null);
-  const [tripCode, setTripCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -52,10 +51,9 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
           unavailable: "غير متوفر",
           request: "اطلب الآن",
           whatsapp: "واتساب",
-          enterTripCode: "أدخل رمز الرحلة",
-          unlockBody: "يبقى التصفح مفتوحاً، لكن التواصل وطلب الكراء يتطلبان رمز رحلة صالح.",
-          cancel: "إلغاء",
-          unlock: "تحقق",
+          lockedTitle: "مساحة التريب مطلوبة",
+          lockedBody: "باش ترسل طلب كراء أو تواصل مباشر، خاصك تكون داخل لمساحة التريب بعد تأكيد الحجز.",
+          openTripSpace: "ادخل لمساحة التريب",
           by: "بواسطة",
           noDescription: "معدات كراء جاهزة للحجز والتنسيق المباشر."
         }
@@ -68,10 +66,9 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
           unavailable: "Indisponible",
           request: "Demander",
           whatsapp: "WhatsApp",
-          enterTripCode: "Entrez votre code voyage",
-          unlockBody: "La navigation reste ouverte, mais le contact et la demande exigent un code voyage valide.",
-          cancel: "Annuler",
-          unlock: "Verifier",
+          lockedTitle: "Espace Trip requis",
+          lockedBody: "Pour contacter ou demander la location, vous devez etre dans l'Espace Trip apres confirmation.",
+          openTripSpace: "Ouvrir l'Espace Trip",
           by: "Par",
           noDescription: "Equipement location disponible avec coordination directe."
         };
@@ -91,7 +88,7 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
     router.push(buildLoginPath(pathname, searchParams.toString(), locale));
   }
 
-  async function unlockAction(nextAction = activeAction) {
+  async function unlockAction(nextAction: "request" | "whatsapp") {
     if (!isSignedIn) {
       redirectToLogin();
       return;
@@ -105,7 +102,6 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tripCode: authorizedTripId ? undefined : tripCode,
           tripId: authorizedTripId,
           rentalItemId: item._id
         })
@@ -113,7 +109,7 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
       const data = await parseApiResponse(response);
 
       if (!response.ok) {
-        throw new Error(translateApiError(getApiError(data, "Invalid trip code."), locale));
+        throw new Error(translateApiError(getApiError(data, "Invalid trip access."), locale));
       }
 
       if (nextAction === "request" && data.phone) {
@@ -128,9 +124,6 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
           window.open(`https://wa.me/${whatsappDigits}`, "_blank", "noopener,noreferrer");
         }
       }
-
-      setTripCode("");
-      setActiveAction(null);
     } catch (submissionError) {
       setError(
         submissionError instanceof Error ? submissionError.message : translateApiError("Unexpected error.", locale)
@@ -196,20 +189,18 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
                 return;
               }
 
-              trackAnalyticsEvent("booking_click", { surface: "rental_item", rental_item_id: item._id });
-              if (authorizedTripId) {
-                setActiveAction("request");
-                setError("");
-                void unlockAction("request");
+              if (!authorizedTripId) {
+                setError(labels.lockedBody);
                 return;
               }
 
-              setActiveAction("request");
-              setError("");
+              trackAnalyticsEvent("booking_click", { surface: "rental_item", rental_item_id: item._id });
+              void unlockAction("request");
             }}
+            disabled={loading}
             className="inline-flex flex-1 items-center justify-center rounded-full bg-forest px-4 py-3 font-semibold text-white transition hover:bg-[#14533f]"
           >
-            {labels.request}
+            {loading ? "..." : labels.request}
           </button>
           <button
             type="button"
@@ -219,58 +210,33 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
                 return;
               }
 
-              trackAnalyticsEvent("whatsapp_click", { surface: "rental_item", rental_item_id: item._id });
-              if (authorizedTripId) {
-                setActiveAction("whatsapp");
-                setError("");
-                void unlockAction("whatsapp");
+              if (!authorizedTripId) {
+                setError(labels.lockedBody);
                 return;
               }
 
-              setActiveAction("whatsapp");
-              setError("");
+              trackAnalyticsEvent("whatsapp_click", { surface: "rental_item", rental_item_id: item._id });
+              void unlockAction("whatsapp");
             }}
+            disabled={loading}
             className="inline-flex flex-1 items-center justify-center rounded-full border border-ink/10 bg-white px-4 py-3 font-semibold text-ink transition hover:bg-slate-50"
           >
-            {labels.whatsapp}
+            {loading ? "..." : labels.whatsapp}
           </button>
         </div>
-        {activeAction && !authorizedTripId ? (
-          <div className="rounded-[1.5rem] border border-ink/10 bg-slate-50 p-4">
-            <p className="text-sm font-semibold text-slate-900">{labels.enterTripCode}</p>
-            <p className="mt-1 text-xs text-slate-500">{labels.unlockBody}</p>
-            <input
-              value={tripCode}
-              onChange={(event) => setTripCode(event.target.value.toUpperCase())}
-              placeholder={labels.enterTripCode}
-              className="mt-3 w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none transition focus:border-[#f97316]/40 focus:ring-4 focus:ring-[#f97316]/10"
-            />
-            {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => {
-                  void unlockAction();
-                }}
-                disabled={loading}
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-[#f97316] px-4 py-3 font-semibold text-white transition hover:bg-[#ea580c] disabled:opacity-60"
-              >
-                {labels.unlock}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveAction(null);
-                  setTripCode("");
-                  setError("");
-                }}
-                className="inline-flex flex-1 items-center justify-center rounded-full border border-ink/10 bg-white px-4 py-3 font-semibold text-ink transition hover:bg-slate-50"
-              >
-                {labels.cancel}
-              </button>
-            </div>
+        {!authorizedTripId ? (
+          <div className="rounded-[1.5rem] border border-dashed border-ink/15 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900">{labels.lockedTitle}</p>
+            <p className="mt-1 text-xs text-slate-500">{labels.lockedBody}</p>
+            <Link
+              href={withLocale("/dashboard", locale)}
+              className="mt-3 inline-flex rounded-full bg-[#f97316] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#ea580c]"
+            >
+              {labels.openTripSpace}
+            </Link>
           </div>
         ) : null}
+        {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
       </div>
     </article>
   );

@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
     await connectToDatabase();
 
-    const currentUser = await User.findById(user.id).select("role canCreateRenter");
+    const currentUser = await User.findById(user.id).select("role canCreateRenter canCreateAgency");
 
     if (!currentUser) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       }
     ).populate("user", "name email avatar role");
 
-    await User.findByIdAndUpdate(user.id, { $set: { role: "renter" } });
+    await User.findByIdAndUpdate(user.id, { $set: { role: "renter", canCreateRenter: false } });
     return NextResponse.json({ profile });
   } catch (error) {
     return createRouteErrorResponse(error, "Could not save renter profile.");

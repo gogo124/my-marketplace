@@ -15,7 +15,7 @@ export default async function AdminReservationsPage({
     <div className="space-y-8">
       <section className="rounded-[2rem] bg-white p-6 shadow-card">
         <h1 className="text-3xl font-black text-ink">Reservations</h1>
-        <p className="mt-3 text-sm text-ink/60">Inspect reservation records, update their status, and delete invalid or abusive entries.</p>
+        <p className="mt-3 text-sm text-ink/60">Inspect reservation records, confirm bookings, update their status, and delete invalid or abusive entries.</p>
         <form className="mt-4 flex flex-wrap gap-3">
           <select name="status" defaultValue={status} className="rounded-xl border border-ink/10 px-4 py-2 text-sm">
             <option value="">All statuses</option>
@@ -45,7 +45,7 @@ export default async function AdminReservationsPage({
                 <p className="mt-2 text-sm text-ink/60">Total: {reservation.totalPrice || 0} DH</p>
                 <div className="mt-2"><StatusBadge kind="reservation" status={reservation.status} locale="fr" /></div>
                 {reservation.status === "confirmed" && reservation.trip?.tripCode ? (
-                  <p className="mt-2 text-sm font-semibold text-clay">Trip code ready: {reservation.trip.tripCode}</p>
+                  <p className="mt-2 text-sm font-semibold text-clay">Trip Space ready: {reservation.trip.tripCode}</p>
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-3">

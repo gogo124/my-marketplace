@@ -3,9 +3,11 @@ import { getAuthSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
 import { MAX_LISTING_IMAGES } from "@/lib/image-upload-shared";
+import { getUserPermissions } from "@/lib/permissions";
 import { validateRentalItemPayload } from "@/lib/validation";
 import RentalItem from "@/models/RentalItem";
 import RenterProfile from "@/models/RenterProfile";
+import User from "@/models/User";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -23,7 +25,17 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     await connectToDatabase();
 
+    const currentUser = await User.findById(session.user.id).select("role canCreateRenter canCreateAgency");
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+
     const profile = await RenterProfile.findOne({ user: session.user.id }).select("_id");
+
+    if (!getUserPermissions(currentUser, { hasRenterProfile: Boolean(profile?._id) }).canOpenRenterProfile) {
+      return NextResponse.json({ error: "Access denied." }, { status: 403 });
+    }
 
     if (!profile) {
       return NextResponse.json({ error: "Renter profile not found." }, { status: 404 });
@@ -125,7 +137,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
     await connectToDatabase();
 
+    const currentUser = await User.findById(session.user.id).select("role canCreateRenter canCreateAgency");
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+
     const profile = await RenterProfile.findOne({ user: session.user.id }).select("_id");
+
+    if (!getUserPermissions(currentUser, { hasRenterProfile: Boolean(profile?._id) }).canOpenRenterProfile) {
+      return NextResponse.json({ error: "Access denied." }, { status: 403 });
+    }
 
     if (!profile) {
       return NextResponse.json({ error: "Renter profile not found." }, { status: 404 });

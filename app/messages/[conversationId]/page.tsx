@@ -138,7 +138,7 @@ export default async function ConversationPage({
               <DashboardEmptyState
                 title={copy.noMessages}
                 body={locale === "ar" ? "ابدأ المحادثة برسالة قصيرة وواضحة." : "Start the conversation with a short, clear message."}
-                href="/listings"
+                href="/agencies"
                 ctaLabel={locale === "ar" ? "تصفح الإعلانات" : "Browse listings"}
                 secondaryHref="/travel-partners"
                 secondaryLabel={locale === "ar" ? "رفقاء السفر" : "Travel partners"}

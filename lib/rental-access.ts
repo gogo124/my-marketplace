@@ -87,63 +87,35 @@ export async function resolveAuthorizedRentalTrip({
 }) {
   await connectToDatabase();
 
-  if (tripCode) {
-    const normalizedTripCode = normalizeTripCode(tripCode);
+  const trip = tripCode
+    ? await AgencyTrip.findOne({
+        tripCode: normalizeTripCode(tripCode),
+        status: "active"
+      })
+        .select("_id agency renterPartners tripCode")
+        .lean()
+    : tripId
+      ? isValidObjectId(tripId)
+        ? await AgencyTrip.findOne({
+            _id: tripId,
+            status: "active"
+          })
+            .select("_id agency renterPartners tripCode")
+            .lean()
+        : null
+      : null;
 
-    if (!normalizedTripCode) {
-      return { error: "Trip code is required." } as const;
-    }
-
-    const trip = await AgencyTrip.findOne({
-      tripCode: normalizedTripCode,
-      status: "active"
-    })
-      .select("_id agency renterPartners tripCode")
-      .lean();
-
-    if (!trip) {
-      return { error: "Invalid trip code." } as const;
-    }
-
-    const reservation = await findConfirmedReservation(userId, String(trip._id));
-
-    if (!reservation) {
-      return { error: "You need a confirmed reservation for this trip before accessing rental." } as const;
-    }
-
-    return { trip, reservation } as const;
+  if (!trip) {
+    return { error: tripCode ? "Invalid trip code." : "Trip is unavailable." } as const;
   }
 
-  if (tripId) {
-    if (!isValidObjectId(tripId)) {
-      return { error: "Trip is invalid." } as const;
-    }
+  const reservation = await findConfirmedReservation(userId, String(trip._id));
 
-    if (!hasRentalTripAccess(cookieValue, tripId)) {
-      return { error: "Rental access expired. Enter the trip code again." } as const;
-    }
-
-    const trip = await AgencyTrip.findOne({
-      _id: tripId,
-      status: "active"
-    })
-      .select("_id agency renterPartners tripCode")
-      .lean();
-
-    if (!trip) {
-      return { error: "Trip is unavailable." } as const;
-    }
-
-    const reservation = await findConfirmedReservation(userId, String(trip._id));
-
-    if (!reservation) {
-      return { error: "You need a confirmed reservation for this trip before accessing rental." } as const;
-    }
-
-    return { trip, reservation } as const;
+  if (!reservation) {
+    return { error: "You need a confirmed reservation for this trip before accessing rental." } as const;
   }
 
-  return { error: "Trip access is required." } as const;
+  return { trip, reservation } as const;
 }
 
 export async function validateAuthorizedRentalItemAccess({

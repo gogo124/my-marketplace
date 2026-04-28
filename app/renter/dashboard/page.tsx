@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import {
   DashboardEmptyState,
   DashboardHero,
@@ -9,9 +8,10 @@ import {
 import { AgencyStatusActions } from "@/components/agency-status-actions";
 import { PartnershipManager } from "@/components/partnership-manager";
 import { StatusBadge } from "@/components/status-badge";
+import { WorkspaceAccessState } from "@/components/workspace-access-state";
 import { getAuthSession } from "@/lib/auth";
 import { resolveLocale, withLocale } from "@/lib/i18n";
-import { getRenterWorkspaceRedirectPath, getSessionUser } from "@/lib/permissions";
+import { getSessionUser, getUserPermissions } from "@/lib/permissions";
 import { getRenterDashboardData } from "@/lib/renter";
 
 export default async function RenterDashboardPage({
@@ -24,14 +24,56 @@ export default async function RenterDashboardPage({
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
-    redirect(withLocale("/login", locale));
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "خاصك تسجل الدخول" : "Connexion requise"}
+        body={locale === "ar" ? "سجل الدخول باش تدخل للوحة الكراء." : "Connectez-vous pour acceder au tableau location."}
+        primaryHref="/login"
+        primaryLabel={locale === "ar" ? "تسجيل الدخول" : "Se connecter"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
   }
 
   const dashboard = await getRenterDashboardData(session.user.id);
-  const redirectPath = getRenterWorkspaceRedirectPath(getSessionUser(session), locale, Boolean(dashboard.profile?._id));
+  const permissions = getUserPermissions(getSessionUser(session), { hasRenterProfile: Boolean(dashboard.profile?._id) });
 
-  if (redirectPath) {
-    redirect(redirectPath);
+  if (!permissions.canOpenRenterProfile) {
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "الحساب ديالك باقي ما مفعلش ككرّاي" : "Acces location non active"}
+        body={
+          locale === "ar"
+            ? "باش تدخل للوحة الكراء، خاص الإدارة تفعل ليك صلاحية الكراء أولاً."
+            : "L'administration doit d'abord activer l'acces location pour ouvrir ce tableau."
+        }
+        primaryHref="/dashboard"
+        primaryLabel={locale === "ar" ? "رجع للوحة المستخدم" : "Aller au tableau utilisateur"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
+  }
+
+  if (!dashboard.profile?._id) {
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "خاصك تكمل ملف الكراء" : "Profil location requis"}
+        body={
+          locale === "ar"
+            ? "تم تفعيل صلاحية الكراء، وباقي خاصك تكمل ملف الكراء باش تولي تقدر تضيف المعدات وتدير الطلبات."
+            : "L'acces location est active, mais vous devez d'abord completer le profil location pour ajouter du materiel et gerer les demandes."
+        }
+        primaryHref="/renter/profile"
+        primaryLabel={locale === "ar" ? "كمل ملف الكراء" : "Completer le profil"}
+        secondaryHref="/dashboard"
+        secondaryLabel={locale === "ar" ? "رجع للوحة المستخدم" : "Tableau utilisateur"}
+      />
+    );
   }
 
   return (
@@ -155,6 +197,7 @@ export default async function RenterDashboardPage({
         accepted={(dashboard.partnerships as any).accepted || []}
         incomingRequests={(dashboard.partnerships as any).incomingRequests || []}
         outgoingRequests={(dashboard.partnerships as any).outgoingRequests || []}
+        currentRenterProfileId={dashboard.profile?._id ? String(dashboard.profile._id) : undefined}
         locale={locale}
       />
     </div>

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   DashboardHero,
   DashboardQuickLinks
@@ -7,10 +6,11 @@ import {
 import { AgencyOverviewSection, AgencyReservationsSection, AgencyStatsGrid } from "@/components/agency-owner-sections";
 import { StatusBadge } from "@/components/status-badge";
 import { PartnershipManager } from "@/components/partnership-manager";
+import { WorkspaceAccessState } from "@/components/workspace-access-state";
 import { getAuthSession } from "@/lib/auth";
 import { getAgencyDashboardData } from "@/lib/agency";
 import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
-import { getAgencyWorkspaceRedirectPath, getSessionUser } from "@/lib/permissions";
+import { getSessionUser, getUserPermissions } from "@/lib/permissions";
 
 export default async function AgencyDashboardPage({
   searchParams
@@ -23,18 +23,60 @@ export default async function AgencyDashboardPage({
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
-    redirect(withLocale("/login", locale));
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "خاصك تسجل الدخول" : "Connexion requise"}
+        body={locale === "ar" ? "سجل الدخول باش تدخل للوحة الوكالة." : "Connectez-vous pour acceder au tableau agence."}
+        primaryHref="/login"
+        primaryLabel={locale === "ar" ? "تسجيل الدخول" : "Se connecter"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
   }
 
   const dashboard = await getAgencyDashboardData(session.user.id);
-  const redirectPath = getAgencyWorkspaceRedirectPath(getSessionUser(session), locale, Boolean(dashboard.profile?._id));
+  const permissions = getUserPermissions(getSessionUser(session), { hasAgencyProfile: Boolean(dashboard.profile?._id) });
 
-  if (redirectPath) {
-    redirect(redirectPath);
+  if (!permissions.canOpenAgencyProfile) {
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "الحساب ديالك باقي ما مفعلش كوكالة" : "Acces agence non active"}
+        body={
+          locale === "ar"
+            ? "باش تدخل للوحة الوكالة، خاص الإدارة تفعل ليك هاد الصلاحية أولاً."
+            : "L'administration doit d'abord activer l'acces agence pour ouvrir ce tableau."
+        }
+        primaryHref="/dashboard"
+        primaryLabel={locale === "ar" ? "رجع للوحة المستخدم" : "Aller au tableau utilisateur"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
+  }
+
+  if (!dashboard.profile?._id) {
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "خاصك تكمل ملف الوكالة" : "Profil agence requis"}
+        body={
+          locale === "ar"
+            ? "تم تفعيل صلاحية الوكالة، وباقي خاصك تكمل ملف الوكالة باش تولي تقدر تنشر الرحلات وتدير الحجوزات."
+            : "L'acces agence est active, mais vous devez completer le profil agence pour publier des voyages et gerer les reservations."
+        }
+        primaryHref="/agency/profile"
+        primaryLabel={locale === "ar" ? "كمل ملف الوكالة" : "Completer le profil"}
+        secondaryHref="/dashboard"
+        secondaryLabel={locale === "ar" ? "رجع للوحة المستخدم" : "Tableau utilisateur"}
+      />
+    );
   }
 
   const cards = [
-    { href: "/agency/trips", label: copy.trips, value: dashboard.stats.tripsCount, note: locale === "ar" ? "الرحلات ورموزها" : "Trips and codes" },
+    { href: "/agency/trips", label: copy.trips, value: dashboard.stats.tripsCount, note: locale === "ar" ? "الرحلات ومساحة التريب" : "Trips and Trip Space" },
     { href: "/agency/reservations", label: copy.reservations, value: dashboard.stats.reservationsCount, note: locale === "ar" ? "إدارة الحجوزات" : "Manage reservations" },
     { href: "/agency/rental-requests", label: locale === "ar" ? "طلبات الكراء" : "Demandes location", value: dashboard.stats.rentalRequestsCount, note: locale === "ar" ? "مرتبطة برحلاتك" : "Linked to your trips" }
   ];

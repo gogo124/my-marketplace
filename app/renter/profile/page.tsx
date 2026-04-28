@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import { RenterProfileForm } from "@/components/renter-profile-form";
+import { WorkspaceAccessState } from "@/components/workspace-access-state";
 import { getAuthSession } from "@/lib/auth";
 import { resolveLocale, withLocale } from "@/lib/i18n";
 import { getSessionUser, getUserPermissions } from "@/lib/permissions";
@@ -15,14 +15,38 @@ export default async function RenterProfilePage({
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
-    redirect(withLocale("/login", locale));
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "خاصك تسجل الدخول" : "Connexion requise"}
+        body={locale === "ar" ? "سجل الدخول باش تكمل ملف الكراء." : "Connectez-vous pour completer le profil location."}
+        primaryHref="/login"
+        primaryLabel={locale === "ar" ? "تسجيل الدخول" : "Se connecter"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
   }
 
   const dashboard = await getRenterDashboardData(session.user.id);
   const permissions = getUserPermissions(getSessionUser(session), { hasRenterProfile: Boolean(dashboard.profile?._id) });
 
   if (!permissions.canOpenRenterProfile) {
-    redirect(withLocale("/", locale));
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "الحساب ديالك باقي ما مفعلش ككرّاي" : "Acces location non active"}
+        body={
+          locale === "ar"
+            ? "الإدارة خاصها تفعل ليك صلاحية الكراء أولاً قبل ما تقدر تنشئ ملف الكراء."
+            : "L'administration doit d'abord activer l'acces location avant la creation du profil."
+        }
+        primaryHref="/dashboard"
+        primaryLabel={locale === "ar" ? "رجع للوحة المستخدم" : "Aller au tableau utilisateur"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
   }
   const labels =
     locale === "ar"

@@ -23,6 +23,9 @@ const AgencyReservationSchema = new Schema(
 );
 
 AgencyReservationSchema.index({ agency: 1, createdAt: -1 });
+AgencyReservationSchema.index({ trip: 1, user: 1 }, { unique: true, partialFilterExpression: { user: { $type: "objectId" } } });
+AgencyReservationSchema.index({ trip: 1, status: 1, createdAt: -1 });
+AgencyReservationSchema.index({ user: 1, createdAt: -1 });
 
 export type AgencyReservationDocument = InferSchemaType<typeof AgencyReservationSchema> & { _id: string };
 

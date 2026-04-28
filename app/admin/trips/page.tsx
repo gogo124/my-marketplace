@@ -9,7 +9,7 @@ export default async function AdminTripsPage() {
       <section className="rounded-[2rem] bg-white p-6 shadow-card">
         <h1 className="text-3xl font-black text-ink">Trips</h1>
         <p className="mt-3 text-sm text-ink/60">
-          Review published trips and manage the trip code used for rental access.
+          Review published trips and manage Trip Space access for rental flow.
         </p>
       </section>
 

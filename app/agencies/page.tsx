@@ -232,7 +232,7 @@ export default async function AgenciesPage({
             <div>
               <p className="text-sm font-semibold text-ink">{locale === "ar" ? "3. دخل للكراء" : "3. Accedez a la location"}</p>
               <p className="mt-2 text-sm leading-7 text-ink/60">
-                {locale === "ar" ? "الكراء متاح فقط بعد تأكيد الحجز وكود الرحلة." : "La location n'est disponible qu'apres confirmation et code voyage."}
+                {locale === "ar" ? "الكراء متاح فقط بعد تأكيد الحجز ومن داخل مساحة التريب." : "La location n'est disponible qu'apres confirmation et depuis l'Espace Trip."}
               </p>
             </div>
           </div>

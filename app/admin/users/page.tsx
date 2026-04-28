@@ -77,6 +77,30 @@ export default async function AdminUsersPage({
                 )}
                 <AdminMutationButton
                   endpoint={`/api/admin/users/${user._id}`}
+                  body={{ role: "user" }}
+                  label="Set user role"
+                  variant={user.role === "user" ? "neutral" : undefined}
+                />
+                <AdminMutationButton
+                  endpoint={`/api/admin/users/${user._id}`}
+                  body={{ role: "agency" }}
+                  label="Set agency role"
+                  variant={user.role === "agency" ? "neutral" : undefined}
+                />
+                <AdminMutationButton
+                  endpoint={`/api/admin/users/${user._id}`}
+                  body={{ role: "renter" }}
+                  label="Set renter role"
+                  variant={user.role === "renter" ? "neutral" : undefined}
+                />
+                <AdminMutationButton
+                  endpoint={`/api/admin/users/${user._id}`}
+                  body={{ role: "admin" }}
+                  label="Set admin role"
+                  variant={user.role === "admin" ? "neutral" : undefined}
+                />
+                <AdminMutationButton
+                  endpoint={`/api/admin/users/${user._id}`}
                   body={{ canCreateAgency: !user.canCreateAgency }}
                   label={user.canCreateAgency ? "Disable agency creation" : "Allow agency creation"}
                   variant={user.canCreateAgency ? "neutral" : undefined}

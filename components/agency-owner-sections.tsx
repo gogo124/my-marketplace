@@ -149,6 +149,11 @@ export function AgencyReservationsSection({ reservations, locale = "ar" }: { res
                 <p className="font-semibold text-ink">{reservation.trip?.title || copy.trips}</p>
                 <StatusBadge kind="reservation" status={reservation.status} locale={safeLocale} />
               </div>
+              {reservation.status === "pending" ? (
+                <p className="mt-2 rounded-full bg-[#fff7ed] px-3 py-1 text-xs font-semibold text-[#c2410c]">
+                  {safeLocale === "ar" ? "في انتظار تأكيد الوكالة" : "Waiting for agency confirmation"}
+                </p>
+              ) : null}
               <p className="mt-2 text-sm text-ink/60">{reservation.user?.name || reservation.customerName || copy.marketplaceUser}</p>
               <p className="mt-2 text-sm text-ink/60">{reservation.customerEmail || reservation.user?.email || "-"}</p>
               <p className="mt-2 text-sm text-ink/60">{reservation.phoneNumber || "-"}</p>
@@ -162,10 +167,13 @@ export function AgencyReservationsSection({ reservations, locale = "ar" }: { res
               <p className="mt-2 text-sm font-semibold text-clay">
                 {safeLocale === "ar" ? "الإجمالي" : "Total"}: {reservation.totalPrice || 0} DH
               </p>
-              {reservation.trip?.tripCode ? (
-                <p className="mt-2 text-sm font-semibold text-clay">
-                  {safeLocale === "ar" ? "رمز الرحلة" : "Trip Code"}: {reservation.trip.tripCode}
-                </p>
+              {reservation.status === "confirmed" && reservation.trip?._id ? (
+                <Link
+                  href={withLocale(`/trip/${reservation.trip._id}`, safeLocale)}
+                  className="mt-3 inline-flex rounded-full bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-white"
+                >
+                  {safeLocale === "ar" ? "ادخل لمساحة التريب" : "Open Trip Space"}
+                </Link>
               ) : null}
               <p className="mt-2 text-xs uppercase tracking-[0.2em] text-ink/45">
                 {formatLocaleDateTime(reservation.createdAt, safeLocale)}

@@ -21,6 +21,7 @@ type PartnershipManagerProps = {
   accepted: PartnershipEntry[];
   incomingRequests: PartnershipEntry[];
   outgoingRequests: PartnershipEntry[];
+  currentRenterProfileId?: string;
   locale?: SiteLocale;
 };
 
@@ -30,12 +31,14 @@ export function PartnershipManager({
   accepted,
   incomingRequests,
   outgoingRequests,
+  currentRenterProfileId,
   locale = "ar"
 }: PartnershipManagerProps) {
   const router = useRouter();
   const safeLocale = resolveLocale(locale);
   const [loadingId, setLoadingId] = useState("");
-  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"error" | "success" | "info">("info");
 
   const labels =
     safeLocale === "ar"
@@ -76,13 +79,25 @@ export function PartnershipManager({
 
   async function sendRequest(targetId: string) {
     setLoadingId(targetId);
-    setError("");
+    setMessage("");
 
     try {
+      const body =
+        role === "renter"
+          ? {
+              agencyId: targetId,
+              renterProfileId: currentRenterProfileId
+            }
+          : { targetId };
+
+      if (role === "renter" && !currentRenterProfileId) {
+        throw new Error(locale === "ar" ? "ملف الكراء غير متاح." : "Rental profile unavailable.");
+      }
+
       const response = await fetch("/api/partnerships", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetId })
+        body: JSON.stringify(body)
       });
       const data = await parseApiResponse(response);
 
@@ -90,11 +105,31 @@ export function PartnershipManager({
         throw new Error(translateApiError(getApiError(data, "Could not send partnership request."), safeLocale));
       }
 
+      const status = (data as any)?.partnership?.status as PartnershipEntry["partnershipStatus"];
+      setMessage(
+        status === "pending"
+          ? locale === "ar"
+            ? "طلب الشراكة قيد الانتظار."
+            : "Partnership request is pending."
+          : status === "accepted"
+            ? locale === "ar"
+              ? "الشراكة مقبولة بالفعل."
+              : "Partnership is already accepted."
+            : status === "rejected"
+              ? locale === "ar"
+                ? "تم رفض هذه الشراكة."
+                : "This partnership was rejected."
+              : locale === "ar"
+                ? "تم حفظ حالة الشراكة."
+                : "Partnership status updated."
+      );
+      setMessageTone("success");
       router.refresh();
     } catch (requestError) {
-      setError(
+      setMessage(
         requestError instanceof Error ? requestError.message : translateApiError("Unexpected error.", safeLocale)
       );
+      setMessageTone("error");
     } finally {
       setLoadingId("");
     }
@@ -102,7 +137,7 @@ export function PartnershipManager({
 
   async function updateRequest(partnershipId: string, status: "accepted" | "rejected") {
     setLoadingId(partnershipId);
-    setError("");
+    setMessage("");
 
     try {
       const response = await fetch("/api/partnerships", {
@@ -116,11 +151,22 @@ export function PartnershipManager({
         throw new Error(translateApiError(getApiError(data, "Could not update partnership request."), safeLocale));
       }
 
+      setMessage(
+        locale === "ar"
+          ? status === "accepted"
+            ? "تم قبول الطلب."
+            : "تم رفض الطلب."
+          : status === "accepted"
+            ? "Request accepted."
+            : "Request rejected."
+      );
+      setMessageTone("success");
       router.refresh();
     } catch (requestError) {
-      setError(
+      setMessage(
         requestError instanceof Error ? requestError.message : translateApiError("Unexpected error.", safeLocale)
       );
+      setMessageTone("error");
     } finally {
       setLoadingId("");
     }
@@ -130,7 +176,11 @@ export function PartnershipManager({
     <section className="space-y-6 rounded-[2rem] bg-white p-6 shadow-card">
       <div>
         <h2 className="text-2xl font-black text-ink">{labels.title}</h2>
-        {error ? <p className="mt-3 text-sm font-medium text-red-600">{error}</p> : null}
+        {message ? (
+          <p className={`mt-3 text-sm font-medium ${messageTone === "error" ? "text-red-600" : messageTone === "success" ? "text-emerald-600" : "text-ink/60"}`}>
+            {message}
+          </p>
+        ) : null}
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
@@ -155,32 +205,36 @@ export function PartnershipManager({
               <div key={`incoming-${entry._id}`} className="rounded-[1.25rem] bg-sand p-3">
                 <p className="font-semibold text-ink">{entry.name || "-"}</p>
                 <p className="mt-1 text-sm text-ink/60">{labels.city}: {entry.city || "-"}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (entry.partnershipId) {
-                        void updateRequest(entry.partnershipId, "accepted");
-                      }
-                    }}
-                    disabled={!entry.partnershipId || loadingId === entry.partnershipId}
-                    className="rounded-full bg-forest px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                  >
-                    {labels.accept}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (entry.partnershipId) {
-                        void updateRequest(entry.partnershipId, "rejected");
-                      }
-                    }}
-                    disabled={!entry.partnershipId || loadingId === entry.partnershipId}
-                    className="rounded-full border border-ink/10 px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60"
-                  >
-                    {labels.reject}
-                  </button>
-                </div>
+                {role === "agency" ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (entry.partnershipId) {
+                          void updateRequest(entry.partnershipId, "accepted");
+                        }
+                      }}
+                      disabled={!entry.partnershipId || loadingId === entry.partnershipId}
+                      className="rounded-full bg-forest px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                    >
+                      {labels.accept}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (entry.partnershipId) {
+                          void updateRequest(entry.partnershipId, "rejected");
+                        }
+                      }}
+                      disabled={!entry.partnershipId || loadingId === entry.partnershipId}
+                      className="rounded-full border border-ink/10 px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60"
+                    >
+                      {labels.reject}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm font-semibold text-clay">{labels.pending}</p>
+                )}
               </div>
             ))
           ) : (
@@ -209,7 +263,10 @@ export function PartnershipManager({
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {directory.map((entry) => {
             const isBusy = loadingId === entry._id;
-            const showSendButton = entry.partnershipStatus === "none" || entry.partnershipStatus === "rejected";
+            const isRenter = role === "renter";
+            const showSendButton = isRenter
+              ? entry.partnershipStatus === "none"
+              : entry.partnershipStatus === "none" || entry.partnershipStatus === "rejected";
 
             return (
               <div key={entry._id} className="rounded-[1.25rem] border border-ink/10 p-4">
@@ -228,7 +285,7 @@ export function PartnershipManager({
                       disabled={isBusy}
                       className="rounded-full bg-forest px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                     >
-                      {entry.partnershipStatus === "rejected" ? labels.resend : labels.send}
+                      {isRenter ? labels.send : entry.partnershipStatus === "rejected" ? labels.resend : labels.send}
                     </button>
                   ) : (
                     <span className="rounded-full bg-sand px-3 py-2 text-sm font-semibold text-ink">

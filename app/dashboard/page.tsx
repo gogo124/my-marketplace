@@ -35,17 +35,17 @@ export default async function UserDashboardPage({
         title={isArabic ? `مرحباً ${dashboard.user?.name || session.user.name || ""}` : `Welcome ${dashboard.user?.name || session.user.name || ""}`}
         body={
           isArabic
-            ? "راقب الحجوزات والرسائل ورموز الرحلات والعناصر المحفوظة من مكان واحد."
-            : "Track reservations, messages, trip codes, and saved items from one place."
+            ? "راقب الحجوزات والرسائل والعناصر المحفوظة ومساحة التريب من مكان واحد."
+            : "Track reservations, messages, saved items, and Trip Space access from one place."
         }
         locale={locale}
         chips={[
           `${dashboard.stats.reservationsCount} ${isArabic ? "حجز" : "reservations"}`,
           `${dashboard.stats.unreadMessagesCount} ${isArabic ? "غير مقروءة" : "unread"}`,
-          `${dashboard.stats.tripCodesCount} ${isArabic ? "رمز رحلة" : "trip codes"}`
+          `${dashboard.reservations.filter((reservation: any) => reservation.status === "confirmed").length} ${isArabic ? "مؤكد" : "confirmed"}`
         ]}
         actions={[
-          { href: "/listings", label: isArabic ? "تصفح الرحلات" : "Browse trips" },
+          { href: "/agencies", label: isArabic ? "تصفح الرحلات" : "Browse trips" },
           { href: "/rentals", label: isArabic ? "كراء المعدات" : "Rent equipment" }
         ]}
       />
@@ -69,10 +69,10 @@ export default async function UserDashboardPage({
               tone: "clay"
             },
             {
-              label: isArabic ? "رموز الرحلات" : "Trip codes",
-              value: dashboard.stats.tripCodesCount,
-              note: isArabic ? "رحلات قابلة للتحقق" : "Trips with code access",
-              href: "/messages",
+              label: isArabic ? "مساحة التريب" : "Trip Space",
+              value: dashboard.reservations.filter((reservation: any) => reservation.status === "confirmed").length,
+              note: isArabic ? "رحلات جاهزة للدخول" : "Trips ready to open",
+              href: "/agencies",
               tone: "amber"
             },
             {
@@ -90,7 +90,7 @@ export default async function UserDashboardPage({
       <DashboardQuickLinks
         locale={locale}
         items={[
-          { href: "/listings", label: isArabic ? "تصفح الرحلات" : "Browse trips", note: isArabic ? "اعثر على إعلان مناسب" : "Find the right listing" },
+          { href: "/agencies", label: isArabic ? "تصفح الرحلات" : "Browse trips", note: isArabic ? "اعثر على رحلة مناسبة" : "Find the right trip" },
           { href: "/rentals", label: isArabic ? "كراء المعدات" : "Rent equipment", note: isArabic ? "معدات السفر والتخييم" : "Travel and camping gear" },
           { href: "/travel-partners", label: isArabic ? "رفيق سفر" : "Find travel partner", note: isArabic ? "تواصل مع مسافرين" : "Meet other travelers" },
           { href: "/listings/new", label: isArabic ? "إضافة إعلان" : "Add listing", note: isArabic ? "عرض منتج جديد" : "Publish a new item" },
@@ -114,6 +114,18 @@ export default async function UserDashboardPage({
                       <p className="mt-2 text-sm text-slate-500">
                         {reservation.seats} • {reservation.totalPrice || 0} DH
                       </p>
+                      {reservation.status === "confirmed" ? (
+                        <Link
+                          href={withLocale(`/trip/${reservation.trip?._id || ""}`, locale)}
+                          className="mt-3 inline-flex rounded-full bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-white"
+                        >
+                          {isArabic ? "ادخل لمساحة التريب" : "Open Trip Space"}
+                        </Link>
+                      ) : reservation.status === "pending" ? (
+                        <p className="mt-3 text-sm font-semibold text-[#c2410c]">
+                          {isArabic ? "في انتظار تأكيد الوكالة" : "Waiting for agency confirmation"}
+                        </p>
+                      ) : null}
                       {reservation.preferredDate || reservation.trip?.startDate ? (
                         <p className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-400">
                           {new Date(reservation.preferredDate || reservation.trip?.startDate).toLocaleDateString()}
@@ -129,7 +141,7 @@ export default async function UserDashboardPage({
             <DashboardEmptyState
               title={isArabic ? "لا توجد حجوزات بعد" : "No reservations yet"}
               body={isArabic ? "ابدأ بحجز أول رحلة من صفحة الرحلات." : "Start by booking a trip from the listings page."}
-              href="/listings"
+              href="/agencies"
               ctaLabel={isArabic ? "تصفح الرحلات" : "Browse trips"}
               locale={locale}
             />
@@ -218,7 +230,7 @@ export default async function UserDashboardPage({
             <DashboardEmptyState
               title={isArabic ? "لا توجد رسائل بعد" : "No messages yet"}
               body={isArabic ? "ابدأ محادثة من صفحة إعلان أو رحلة." : "Start a chat from a listing or trip page."}
-              href="/listings"
+              href="/agencies"
               ctaLabel={isArabic ? "تصفح الإعلانات" : "Browse listings"}
               secondaryHref="/travel-partners"
               secondaryLabel={isArabic ? "الرفقاء" : "Travel partners"}

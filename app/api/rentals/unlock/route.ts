@@ -13,7 +13,7 @@ import { checkRateLimit, getRequestIdentity } from "@/lib/rate-limit";
 export async function POST(request: Request) {
   try {
     const session = await getAuthSession();
-    const deniedResponse = requireMarketplaceParticipant(session, "canValidateTripCodes");
+    const deniedResponse = requireMarketplaceParticipant(session, "canRequestRentals");
 
     if (deniedResponse) {
       return deniedResponse;
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     });
 
     if (!rateLimit.allowed) {
-      return NextResponse.json({ error: "Too many trip code attempts. Please try again shortly." }, { status: 429 });
+      return NextResponse.json({ error: "Too many trip access attempts. Please try again shortly." }, { status: 429 });
     }
 
     const { tripCode, tripId, rentalItemId } = await request.json();
@@ -63,6 +63,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(validation.data);
   } catch (error) {
-    return createRouteErrorResponse(error, "Could not validate trip code.");
+    return createRouteErrorResponse(error, "Could not validate trip access.");
   }
 }

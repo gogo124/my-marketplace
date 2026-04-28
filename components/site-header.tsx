@@ -43,21 +43,18 @@ export function SiteHeader({ session }: SiteHeaderProps) {
   const locale = resolveLocale(searchParams.get("lang") || undefined);
   const copy = siteCopy[locale];
   const [isOpen, setIsOpen] = useState(false);
-  const isAgency = session?.user?.role === "agency";
-  const isRenter = session?.user?.role === "renter";
-  const isAdmin = session?.user?.role === "admin";
   const canCreateAgency = Boolean(session?.user?.canCreateAgency);
   const canCreateRenter = Boolean(session?.user?.canCreateRenter);
+  const isAgency = session?.user?.role === "agency" && !canCreateAgency;
+  const isRenter = session?.user?.role === "renter" && !canCreateRenter;
+  const isAdmin = session?.user?.role === "admin";
   const primaryNavigation = [
-    { href: withLocale("/", locale), label: copy.home },
-    { href: withLocale("/agencies", locale), label: copy.agencies, emphasize: true },
-    { href: withLocale("/camping", locale), label: locale === "ar" ? "أماكن التخييم" : "Camping" },
-    { href: withLocale("/rentals", locale), label: copy.rent }
-  ];
-  const secondaryNavigation = [
-    { href: withLocale("/travel-partners", locale), label: copy.travelPartners },
-    { href: withLocale("/listings/new", locale), label: copy.sell },
-    { href: `${withLocale("/", locale)}#trip-code`, label: "Trip Code" }
+    { href: withLocale("/trips", locale), label: locale === "ar" ? "التريبات" : "Trips", emphasize: true },
+    { href: withLocale("/agencies", locale), label: locale === "ar" ? "وكالات السفر" : "Agencies" },
+    { href: withLocale("/rentals", locale), label: locale === "ar" ? "كراء المعدات" : "Rentals" },
+    { href: withLocale("/listings/new", locale), label: locale === "ar" ? "Marketplace" : "Marketplace" },
+    { href: withLocale("/camping", locale), label: locale === "ar" ? "أماكن التخييم" : "Camping Places" },
+    { href: withLocale("/travel-partners", locale), label: locale === "ar" ? "رفيق سفر" : "Travel Partners" }
   ];
 
   useEffect(() => {
@@ -68,8 +65,8 @@ export function SiteHeader({ session }: SiteHeaderProps) {
     <header className="sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl">
       <div className="border-b border-forest/10 bg-[#0f3d2e] px-4 py-2 text-center text-xs font-semibold text-white/90 sm:px-6">
         {locale === "ar"
-          ? "وكالات موثقة، رحلات أوضح، ودخول سريع عبر Trip Code"
-          : "Agences verifiees, voyages plus clairs et acces rapide avec Trip Code"}
+          ? "كلشي ديال التريب فبلاصة وحدة: Trips، وكالات، كراء، Marketplace، وأماكن تخييم"
+          : "Tout pour ton trip au Maroc : trips, agences, location, marketplace et spots camping"}
       </div>
       <div dir={getDirection(locale)} className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between gap-3 min-w-0">
@@ -116,31 +113,15 @@ export function SiteHeader({ session }: SiteHeaderProps) {
 
         <div className={`${isOpen ? "flex" : "hidden"} flex-col gap-4 xl:flex xl:flex-row xl:items-center xl:justify-between`}>
           <nav className="flex flex-col gap-2 text-sm font-medium text-ink xl:flex-row xl:flex-wrap xl:items-center">
-            {primaryNavigation.map((item) => (
+            {primaryNavigation.map((item, index) => (
               <Link
-                key={item.href}
+                key={`${item.href}-${item.label}-${index}`}
                 href={item.href}
                 className={`${getNavLinkClass(pathname === item.href.split("?")[0], item.emphasize)} w-full xl:w-auto`}
               >
                 {item.label}
               </Link>
             ))}
-            <div className="rounded-[1.4rem] border border-ink/10 bg-sand/50 p-3 xl:rounded-none xl:border-0 xl:bg-transparent xl:p-0">
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-ink/45 xl:hidden">
-                {locale === "ar" ? "المزيد" : "Plus"}
-              </p>
-              <div className="flex flex-col gap-2 xl:flex-row xl:flex-wrap xl:items-center">
-                {secondaryNavigation.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`${getNavLinkClass(pathname === item.href.split("?")[0])} w-full xl:w-auto xl:border-none xl:bg-transparent xl:px-2 xl:py-2 xl:text-ink/70 xl:shadow-none`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
           </nav>
 
           <div className="flex min-w-0 flex-col gap-2 xl:flex-row xl:flex-wrap xl:items-center xl:justify-end">
@@ -214,7 +195,7 @@ export function SiteHeader({ session }: SiteHeaderProps) {
                   {copy.login}
                 </Link>
                 <Link href={withLocale("/agencies", locale)} className="w-full rounded-full border border-forest/20 bg-sand/70 px-4 py-2 text-center font-semibold text-forest shadow-card xl:w-auto">
-                  {locale === "ar" ? "اكتشف الرحلات" : "Explorer les voyages"}
+                  {locale === "ar" ? "وجد التريب ديالك" : "Trouver ton trip"}
                 </Link>
                 <Link href={withLocale("/register", locale)} className="w-full rounded-full bg-forest px-4 py-2 text-center text-white shadow-card xl:w-auto">
                   {locale === "ar" ? "ابدأ الآن" : "Creer un compte"}

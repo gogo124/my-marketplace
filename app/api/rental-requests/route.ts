@@ -158,39 +158,45 @@ export async function PATCH(request: Request) {
 
     await connectToDatabase();
 
+    const [agencyProfile, renterProfile] = await Promise.all([
+      AgencyProfile.findOne({ user: user.id }).select("_id"),
+      RenterProfile.findOne({ user: user.id }).select("_id")
+    ]);
+
+    const permissions = getUserPermissions(user, {
+      hasAgencyProfile: Boolean(agencyProfile?._id),
+      hasRenterProfile: Boolean(renterProfile?._id)
+    });
+
     let rentalRequest = null;
 
-    if (getUserPermissions(user).canAccessAdminWorkspace) {
+    if (permissions.canAccessAdminWorkspace) {
       rentalRequest = await RentalRequest.findByIdAndUpdate(
         rentalRequestId,
         { $set: { status } },
         { new: true }
       );
-    } else if (getUserPermissions(user).canAccessRenterWorkspace) {
-      const profile = await RenterProfile.findOne({ user: user.id }).select("_id");
-
-      if (!profile) {
+    } else if (permissions.canAccessRenterWorkspace) {
+      if (!renterProfile) {
         return NextResponse.json({ error: "Renter profile not found." }, { status: 404 });
       }
 
       rentalRequest = await RentalRequest.findOneAndUpdate(
-        { _id: rentalRequestId, renter: profile._id },
+        { _id: rentalRequestId, renter: renterProfile._id },
         { $set: { status } },
         { new: true }
       );
     } else {
-      if (!getUserPermissions(user).canAccessAgencyWorkspace) {
+      if (!permissions.canAccessAgencyWorkspace) {
         return NextResponse.json({ error: "Access denied." }, { status: 403 });
       }
 
-      const profile = await AgencyProfile.findOne({ user: user.id }).select("_id");
-
-      if (!profile) {
+      if (!agencyProfile) {
         return NextResponse.json({ error: "Agency profile not found." }, { status: 404 });
       }
 
       rentalRequest = await RentalRequest.findOneAndUpdate(
-        { _id: rentalRequestId, agency: profile._id },
+        { _id: rentalRequestId, agency: agencyProfile._id },
         { $set: { status } },
         { new: true }
       );

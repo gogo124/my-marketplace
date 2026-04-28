@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
 import { RentalItemManager } from "@/components/rental-item-manager";
+import { WorkspaceAccessState } from "@/components/workspace-access-state";
 import { getAuthSession } from "@/lib/auth";
 import { resolveLocale, withLocale } from "@/lib/i18n";
-import { getRenterWorkspaceRedirectPath, getSessionUser } from "@/lib/permissions";
+import { getSessionUser, getUserPermissions } from "@/lib/permissions";
 import { getRenterDashboardData } from "@/lib/renter";
 
 export default async function RenterItemsPage({
@@ -15,14 +15,56 @@ export default async function RenterItemsPage({
   const session = await getAuthSession();
 
   if (!session?.user?.id) {
-    redirect(withLocale("/login", locale));
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "خاصك تسجل الدخول" : "Connexion requise"}
+        body={locale === "ar" ? "سجل الدخول باش تدير معدات الكراء ديالك." : "Connectez-vous pour gerer votre materiel de location."}
+        primaryHref="/login"
+        primaryLabel={locale === "ar" ? "تسجيل الدخول" : "Se connecter"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
   }
 
   const dashboard = await getRenterDashboardData(session.user.id);
-  const redirectPath = getRenterWorkspaceRedirectPath(getSessionUser(session), locale, Boolean(dashboard.profile?._id));
+  const permissions = getUserPermissions(getSessionUser(session), { hasRenterProfile: Boolean(dashboard.profile?._id) });
 
-  if (redirectPath) {
-    redirect(redirectPath);
+  if (!permissions.canOpenRenterProfile) {
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "الحساب ديالك باقي ما مفعلش ككرّاي" : "Acces location non active"}
+        body={
+          locale === "ar"
+            ? "صلاحية الكراء مازال ما تفعّلاتش فهاد الحساب."
+            : "L'acces location n'est pas encore active pour ce compte."
+        }
+        primaryHref="/dashboard"
+        primaryLabel={locale === "ar" ? "رجع للوحة المستخدم" : "Aller au tableau utilisateur"}
+        secondaryHref="/"
+        secondaryLabel={locale === "ar" ? "الرجوع للرئيسية" : "Retour a l'accueil"}
+      />
+    );
+  }
+
+  if (!dashboard.profile?._id) {
+    return (
+      <WorkspaceAccessState
+        locale={locale}
+        title={locale === "ar" ? "خاصك تكمل ملف الكراء" : "Profil location requis"}
+        body={
+          locale === "ar"
+            ? "قبل ما تزيد عناصر الكراء، خاصك تكمل ملف الكراء ديالك."
+            : "Avant d'ajouter des articles location, vous devez completer votre profil location."
+        }
+        primaryHref="/renter/profile"
+        primaryLabel={locale === "ar" ? "كمل ملف الكراء" : "Completer le profil"}
+        secondaryHref="/renter/dashboard"
+        secondaryLabel={locale === "ar" ? "لوحة الكراء" : "Tableau location"}
+      />
+    );
   }
 
   const labels =

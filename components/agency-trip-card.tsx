@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { RentalTripAccessForm } from "@/components/rental-trip-access-form";
 import { AgencyReservationForm } from "@/components/agency-reservation-form";
 import { TripMediaCarousel } from "@/components/trip-media-carousel";
 import { formatLocaleDate, formatLocalePrice, resolveLocale, SiteLocale, siteCopy } from "@/lib/i18n";
@@ -233,8 +232,8 @@ export function AgencyTripCard({
                 <div className="px-4 pb-4 text-sm leading-7 text-ink/70">
                   <p>
                     {safeLocale === "ar"
-                      ? "بعد تأكيد الحجز، ستتواصل الوكالة عبر واتساب. يمكن استعمال Trip Code بعد التأكيد لعرض معدات الرحلة."
-                      : "Apres confirmation, l'agence vous contacte via WhatsApp. Le Trip Code reste disponible apres validation."}
+                      ? "بعد تأكيد الحجز، ستتواصل الوكالة عبر واتساب. من داخل مساحة التريب تقدر تشوف معدات الرحلة المرتبطة."
+                      : "Apres confirmation, l'agence vous contacte via WhatsApp. Depuis l'Espace Trip, vous voyez le materiel associe."}
                   </p>
                 </div>
               </details>
@@ -264,12 +263,16 @@ export function AgencyTripCard({
                       {safeLocale === "ar" ? "تواصل واتساب" : "Contacter sur WhatsApp"}
                     </a>
                   ) : null}
-                  <RentalTripAccessForm
-                    placeholder={safeLocale === "ar" ? "أدخل رمز الرحلة" : "Enter trip code"}
-                    buttonLabel={safeLocale === "ar" ? "عرض المعدات" : "View equipment"}
-                    invalidLabel={safeLocale === "ar" ? "رمز الرحلة غير صالح." : "Invalid trip code."}
-                    className="grid gap-3 sm:grid-cols-[1fr_auto]"
-                  />
+                  <div className="rounded-[1.25rem] border border-dashed border-forest/15 bg-sand/20 p-4">
+                    <p className="text-sm font-semibold text-ink">
+                      {safeLocale === "ar" ? "من بعد تأكيد الحجز، كتدخل لمساحة التريب من لوحة الحساب" : "Apres confirmation, l'entree se fait depuis votre tableau de bord"}
+                    </p>
+                    <p className="mt-1 text-xs leading-6 text-ink/60">
+                      {safeLocale === "ar"
+                        ? "ما كاين حتى رمز هنا. تأكيد الوكالة هو اللي كيفتح مساحة التريب والكراء المرتبط بها."
+                        : "Aucun code n'est saisi ici. La confirmation de l'agence ouvre l'espace Trip et la location associee."}
+                    </p>
+                  </div>
                 </div>
               </details>
             </div>

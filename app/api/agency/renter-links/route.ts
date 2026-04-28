@@ -19,10 +19,6 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    if (!getUserPermissions(user).canAccessAgencyWorkspace) {
-      return NextResponse.json({ error: "Access denied." }, { status: 403 });
-    }
-
     const payload = await request.json();
     const validation = validateAgencyRenterLinksPayload(payload);
 
@@ -33,6 +29,11 @@ export async function PATCH(request: Request) {
     await connectToDatabase();
 
     const profile = await AgencyProfile.findOne({ user: user.id }).select("_id");
+    const permissions = getUserPermissions(user, { hasAgencyProfile: Boolean(profile?._id) });
+
+    if (!permissions.canAccessAgencyWorkspace) {
+      return NextResponse.json({ error: "Access denied." }, { status: 403 });
+    }
 
     if (!profile) {
       return NextResponse.json({ error: "Agency profile not found." }, { status: 404 });
