@@ -15,6 +15,7 @@ function getStatusClass(status: string) {
     case "completed":
     case "resolved":
     case "active":
+    case "sold":
     case "verified":
       return "bg-forest text-white";
     case "pending":

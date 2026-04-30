@@ -13,6 +13,8 @@ export function AdminSidebar() {
     { href: "/admin", label: copy.overview },
     { href: "/admin/users", label: copy.users },
     { href: "/admin/agencies", label: copy.agencies },
+    { href: "/admin/activity-providers", label: locale === "ar" ? "مزودو الأنشطة" : "Activity providers" },
+    { href: "/admin/activities", label: locale === "ar" ? "الأنشطة" : "Activities" },
     { href: "/admin/trips", label: copy.trips },
     { href: "/admin/places", label: locale === "ar" ? "أماكن التخييم" : "Lieux camping" },
     { href: "/admin/listings", label: copy.listings },

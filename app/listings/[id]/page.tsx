@@ -8,13 +8,16 @@ import { ListingSaveButton } from "@/components/listing-save-button";
 import { ReportForm } from "@/components/report-form";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewReplyForm } from "@/components/review-reply-form";
+import { SellerLeadForm } from "@/components/seller-lead-form";
 import { VerificationBadge } from "@/components/verification-badge";
+import { LightboxImage } from "@/components/lightbox-image";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getListingById, getReviewsForListing } from "@/lib/data";
-import { formatLocaleDate, getDirection, resolveLocale, siteCopy } from "@/lib/i18n";
+import { formatLocaleDate, getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
 import { absoluteUrl, buildPageMetadata } from "@/lib/seo";
 import { canUserReviewListing } from "@/lib/reviews";
+import { getSellerStoreSlug } from "@/lib/seller";
 import { formatPrice } from "@/lib/utils";
 
 export async function generateMetadata({
@@ -84,6 +87,7 @@ export default async function ListingDetailsPage({
     ? listing.images
     : ["/images/buy-gear.jpg"];
   const sellerId = seller?._id?.toString?.() || "";
+  const sellerStorePath = sellerId ? `/marketplace/seller/${getSellerStoreSlug({ _id: sellerId, name: seller?.name || "" })}` : "";
   const isSeller = session?.user?.id === sellerId;
   const whatsappDigits = typeof listing.whatsappNumber === "string" ? listing.whatsappNumber.replace(/\D/g, "") : "";
   const phoneDigits = typeof listing.phoneNumber === "string" ? listing.phoneNumber.replace(/\D/g, "") : "";
@@ -131,13 +135,14 @@ export default async function ListingDetailsPage({
       <section className="space-y-6">
         <div className="overflow-hidden rounded-[2.75rem] bg-white shadow-card">
           <div className="relative h-[520px]">
-            <Image
+            <LightboxImage
               src={images[0]}
               alt={listing.title}
-              fill
-              priority
+              images={images}
+              wrapperClassName="relative block h-full w-full"
+              imageClassName="object-cover"
               sizes="(max-width: 1280px) 100vw, 60vw"
-              className="object-cover"
+              priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
             <div className="absolute left-5 top-5 flex flex-wrap gap-2">
@@ -157,15 +162,16 @@ export default async function ListingDetailsPage({
           {images.length > 1 ? (
             <div className="grid grid-cols-4 gap-3 bg-white p-4 sm:grid-cols-5">
               {images.slice(1, 6).map((image: string, index: number) => (
-                <div key={`${image}-${index}`} className="relative h-24 overflow-hidden rounded-[1.25rem] bg-sand">
-                  <Image
-                    src={image}
-                    alt={`${listing.title} ${index + 2}`}
-                    fill
-                    sizes="160px"
-                    className="object-cover transition duration-500 hover:scale-105"
-                  />
-                </div>
+                <LightboxImage
+                  key={`${image}-${index}`}
+                  src={image}
+                  alt={`${listing.title} ${index + 2}`}
+                  images={images}
+                  index={index + 1}
+                  wrapperClassName="relative block h-24 overflow-hidden rounded-[1.25rem] bg-sand"
+                  imageClassName="object-cover transition duration-500 hover:scale-105"
+                  sizes="160px"
+                />
               ))}
             </div>
           ) : null}
@@ -272,15 +278,11 @@ export default async function ListingDetailsPage({
                   {Array.isArray(review.images) && review.images.length > 0 ? (
                     <div className="mt-3 grid grid-cols-3 gap-3">
                       {review.images.map((image: string) => (
-                        <div key={image} className="relative h-24 overflow-hidden rounded-[1rem] bg-sand">
-                          <Image src={image} alt="Review image" fill sizes="160px" className="object-cover" />
-                        </div>
+                        <LightboxImage key={image} src={image} alt="Review image" images={review.images} wrapperClassName="relative block h-24 overflow-hidden rounded-[1rem] bg-sand" imageClassName="object-cover" sizes="160px" />
                       ))}
                     </div>
                   ) : review.image ? (
-                    <div className="relative mt-3 h-24 overflow-hidden rounded-[1rem] bg-sand">
-                      <Image src={review.image} alt="Review image" fill sizes="160px" className="object-cover" />
-                    </div>
+                    <LightboxImage src={review.image} alt="Review image" images={[review.image]} wrapperClassName="relative mt-3 block h-24 overflow-hidden rounded-[1rem] bg-sand" imageClassName="object-cover" sizes="160px" />
                   ) : null}
                   {review.providerReply ? (
                     <div className="mt-3 rounded-[1rem] bg-sand/35 p-4 text-sm text-ink/70">
@@ -328,6 +330,11 @@ export default async function ListingDetailsPage({
           </div>
           <p className="mt-2 text-sm text-ink/60">{listing.phoneNumber}</p>
           <p className="mt-2 text-sm text-ink/60">{listing.whatsappNumber}</p>
+          {sellerStorePath ? (
+            <Link href={withLocale(sellerStorePath, locale)} className="mt-3 inline-flex rounded-full border border-ink/10 bg-white px-4 py-2 text-sm font-semibold text-ink">
+              {locale === "ar" ? "عرض متجر البائع" : "View seller store"}
+            </Link>
+          ) : null}
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <div className="rounded-[1.25rem] bg-sand/50 p-4 text-sm text-ink/70">
               <p className="font-semibold text-ink">{locale === "ar" ? "موثوق" : "Utilisateur verifie"}</p>
@@ -381,13 +388,23 @@ export default async function ListingDetailsPage({
                 )}
                 <ListingSaveButton listingId={listing._id} locale={locale} />
               </div>
-              <ContactSellerForm
-                listingId={listing._id}
-                sellerId={sellerId}
-                phoneNumber={listing.phoneNumber}
-                whatsappNumber={listing.whatsappNumber}
-                locale={locale}
-              />
+          <ContactSellerForm
+            listingId={listing._id}
+            listingTitle={listing.title}
+            sellerId={sellerId}
+            phoneNumber={listing.phoneNumber}
+            whatsappNumber={listing.whatsappNumber}
+            locale={locale}
+          />
+              {sellerId ? (
+                <SellerLeadForm
+                  sellerId={sellerId}
+                  listingId={listing._id}
+                  source="listing"
+                  title={locale === "ar" ? "استفسار عن هذا المنتج" : "Product inquiry"}
+                  isSignedIn={Boolean(session?.user)}
+                />
+              ) : null}
             </div>
           )
         ) : (

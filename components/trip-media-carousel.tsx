@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
+import { LightboxImage } from "@/components/lightbox-image";
 
 type TripMediaCarouselProps = {
   images?: string[];
@@ -50,14 +51,15 @@ export function TripMediaCarousel({
       >
         {media.map((src, index) => (
           <div key={`${src}-${index}`} className="relative h-full w-full flex-none snap-center">
-            <Image
+            <LightboxImage
               src={src}
               alt={`${alt} ${index + 1}`}
-              fill
-              priority={priority && index === 0}
+              images={media}
+              index={index}
+              wrapperClassName="relative block h-full w-full"
+              imageClassName={imageClassName}
               sizes={sizes}
-              loading={priority && index === 0 ? "eager" : "lazy"}
-              className={imageClassName}
+              priority={priority && index === 0}
             />
           </div>
         ))}

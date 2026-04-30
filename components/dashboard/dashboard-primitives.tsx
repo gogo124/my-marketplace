@@ -87,12 +87,12 @@ export function DashboardMetricGrid({ cards, locale = "ar" }: { cards: MetricCar
       {cards.map((card) => {
         const content = (
           <div className="flex h-full flex-col rounded-[2rem] border border-slate-100 bg-white p-5 shadow-[0_12px_34px_rgba(15,61,46,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_48px_rgba(15,61,46,0.12)] sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <p className="text-sm font-medium text-slate-500">{card.label}</p>
-              <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${toneClasses[card.tone || "slate"]}`}>
-                {safeLocale === "ar" ? "ملخص" : "Summary"}
-              </span>
-            </div>
+          <div className="flex items-start justify-between gap-4">
+            <p className="text-sm font-medium text-slate-500">{card.label}</p>
+            <span className={`inline-flex h-3 w-3 rounded-full border ${toneClasses[card.tone || "slate"]}`}>
+              <span className="sr-only">{card.label}</span>
+            </span>
+          </div>
             <p className="mt-3 text-3xl font-black leading-none text-slate-900">{card.value}</p>
             {card.note ? <p className="mt-3 text-sm leading-6 text-slate-500">{card.note}</p> : null}
           </div>
@@ -182,7 +182,9 @@ export function DashboardEmptyState({
 
   return (
     <div className="rounded-[2rem] border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
-      <p className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl shadow-sm">•</p>
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+        <div className="h-3 w-3 rounded-full bg-[#f97316]" />
+      </div>
       <h3 className="text-xl font-black text-slate-900">{title}</h3>
       <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-500">{body}</p>
       {(href && ctaLabel) || (secondaryHref && secondaryLabel) ? (

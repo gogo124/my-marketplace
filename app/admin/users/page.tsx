@@ -1,4 +1,5 @@
 import { AdminMutationButton } from "@/components/admin-mutation-button";
+import { AdminSellerControls } from "@/components/admin-seller-controls";
 import { StatusBadge } from "@/components/status-badge";
 import { getAdminUsers } from "@/lib/admin";
 import { getSellerVerificationLabel } from "@/lib/trust";
@@ -51,6 +52,30 @@ export default async function AdminUsersPage({
                   Seller verification: {getSellerVerificationLabel(sellerStatus, "fr")}
                 </p>
                 <p className="mt-2 text-sm text-ink/60">
+                  Seller access: {user.sellerStatus || "none"}
+                </p>
+                <p className="mt-2 text-sm text-ink/60">
+                  Activity provider: {user.activityProviderStatus || "none"}
+                </p>
+                <p className="mt-2 text-sm text-ink/60">
+                  Seller plan: {user.sellerPlan || "-"}
+                </p>
+                <p className="mt-2 text-sm text-ink/60">
+                  Seller expires: {user.sellerExpiresAt ? new Date(user.sellerExpiresAt).toLocaleString() : "-"}
+                </p>
+                {user.sellerProfile?.businessName ? (
+                  <div className="mt-3 rounded-[1.25rem] border border-ink/10 bg-sand/20 p-4 text-sm text-ink/70">
+                    <p><strong>Store:</strong> {user.sellerProfile.businessName}</p>
+                    <p><strong>City:</strong> {user.sellerProfile.city || "-"}</p>
+                    <p><strong>Phone:</strong> {user.sellerProfile.phone || "-"}</p>
+                    <p><strong>WhatsApp:</strong> {user.sellerProfile.whatsapp || "-"}</p>
+                    <p><strong>Instagram:</strong> {user.sellerProfile.instagram || "-"}</p>
+                    <p><strong>Facebook:</strong> {user.sellerProfile.facebook || "-"}</p>
+                    <p><strong>Description:</strong> {user.sellerProfile.description || "-"}</p>
+                    <p><strong>Products:</strong> {user.sellerProfile.whatTheySell || "-"}</p>
+                  </div>
+                ) : null}
+                <p className="mt-2 text-sm text-ink/60">
                   Can create agency: {user.canCreateAgency ? "Yes" : "No"}
                 </p>
                 <p className="mt-2 text-sm text-ink/60">
@@ -61,6 +86,14 @@ export default async function AdminUsersPage({
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
+                <div className="w-full">
+                  <AdminSellerControls
+                    userId={user._id}
+                    sellerStatus={user.sellerStatus}
+                    sellerPlan={user.sellerPlan}
+                    sellerExpiresAt={user.sellerExpiresAt}
+                  />
+                </div>
                 {sellerStatus !== "verified" ? (
                   <AdminMutationButton
                     endpoint={`/api/admin/users/${user._id}`}
@@ -110,6 +143,17 @@ export default async function AdminUsersPage({
                   body={{ canCreateRenter: !user.canCreateRenter }}
                   label={user.canCreateRenter ? "Disable renter creation" : "Allow renter creation"}
                   variant={user.canCreateRenter ? "neutral" : undefined}
+                />
+                <AdminMutationButton
+                  endpoint={`/api/admin/users/${user._id}`}
+                  body={{ activityProviderStatus: "active" }}
+                  label="Activate activity provider"
+                />
+                <AdminMutationButton
+                  endpoint={`/api/admin/users/${user._id}`}
+                  body={{ activityProviderStatus: "rejected" }}
+                  label="Reject activity provider"
+                  variant="neutral"
                 />
                 <AdminMutationButton
                   endpoint={`/api/admin/users/${user._id}`}

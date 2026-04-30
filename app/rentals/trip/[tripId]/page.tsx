@@ -33,7 +33,30 @@ export default async function RentalTripPage({
   });
 
   if ("error" in access) {
-    redirect(withLocale("/rentals", locale));
+    return (
+      <main dir={getDirection(locale)} className="page-shell">
+        <section className="rounded-[2.75rem] border border-dashed border-ink/15 bg-white p-8 shadow-card">
+          <p className="text-sm uppercase tracking-[0.3em] text-clay">{locale === "ar" ? "مساحة التريب" : "Espace Trip"}</p>
+          <h1 className="mt-4 text-3xl font-black text-ink">
+            {locale === "ar" ? "هذا الطلب مقفول حالياً" : "Cet acces est verrouille pour le moment"}
+          </h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-ink/65">
+            {locale === "ar"
+              ? "الكراء المرتبط بالرحلة يفتح فقط للمسافرين الذين عندهم حجز مؤكد. من بعد التأكيد، افتح مساحة التريب من لوحة الحساب."
+              : "La location liee au voyage reste reservee aux voyageurs avec une reservation confirmee. Apres confirmation, ouvrez l'Espace Trip depuis votre tableau de bord."}
+          </p>
+          <p className="mt-3 text-sm font-medium text-red-600">{access.error}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href={withLocale("/dashboard", locale)} className="rounded-full bg-forest px-5 py-3 font-semibold text-white">
+              {locale === "ar" ? "لوحة الحساب" : "Tableau de bord"}
+            </Link>
+            <Link href={withLocale("/rentals", locale)} className="rounded-full border border-ink/10 bg-white px-5 py-3 font-semibold text-ink">
+              {locale === "ar" ? "العودة إلى الكراء" : "Retour aux locations"}
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   const data = await getRentalTripPageData(tripId);
@@ -112,6 +135,7 @@ export default async function RentalTripPage({
                   <RentalRequestForm
                     tripTitle={trip.title}
                     isSignedIn={Boolean(session?.user)}
+                    canRequest
                     hideTripCodeInput
                     tripId={String(trip._id)}
                     lockedRenterId={item.renter?._id ? String(item.renter._id) : String(item.renter)}

@@ -8,6 +8,7 @@ import { PlaceStoryForm } from "@/components/place-story-form";
 import { ReportForm } from "@/components/report-form";
 import { ReviewReplyForm } from "@/components/review-reply-form";
 import { VerificationBadge } from "@/components/verification-badge";
+import { LightboxImage } from "@/components/lightbox-image";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getPlaceById } from "@/lib/camping";
@@ -81,9 +82,7 @@ export default async function PlaceDetailsPage({
       <section className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           {(place.images?.length ? place.images : ["/images/camping.jpg"]).map((image: string, index: number) => (
-            <div key={`${image}-${index}`} className="relative h-72 overflow-hidden rounded-[2rem] bg-white shadow-card">
-              <Image src={image} alt={place.name} fill priority={index === 0} sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
-            </div>
+            <LightboxImage key={`${image}-${index}`} src={image} alt={place.name} images={place.images?.length ? place.images : ["/images/camping.jpg"]} index={index} wrapperClassName="relative block h-72 overflow-hidden rounded-[2rem] bg-white shadow-card" imageClassName="object-cover" sizes="(max-width: 768px) 100vw, 50vw" priority={index === 0} />
           ))}
         </div>
 
@@ -191,15 +190,11 @@ export default async function PlaceDetailsPage({
                     {Array.isArray(review.images) && review.images.length > 0 ? (
                       <div className="mt-3 grid grid-cols-3 gap-3">
                         {review.images.map((image: string) => (
-                          <div key={image} className="relative h-24 overflow-hidden rounded-[1rem] bg-sand">
-                            <Image src={image} alt="Review image" fill sizes="160px" className="object-cover" />
-                          </div>
+                          <LightboxImage key={image} src={image} alt="Review image" images={review.images} wrapperClassName="relative block h-24 overflow-hidden rounded-[1rem] bg-sand" imageClassName="object-cover" sizes="160px" />
                         ))}
                       </div>
                     ) : review.image ? (
-                      <div className="relative mt-3 h-32 overflow-hidden rounded-[1.2rem] bg-sand">
-                        <Image src={review.image} alt="Review image" fill sizes="300px" className="object-cover" />
-                      </div>
+                      <LightboxImage src={review.image} alt="Review image" images={[review.image]} wrapperClassName="relative mt-3 block h-32 overflow-hidden rounded-[1.2rem] bg-sand" imageClassName="object-cover" sizes="300px" />
                     ) : null}
                     {review.providerReply ? (
                       <div className="mt-3 rounded-[1rem] bg-sand/35 p-4 text-sm text-ink/70">
@@ -229,9 +224,7 @@ export default async function PlaceDetailsPage({
                     </p>
                     <p className="mt-3 text-sm leading-7 text-ink/65">{story.body}</p>
                     {story.image ? (
-                      <div className="relative mt-3 h-36 overflow-hidden rounded-[1.2rem] bg-sand">
-                        <Image src={story.image} alt={story.title} fill sizes="300px" className="object-cover" />
-                      </div>
+                      <LightboxImage src={story.image} alt={story.title} images={[story.image]} wrapperClassName="relative mt-3 block h-36 overflow-hidden rounded-[1.2rem] bg-sand" imageClassName="object-cover" sizes="300px" />
                     ) : null}
                     {session?.user ? <ReportForm targetType="story" targetId={story._id} title={locale === "ar" ? "إبلاغ عن القصة" : "Signaler l'histoire"} compact locale={locale} /> : null}
                   </article>

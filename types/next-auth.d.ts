@@ -8,6 +8,14 @@ declare module "next-auth" {
     accountStatus?: "active" | "disabled";
     canCreateAgency?: boolean;
     canCreateRenter?: boolean;
+    sellerStatus?: "none" | "pending" | "active" | "expired" | "suspended" | "rejected";
+    sellerPlan?: "free" | "monthly" | null;
+    sellerExpiresAt?: string | null;
+    sellerRequestedAt?: string | null;
+    sellerApprovedAt?: string | null;
+    activityProviderStatus?: "none" | "pending" | "active" | "suspended" | "rejected";
+    activityProviderRequestedAt?: string | null;
+    activityProviderApprovedAt?: string | null;
   }
 
   interface Session {
@@ -17,6 +25,14 @@ declare module "next-auth" {
       accountStatus?: "active" | "disabled";
       canCreateAgency?: boolean;
       canCreateRenter?: boolean;
+      sellerStatus?: "none" | "pending" | "active" | "expired" | "suspended" | "rejected";
+      sellerPlan?: "free" | "monthly" | null;
+      sellerExpiresAt?: string | null;
+      sellerRequestedAt?: string | null;
+      sellerApprovedAt?: string | null;
+      activityProviderStatus?: "none" | "pending" | "active" | "suspended" | "rejected";
+      activityProviderRequestedAt?: string | null;
+      activityProviderApprovedAt?: string | null;
       name?: string | null;
       email?: string | null;
       image?: string | null;
@@ -30,5 +46,13 @@ declare module "next-auth/jwt" {
     accountStatus?: "active" | "disabled";
     canCreateAgency?: boolean;
     canCreateRenter?: boolean;
+    sellerStatus?: "none" | "pending" | "active" | "expired" | "suspended" | "rejected";
+    sellerPlan?: "free" | "monthly" | null;
+    sellerExpiresAt?: string | null;
+    sellerRequestedAt?: string | null;
+    sellerApprovedAt?: string | null;
+    activityProviderStatus?: "none" | "pending" | "active" | "suspended" | "rejected";
+    activityProviderRequestedAt?: string | null;
+    activityProviderApprovedAt?: string | null;
   }
 }

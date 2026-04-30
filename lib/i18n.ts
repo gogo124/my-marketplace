@@ -310,6 +310,54 @@ const apiErrorDictionary = {
   "The server did not return the created conversation.": {
     ar: "لم يُرجع الخادم المحادثة التي تم إنشاؤها.",
     fr: "Le serveur n'a pas renvoye la conversation creee."
+  },
+  "Could not send reset email.": {
+    ar: "تعذر إرسال رابط إعادة التعيين.",
+    fr: "Impossible d'envoyer le lien de reinitialisation."
+  },
+  "Could not reset password.": {
+    ar: "تعذر إعادة تعيين كلمة المرور.",
+    fr: "Impossible de reinitialiser le mot de passe."
+  },
+  "Password reset service is not configured.": {
+    ar: "خدمة إعادة تعيين كلمة المرور غير مفعلة حالياً.",
+    fr: "Le service de reinitialisation du mot de passe n'est pas configure."
+  },
+  "Too many password reset attempts. Please try again later.": {
+    ar: "محاولات إعادة التعيين كثيرة جداً. حاول لاحقاً.",
+    fr: "Trop de tentatives de reinitialisation. Reessayez plus tard."
+  },
+  "Reset token is required.": {
+    ar: "رابط إعادة التعيين غير مكتمل.",
+    fr: "Le jeton de reinitialisation est requis."
+  },
+  "Reset token is invalid or expired.": {
+    ar: "رابط إعادة التعيين غير صالح أو منتهي الصلاحية.",
+    fr: "Le lien de reinitialisation est invalide ou expire."
+  },
+  "Password updated successfully.": {
+    ar: "تم تحديث كلمة المرور بنجاح.",
+    fr: "Le mot de passe a ete mis a jour avec succes."
+  },
+  "If an account exists for this email, a reset link has been sent.": {
+    ar: "إذا كان هذا البريد مرتبطاً بحساب، فسيصلك رابط إعادة التعيين.",
+    fr: "Si un compte existe pour cet email, un lien de reinitialisation a ete envoye."
+  },
+  "Custom product name is too long.": {
+    ar: "اسم المنتج المخصص طويل جداً.",
+    fr: "Le nom du produit personnalise est trop long."
+  },
+  "Lead notes are too long.": {
+    ar: "ملاحظات الطلب طويلة جداً.",
+    fr: "Les notes du lead sont trop longues."
+  },
+  "Lead price is invalid.": {
+    ar: "سعر الطلب غير صالح.",
+    fr: "Le prix du lead est invalide."
+  },
+  "Lead quantity is invalid.": {
+    ar: "كمية الطلب غير صالحة.",
+    fr: "La quantite du lead est invalide."
   }
 } as const;
 

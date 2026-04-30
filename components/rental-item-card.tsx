@@ -6,6 +6,7 @@ import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
 import { VerificationBadge } from "@/components/verification-badge";
+import { LightboxImage } from "@/components/lightbox-image";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { SiteLocale, translateApiError, withLocale } from "@/lib/i18n";
@@ -136,12 +137,13 @@ export function RentalItemCard({ item, locale = "ar", isSignedIn, authorizedTrip
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-[0_18px_45px_rgba(15,61,46,0.08)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_26px_60px_rgba(15,61,46,0.16)]">
       <div className="relative h-60 overflow-hidden bg-slate-100">
-        <Image
+        <LightboxImage
           src={images[0] || "/images/rent-gear.jpg"}
           alt={item.title || "Rental item"}
-          fill
+          images={images}
+          wrapperClassName="relative block h-full w-full"
+          imageClassName="object-cover object-center transition duration-700 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-          className="object-cover object-center transition duration-700 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.05)_0%,rgba(15,61,46,0.2)_50%,rgba(0,0,0,0.72)_100%)] transition duration-500 group-hover:bg-[linear-gradient(180deg,rgba(15,23,42,0.12)_0%,rgba(15,61,46,0.28)_50%,rgba(0,0,0,0.82)_100%)]" />
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">

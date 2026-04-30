@@ -1,19 +1,23 @@
 import { connectToDatabase } from "@/lib/db";
 import { getConversationsForUser } from "@/lib/data";
 import { getSavedPlacesForUser } from "@/lib/camping";
+import { getSellerAccessSnapshot } from "@/lib/seller";
 import { serializeDocument } from "@/lib/utils";
 import AgencyReservation from "@/models/AgencyReservation";
 import RentalRequest from "@/models/RentalRequest";
 import TravelPost from "@/models/TravelPost";
 import Review from "@/models/Review";
 import User from "@/models/User";
+import Listing from "@/models/Listing";
 
 export async function getUserDashboardData(userId: string) {
   await connectToDatabase();
 
-  const [profile, reservations, rentalRequests, savedPlaces, reviews, conversations, travelPostsCount] = await Promise.all([
+  const [profile, reservations, rentalRequests, savedPlaces, reviews, conversations, travelPostsCount, listingsCount] = await Promise.all([
     User.findById(userId)
-      .select("name email avatar role createdAt sellerVerificationStatus verified canCreateAgency canCreateRenter savedPlaceIds")
+      .select(
+        "name email avatar role createdAt sellerVerificationStatus verified canCreateAgency canCreateRenter savedPlaceIds sellerStatus sellerPlan sellerExpiresAt sellerRequestedAt sellerApprovedAt sellerProfile"
+      )
       .lean(),
     AgencyReservation.find({ user: userId })
       .populate("trip", "title destination startDate endDate tripCode")
@@ -33,7 +37,8 @@ export async function getUserDashboardData(userId: string) {
       .sort({ createdAt: -1 })
       .lean(),
     getConversationsForUser(userId),
-    TravelPost.countDocuments({ userId })
+    TravelPost.countDocuments({ userId }),
+    Listing.countDocuments({ seller: userId })
   ]);
 
   const normalizedReservations = serializeDocument(reservations) as any[];
@@ -67,6 +72,7 @@ export async function getUserDashboardData(userId: string) {
 
   return {
     user: profile ? (serializeDocument(profile) as any) : null,
+    sellerAccess: getSellerAccessSnapshot(profile as any),
     reservations: normalizedReservations,
     rentalRequests: normalizedRentalRequests,
     savedPlaces: normalizedSavedPlaces,
@@ -82,7 +88,8 @@ export async function getUserDashboardData(userId: string) {
       unreadMessagesCount,
       travelPostsCount,
       tripCodesCount,
-      profileCompletion
+      profileCompletion,
+      listingsCount
     }
   };
 }

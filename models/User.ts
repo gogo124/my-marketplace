@@ -17,6 +17,61 @@ const UserSchema = new Schema(
       enum: ["unverified", "verified"],
       default: "unverified"
     },
+    sellerStatus: {
+      type: String,
+      enum: ["none", "pending", "active", "expired", "suspended", "rejected"],
+      default: "none"
+    },
+    sellerPlan: {
+      type: String,
+      enum: ["free", "monthly", null],
+      default: null
+    },
+    sellerExpiresAt: {
+      type: Date,
+      default: null
+    },
+    sellerRequestedAt: {
+      type: Date,
+      default: null
+    },
+    sellerApprovedAt: {
+      type: Date,
+      default: null
+    },
+    sellerProfile: {
+      businessName: { type: String, default: "", trim: true },
+      city: { type: String, default: "", trim: true },
+      phone: { type: String, default: "", trim: true },
+      whatsapp: { type: String, default: "", trim: true },
+      instagram: { type: String, default: "", trim: true },
+      facebook: { type: String, default: "", trim: true },
+      description: { type: String, default: "", trim: true },
+      whatTheySell: { type: String, default: "", trim: true }
+    },
+    activityProviderStatus: {
+      type: String,
+      enum: ["none", "pending", "active", "suspended", "rejected"],
+      default: "none"
+    },
+    activityProviderRequestedAt: {
+      type: Date,
+      default: null
+    },
+    activityProviderApprovedAt: {
+      type: Date,
+      default: null
+    },
+    activityProviderProfile: {
+      businessName: { type: String, default: "", trim: true },
+      city: { type: String, default: "", trim: true },
+      phone: { type: String, default: "", trim: true },
+      whatsapp: { type: String, default: "", trim: true },
+      instagram: { type: String, default: "", trim: true },
+      facebook: { type: String, default: "", trim: true },
+      activityType: { type: String, default: "", trim: true },
+      description: { type: String, default: "", trim: true }
+    },
     verified: {
       type: Boolean,
       default: false
@@ -35,6 +90,11 @@ const UserSchema = new Schema(
       enum: ["active", "disabled"],
       default: "active"
     },
+    passwordReset: {
+      tokenHash: { type: String, default: null },
+      expiresAt: { type: Date, default: null },
+      requestedAt: { type: Date, default: null }
+    }
   },
   { timestamps: true }
 );

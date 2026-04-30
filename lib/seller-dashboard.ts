@@ -1,4 +1,5 @@
 import { connectToDatabase } from "@/lib/db";
+import { getSellerAccessSnapshot } from "@/lib/seller";
 import { serializeDocument } from "@/lib/utils";
 import Conversation from "@/models/Conversation";
 import Lead from "@/models/Lead";
@@ -10,7 +11,9 @@ export async function getSellerDashboardData(userId: string) {
   await connectToDatabase();
 
   const seller = await User.findById(userId)
-    .select("name email avatar sellerVerificationStatus verified accountStatus createdAt")
+    .select(
+      "name email avatar sellerVerificationStatus verified accountStatus createdAt sellerStatus sellerPlan sellerExpiresAt sellerRequestedAt sellerApprovedAt sellerProfile"
+    )
     .lean();
 
   const listings = await Listing.find({ seller: userId })
@@ -26,7 +29,7 @@ export async function getSellerDashboardData(userId: string) {
       .populate("listingId", "title price images location type status")
       .populate("buyerId", "name email avatar")
       .sort({ createdAt: -1 })
-      .limit(16)
+      .limit(30)
       .lean(),
     listingIds.length > 0
       ? Conversation.find({ listing: { $in: listingIds } })
@@ -39,6 +42,8 @@ export async function getSellerDashboardData(userId: string) {
   ]);
 
   const normalizedLeads = serializeDocument(leads) as any[];
+  const marketplaceLeads = normalizedLeads.filter((lead: any) => !lead.isExternalOrder);
+  const externalOrders = normalizedLeads.filter((lead: any) => lead.isExternalOrder);
   const normalizedConversations = serializeDocument(conversations) as any[];
   const conversationIds = normalizedConversations.map((conversation) => conversation._id);
   const recentMessages = conversationIds.length
@@ -57,8 +62,11 @@ export async function getSellerDashboardData(userId: string) {
 
   return {
     seller: seller ? (serializeDocument(seller) as any) : null,
+    sellerAccess: getSellerAccessSnapshot(seller as any),
     listings: normalizedListings,
     leads: normalizedLeads,
+    marketplaceLeads,
+    externalOrders,
     conversations: normalizedConversations,
     recentMessages: normalizedRecentMessages,
     stats: {
@@ -66,9 +74,11 @@ export async function getSellerDashboardData(userId: string) {
       activeListingsCount: normalizedListings.filter((listing: any) => listing.status === "active").length,
       inactiveListingsCount: normalizedListings.filter((listing: any) => listing.status !== "active").length,
       leadCount: normalizedLeads.length,
+      marketplaceLeadCount: marketplaceLeads.length,
+      externalOrderCount: externalOrders.length,
       newLeadCount: normalizedLeads.filter((lead: any) => lead.status === "new").length,
       contactedLeadCount: normalizedLeads.filter((lead: any) => lead.status === "contacted").length,
-      closedLeadCount: normalizedLeads.filter((lead: any) => lead.status === "closed").length,
+      closedLeadCount: normalizedLeads.filter((lead: any) => ["closed", "sold", "cancelled"].includes(lead.status)).length,
       conversationCount: normalizedConversations.length,
       messageCount: normalizedRecentMessages.length,
       verifiedSellerCount: seller ? Number(Boolean((seller as any).sellerVerificationStatus === "verified" || (seller as any).verified)) : 0

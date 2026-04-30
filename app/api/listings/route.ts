@@ -4,8 +4,10 @@ import { createRouteErrorResponse } from "@/lib/api-errors";
 import { connectToDatabase } from "@/lib/db";
 import { getSubmittedImageUrls, validateSubmittedImageUrls } from "@/lib/image-upload";
 import { MAX_LISTING_IMAGES } from "@/lib/image-upload-shared";
+import { canPublishListing, getPublicSellerQuery } from "@/lib/seller";
 import { validateListingPayload } from "@/lib/validation";
 import Listing from "@/models/Listing";
+import User from "@/models/User";
 
 export const runtime = "nodejs";
 
@@ -38,8 +40,14 @@ export async function GET(request: Request) {
       ];
     }
 
+    const eligibleSellerIds = await User.find(getPublicSellerQuery()).select("_id").lean();
+    const publicQuery =
+      eligibleSellerIds.length > 0
+        ? { ...query, seller: { $in: eligibleSellerIds.map((seller: any) => seller._id) } }
+        : { ...query, seller: { $in: [] } };
+
     const [listings, total] = await Promise.all([
-      Listing.find(query)
+      Listing.find(publicQuery)
         .select(
           "title description price type category location phoneNumber whatsappNumber startDate endDate deposit images seller status createdAt"
         )
@@ -48,7 +56,7 @@ export async function GET(request: Request) {
         .skip((page - 1) * pageSize)
         .limit(pageSize)
         .lean(),
-      Listing.countDocuments(query)
+      Listing.countDocuments(publicQuery)
     ]);
 
     return NextResponse.json({
@@ -76,6 +84,10 @@ export async function POST(request: Request) {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
+    if (!canPublishListing(session.user)) {
+      return NextResponse.json({ error: "Active seller access is required to publish listings." }, { status: 403 });
     }
 
     const formData = await request.formData();
@@ -121,6 +133,12 @@ export async function POST(request: Request) {
     }
 
     await connectToDatabase();
+
+    const currentUser = await User.findById(session.user.id).select("sellerStatus sellerExpiresAt sellerPlan");
+
+    if (!currentUser || !canPublishListing(currentUser as any)) {
+      return NextResponse.json({ error: "Active seller access is required to publish listings." }, { status: 403 });
+    }
 
     const listing = await Listing.create({
       ...validation.data,

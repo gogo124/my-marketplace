@@ -8,17 +8,22 @@ import {
   DashboardQuickLinks,
   DashboardSection
 } from "@/components/dashboard/dashboard-primitives";
+import { AgencyStatusActions } from "@/components/agency-status-actions";
+import { SellerAccessRequestForm } from "@/components/seller-access-request-form";
+import { SellerLeadForm } from "@/components/seller-lead-form";
+import { SellerStoreActions } from "@/components/seller-store-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { getAuthSession } from "@/lib/auth";
 import { getDirection, resolveLocale, withLocale } from "@/lib/i18n";
+import { getSellerAccessSnapshot, getSellerStoreSlug } from "@/lib/seller";
 import { getSellerDashboardData } from "@/lib/seller-dashboard";
 
 export default async function SellerDashboardPage({
   searchParams
 }: {
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; source?: string; status?: string }>;
 }) {
-  const { lang } = await searchParams;
+  const { lang, source = "", status = "" } = await searchParams;
   const locale = resolveLocale(lang);
   const session = await getAuthSession();
 
@@ -28,6 +33,115 @@ export default async function SellerDashboardPage({
 
   const dashboard = await getSellerDashboardData(session.user.id);
   const isArabic = locale === "ar";
+  const sellerAccess = dashboard.sellerAccess || getSellerAccessSnapshot(dashboard.seller);
+  const storePath = withLocale(`/marketplace/seller/${getSellerStoreSlug(dashboard.seller || session.user)}`, locale);
+  const externalOrders = dashboard.externalOrders.filter((lead: any) => {
+    const sourceMatch = source ? String(lead.source || "") === source : true;
+    const statusMatch = status ? String(lead.status || "") === status : true;
+    return sourceMatch && statusMatch;
+  });
+
+  if (sellerAccess.status === "none") {
+    return (
+      <div dir={getDirection(locale)} className="space-y-8">
+        <DashboardHero
+          kicker={isArabic ? "مساحة البائع" : "Seller workspace"}
+          title={isArabic ? "تفعيل البيع مطلوب" : "Seller access required"}
+          body={
+            isArabic
+              ? "هذا الحساب مازال ما تفعلش للبيع. عمر الطلب في الأسفل باش تراجعو الإدارة."
+              : "This account is not activated for selling yet. Submit the request below so the admin can review it."
+          }
+          locale={locale}
+          chips={[
+            `${dashboard.stats.listingsCount} ${isArabic ? "إعلان محفوظ" : "saved listings"}`,
+            `${dashboard.stats.leadCount} ${isArabic ? "طلبات" : "leads"}`
+          ]}
+          actions={[{ href: "/dashboard", label: isArabic ? "لوحتي" : "My dashboard" }]}
+        />
+        <SellerAccessRequestForm />
+      </div>
+    );
+  }
+
+  if (sellerAccess.isPending) {
+    return (
+      <div dir={getDirection(locale)} className="space-y-8">
+        <DashboardHero
+          kicker={isArabic ? "مساحة البائع" : "Seller workspace"}
+          title={isArabic ? "طلبك قيد المراجعة" : "Seller request pending"}
+          body={
+            isArabic
+              ? "تم إرسال طلب البيع وهو الآن في انتظار موافقة الإدارة."
+              : "Your seller access request has been sent and is waiting for admin approval."
+          }
+          locale={locale}
+          chips={[
+            `${dashboard.stats.listingsCount} ${isArabic ? "إعلانات محفوظة" : "saved listings"}`,
+            `${dashboard.stats.leadCount} ${isArabic ? "طلبات" : "leads"}`
+          ]}
+          actions={[{ href: "/dashboard", label: isArabic ? "لوحتي" : "My dashboard" }]}
+        />
+      </div>
+    );
+  }
+
+  if (sellerAccess.isRejected) {
+    return (
+      <div dir={getDirection(locale)} className="space-y-8">
+        <DashboardHero
+          kicker={isArabic ? "مساحة البائع" : "Seller workspace"}
+          title={isArabic ? "تم رفض طلب البيع" : "Seller request rejected"}
+          body={
+            isArabic
+              ? "تم رفض طلب البيع حالياً. تواصل مع الإدارة إذا كنت باغي توضح المعلومات أو تعاود الطلب."
+              : "The seller request was rejected. Contact support or the admin if you need to clarify the submitted information."
+          }
+          locale={locale}
+          chips={[`${dashboard.stats.listingsCount} ${isArabic ? "إعلانات محفوظة" : "saved listings"}`]}
+          actions={[{ href: "/dashboard", label: isArabic ? "لوحتي" : "My dashboard" }]}
+        />
+      </div>
+    );
+  }
+
+  if (sellerAccess.isSuspended) {
+    return (
+      <div dir={getDirection(locale)} className="space-y-8">
+        <DashboardHero
+          kicker={isArabic ? "مساحة البائع" : "Seller workspace"}
+          title={isArabic ? "حساب البائع موقوف" : "Seller account suspended"}
+          body={
+            isArabic
+              ? "تم توقيف الوصول للبيع مؤقتاً. الإعلانات العمومية مخفية إلى أن تعاود الإدارة التفعيل."
+              : "Seller access is suspended. Public listings stay hidden until the admin reactivates the account."
+          }
+          locale={locale}
+          chips={[`${dashboard.stats.listingsCount} ${isArabic ? "إعلانات محفوظة" : "saved listings"}`]}
+          actions={[{ href: "/dashboard", label: isArabic ? "لوحتي" : "My dashboard" }]}
+        />
+      </div>
+    );
+  }
+
+  if (sellerAccess.isExpired) {
+    return (
+      <div dir={getDirection(locale)} className="space-y-8">
+        <DashboardHero
+          kicker={isArabic ? "مساحة البائع" : "Seller workspace"}
+          title={isArabic ? "اشتراك البيع منتهي" : "Seller subscription expired"}
+          body={
+            isArabic
+              ? "انتهت صلاحية البيع. ما تقدرش تضيف أو تعاود تنشر الإعلانات حتى يتم التجديد."
+              : "Seller access has expired. You cannot add or republish listings until renewal."
+          }
+          locale={locale}
+          chips={[`${dashboard.stats.listingsCount} ${isArabic ? "إعلانات محفوظة" : "saved listings"}`]}
+          actions={[{ href: "/dashboard", label: isArabic ? "لوحتي" : "My dashboard" }]}
+        />
+      </div>
+    );
+  }
 
   return (
     <div dir={getDirection(locale)} className="space-y-8">
@@ -76,11 +190,18 @@ export default async function SellerDashboardPage({
             tone: "amber"
           },
           {
-            label: isArabic ? "طلبات المشترين" : "Buyer leads",
-            value: dashboard.stats.leadCount,
-            note: isArabic ? "طلبات الاتصال والمراسلة" : "Contact and chat requests",
+            label: isArabic ? "Leads المنصة" : "Marketplace leads",
+            value: dashboard.stats.marketplaceLeadCount,
+            note: isArabic ? "طلبات ناتجة من المنصة" : "Requests coming from the platform",
             href: "/messages",
             tone: "slate"
+          },
+          {
+            label: isArabic ? "طلبات خارجية" : "External orders",
+            value: dashboard.stats.externalOrderCount,
+            note: isArabic ? "واتساب، اتصال، إنستغرام أو بيع مباشر" : "WhatsApp, phone, Instagram, or offline sales",
+            href: "/seller/dashboard",
+            tone: "amber"
           }
         ]}
       />
@@ -93,6 +214,23 @@ export default async function SellerDashboardPage({
           { href: "/dashboard", label: isArabic ? "ملخصي" : "My overview", note: isArabic ? "نظرة سريعة على الأداء" : "Quick performance summary" }
         ]}
       />
+
+      <DashboardSection
+        title={isArabic ? "متجري" : "My store"}
+        body={isArabic ? "رابط المتجر العمومي القابل للمشاركة." : "Your public store link that you can share."}
+      >
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="rounded-[1.5rem] border border-slate-100 p-4">
+            <p className="text-sm text-slate-500">{isArabic ? "رابط المتجر" : "Store URL"}</p>
+            <p className="mt-2 break-all text-sm font-semibold text-slate-900">{storePath}</p>
+            <div className="mt-4 rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-600">
+              <p className="font-semibold text-slate-900">{dashboard.seller?.sellerProfile?.businessName || dashboard.seller?.name || (isArabic ? "متجر البائع" : "Seller store")}</p>
+              <p className="mt-1">{dashboard.seller?.sellerProfile?.city || dashboard.seller?.sellerProfile?.description || (isArabic ? "واجهة عمومية لمنتجاتك النشطة." : "Public storefront for your active listings.")}</p>
+            </div>
+          </div>
+          <SellerStoreActions storePath={storePath} locale={locale} sellerName={dashboard.seller?.name || session.user.name || ""} />
+        </div>
+      </DashboardSection>
 
       <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <DashboardSection
@@ -166,24 +304,36 @@ export default async function SellerDashboardPage({
         </DashboardSection>
 
         <DashboardSection
-          title={isArabic ? "طلبات المشترين" : "Buyer requests"}
-          body={isArabic ? "مؤشرات الاتصال والرسائل المرتبطة بإعلاناتك." : "Buyer interest and conversations around your listings."}
-        >
+        title={isArabic ? "Leads المنصة" : "Marketplace leads"}
+        body={isArabic ? "طلبات ورسائل مرتبطة بإعلانات السوق داخل المنصة." : "Buyer requests and conversations tied to marketplace listings."}
+      >
           <div className="grid gap-3">
-            {dashboard.leads.length > 0 ? (
-              dashboard.leads.slice(0, 6).map((lead: any) => (
+            {dashboard.marketplaceLeads.length > 0 ? (
+              dashboard.marketplaceLeads.slice(0, 6).map((lead: any) => (
                 <article key={lead._id} className="rounded-[1.5rem] border border-slate-100 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-bold text-slate-900">{lead.listingId?.title || (isArabic ? "طلب" : "Lead")}</p>
                       <p className="mt-1 text-sm text-slate-500">
-                        {lead.type} • {lead.buyerId?.name || lead.buyerId?.email || (isArabic ? "مشتري" : "Buyer")}
+                        {(lead.source || lead.type || "listing")} • {lead.name || lead.buyerId?.name || lead.buyerId?.email || (isArabic ? "مشتري" : "Buyer")}
                       </p>
+                      {lead.phone ? <p className="mt-1 text-sm text-slate-500">{lead.phone}</p> : null}
+                      {lead.city ? <p className="mt-1 text-sm text-slate-500">{lead.city}</p> : null}
+                      {lead.message ? <p className="mt-2 text-sm leading-6 text-slate-500">{lead.message}</p> : null}
                       <p className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-400">
                         {lead.status || "new"}
                       </p>
                     </div>
-                    <StatusBadge kind="lead" status={lead.status} locale={locale} />
+                    <div className="flex flex-col items-end gap-3">
+                      <StatusBadge kind="lead" status={lead.status} locale={locale} />
+                      <AgencyStatusActions
+                        endpoint="/api/leads"
+                        idField="leadId"
+                        itemId={String(lead._id)}
+                        status={lead.status || "new"}
+                        allowedStatuses={["new", "contacted", "sold", "cancelled"]}
+                      />
+                    </div>
                   </div>
                 </article>
               ))
@@ -199,6 +349,105 @@ export default async function SellerDashboardPage({
           </div>
         </DashboardSection>
       </section>
+
+      <DashboardSection
+        title={isArabic ? "الطلبات الخارجية / اليدوية" : "External orders / manual leads"}
+        body={
+          isArabic
+            ? "سجل بيعاً أو طلباً جاك من خارج الموقع مع فصل واضح عن Leads المنصة."
+            : "Register a sale or lead that came from outside the website, clearly separated from marketplace leads."
+        }
+      >
+        <form action="/seller/dashboard" className="mb-5 grid gap-3 rounded-[1.5rem] border border-slate-100 bg-slate-50/60 p-4 md:grid-cols-[1fr_1fr_auto]">
+          <input type="hidden" name="lang" value={locale} />
+          <select
+            name="source"
+            defaultValue={source}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/20"
+          >
+            <option value="">{isArabic ? "كل المصادر" : "All sources"}</option>
+            <option value="manual">{isArabic ? "يدوي" : "Manual"}</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="call">{isArabic ? "اتصال" : "Call"}</option>
+            <option value="instagram">Instagram</option>
+            <option value="facebook">Facebook</option>
+            <option value="offline">{isArabic ? "خارج المنصة" : "Offline"}</option>
+            <option value="other">{isArabic ? "مصدر آخر" : "Other"}</option>
+          </select>
+          <select
+            name="status"
+            defaultValue={status}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/20"
+          >
+            <option value="">{isArabic ? "كل الحالات" : "All statuses"}</option>
+            <option value="new">{isArabic ? "جديد" : "New"}</option>
+            <option value="contacted">{isArabic ? "تم التواصل" : "Contacted"}</option>
+            <option value="sold">{isArabic ? "تم البيع" : "Sold"}</option>
+            <option value="cancelled">{isArabic ? "ملغى" : "Cancelled"}</option>
+          </select>
+          <button className="rounded-full bg-forest px-5 py-3 font-semibold text-white">
+            {isArabic ? "تصفية" : "Filter"}
+          </button>
+        </form>
+        <SellerLeadForm
+          sellerId={session.user.id}
+          source="manual"
+          title={isArabic ? "تسجيل طلب خارجي أو بيع يدوي" : "Register external order or manual lead"}
+          isSignedIn
+          allowSourceSelect
+          listingOptions={dashboard.listings.map((listing: any) => ({
+            _id: String(listing._id),
+            title: listing.title
+          }))}
+        />
+        <div className="mt-6 grid gap-3">
+          {externalOrders.length > 0 ? (
+            externalOrders.map((lead: any) => (
+              <article key={lead._id} className="rounded-[1.5rem] border border-slate-100 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900">
+                      {lead.customProductName || lead.listingId?.title || (isArabic ? "طلب خارجي" : "External order")}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {lead.source || "manual"} • {lead.name || (isArabic ? "عميل" : "Customer")}
+                    </p>
+                    {lead.phone ? <p className="mt-1 text-sm text-slate-500">{lead.phone}</p> : null}
+                    {lead.city ? <p className="mt-1 text-sm text-slate-500">{lead.city}</p> : null}
+                    {(lead.unitPrice || lead.quantity) ? (
+                      <p className="mt-1 text-sm text-slate-500">
+                        {lead.unitPrice ? `${lead.unitPrice} DH` : "-"} {lead.quantity ? `• x${lead.quantity}` : ""}
+                      </p>
+                    ) : null}
+                    {lead.message ? <p className="mt-2 text-sm leading-6 text-slate-500">{lead.message}</p> : null}
+                    {lead.notes ? <p className="mt-2 text-sm leading-6 text-slate-500">{lead.notes}</p> : null}
+                  </div>
+                  <div className="flex flex-col items-end gap-3">
+                    <StatusBadge kind="lead" status={lead.status} locale={locale} />
+                    <AgencyStatusActions
+                      endpoint="/api/leads"
+                      idField="leadId"
+                      itemId={String(lead._id)}
+                      status={lead.status || "new"}
+                      allowedStatuses={["new", "contacted", "sold", "cancelled"]}
+                    />
+                  </div>
+                </div>
+              </article>
+            ))
+          ) : (
+            <DashboardEmptyState
+              title={isArabic ? "لا توجد طلبات خارجية" : "No external orders"}
+              body={
+                isArabic
+                  ? "الطلبات القادمة من واتساب أو إنستغرام أو البيع المباشر ستظهر هنا."
+                  : "Orders from WhatsApp, Instagram, phone, or offline sales will appear here."
+              }
+              locale={locale}
+            />
+          )}
+        </div>
+      </DashboardSection>
 
       <section className="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
         <DashboardSection

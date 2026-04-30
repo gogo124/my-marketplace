@@ -10,12 +10,14 @@ import { isValidPhoneNumber } from "@/lib/validation";
 
 export function ContactSellerForm({
   listingId,
+  listingTitle,
   sellerId,
   phoneNumber,
   whatsappNumber,
   locale
 }: {
   listingId: string;
+  listingTitle?: string;
   sellerId: string;
   phoneNumber?: string;
   whatsappNumber?: string;
@@ -39,12 +41,36 @@ export function ContactSellerForm({
     : safeWhatsappNumber.replace(/\D/g, "");
   const whatsappDigits = normalizedWhatsapp.replace(/\D/g, "");
   const phoneDigits = normalizedPhone.replace(/\D/g, "");
+  const safeListingTitle = typeof listingTitle === "string" ? listingTitle.trim() : "";
+
+  function buildInitialMessage() {
+    const baseMessage = message.trim() || copy.defaultSellerMessage;
+
+    if (!safeListingTitle) {
+      return baseMessage;
+    }
+
+    return safeLocale === "ar"
+      ? `Moroccan Trip\nالمنتج: ${safeListingTitle}\n${baseMessage}`
+      : `Moroccan Trip\nProduit : ${safeListingTitle}\n${baseMessage}`;
+  }
 
   async function trackLead(type: "whatsapp" | "call" | "chat") {
     const response = await fetch("/api/leads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ listingId, sellerId, type })
+      body: JSON.stringify({
+        listingId,
+        sellerId,
+        type,
+        source: "listing",
+        message:
+          type === "whatsapp" && safeListingTitle
+            ? safeLocale === "ar"
+              ? `WhatsApp click for ${safeListingTitle}`
+              : `Clic WhatsApp pour ${safeListingTitle}`
+            : ""
+      })
     });
 
     const data = await parseApiResponse(response);
@@ -72,7 +98,7 @@ export function ContactSellerForm({
       trackAnalyticsEvent("whatsapp_click", { surface: "listing_contact", listing_id: listingId });
       await trackLead("whatsapp");
 
-      const text = encodeURIComponent(message || copy.defaultSellerMessage);
+      const text = encodeURIComponent(buildInitialMessage());
       window.open(`https://wa.me/${whatsappDigits}?text=${text}`, "_blank", "noopener,noreferrer");
     } catch (submissionError) {
       setError(
@@ -139,7 +165,7 @@ export function ContactSellerForm({
 
       await trackLead("chat");
 
-      const defaultBody = message || copy.defaultSellerMessage;
+      const defaultBody = buildInitialMessage();
 
       const messageResponse = await fetch("/api/messages", {
         method: "POST",
@@ -181,7 +207,7 @@ export function ContactSellerForm({
         value={message}
         onChange={(event) => setMessage(event.target.value)}
         rows={4}
-        placeholder={copy.defaultSellerMessage}
+        placeholder={buildInitialMessage()}
         className="w-full rounded-2xl border border-ink/10 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
       <p className="text-xs text-ink/50">{copy.contactSellerBody}</p>

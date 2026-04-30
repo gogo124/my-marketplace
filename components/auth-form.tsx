@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getApiError, parseApiResponse } from "@/lib/api";
 import { normalizeInternalRedirect } from "@/lib/auth-flow";
@@ -183,6 +184,13 @@ export function AuthForm({ mode }: AuthFormProps) {
         minLength={8}
         className="w-full rounded-[1.4rem] border border-ink/10 bg-white/80 px-4 py-3 outline-none ring-clay/30 focus:ring"
       />
+      {mode === "login" ? (
+        <div className="flex justify-end">
+          <Link href={withLocale("/forgot-password", locale)} className="text-sm font-semibold text-forest">
+            {locale === "ar" ? "نسيت كلمة المرور؟" : "Mot de passe oublie ?"}
+          </Link>
+        </div>
+      ) : null}
       {mode === "register" ? (
         <p className="text-sm text-ink/60">
           {locale === "ar"

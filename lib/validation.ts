@@ -105,6 +105,70 @@ export function validateAgencyProfilePayload(payload: Record<string, unknown>) {
   };
 }
 
+export function validateSellerAccessRequestPayload(payload: Record<string, unknown>) {
+  const businessName = trimText(payload.businessName);
+  const city = trimText(payload.city);
+  const phone = normalizePhoneNumber(payload.phone);
+  const whatsapp = normalizePhoneNumber(payload.whatsapp);
+  const instagram = trimText(payload.instagram);
+  const facebook = trimText(payload.facebook);
+  const description = trimText(payload.description);
+  const whatTheySell = trimText(payload.whatTheySell);
+
+  if (businessName.length < 3) {
+    return { error: "Business name must be at least 3 characters." };
+  }
+
+  if (city.length < 2) {
+    return { error: "City is required." };
+  }
+
+  if (!isValidPhoneNumber(phone)) {
+    return { error: "Enter a valid phone number." };
+  }
+
+  if (!isValidPhoneNumber(whatsapp)) {
+    return { error: "Enter a valid WhatsApp number." };
+  }
+
+  if (description.length < 20) {
+    return { error: "Short description must be at least 20 characters." };
+  }
+
+  if (description.length > 1200) {
+    return { error: "Short description is too long." };
+  }
+
+  if (whatTheySell.length < 5) {
+    return { error: "Tell us what you sell." };
+  }
+
+  if (whatTheySell.length > 400) {
+    return { error: "The products field is too long." };
+  }
+
+  if (instagram && instagram.length > 280) {
+    return { error: "Instagram field is too long." };
+  }
+
+  if (facebook && facebook.length > 280) {
+    return { error: "Facebook field is too long." };
+  }
+
+  return {
+    data: {
+      businessName,
+      city,
+      phone,
+      whatsapp,
+      instagram,
+      facebook,
+      description,
+      whatTheySell
+    }
+  };
+}
+
 export function validateAgencyTripPayload(payload: Record<string, unknown>, partial = false) {
   const title = trimText(payload.title);
   const destination = trimText(payload.destination);
@@ -841,19 +905,286 @@ export function validateMessagePayload(payload: Record<string, unknown>) {
 }
 
 export function validateLeadPayload(payload: Record<string, unknown>) {
-  const listingId = trimText(payload.listingId);
   const sellerId = trimText(payload.sellerId);
+  const listingId = trimText(payload.listingId);
+  const activityId = trimText(payload.activityId);
   const type = trimText(payload.type);
+  const source = trimText(payload.source);
+  const status = trimText(payload.status);
+  const name = trimText(payload.name);
+  const phone = normalizePhoneNumber(payload.phone);
+  const city = trimText(payload.city);
+  const preferredDate = trimText(payload.preferredDate);
+  const message = normalizeMessageBody(payload.message);
+  const customProductName = trimText(payload.customProductName);
+  const notes = normalizeMessageBody(payload.notes);
+  const hasUnitPrice = payload.unitPrice !== undefined && trimText(payload.unitPrice) !== "";
+  const unitPrice = hasUnitPrice ? Number(payload.unitPrice) : null;
+  const hasQuantity = payload.quantity !== undefined && trimText(payload.quantity) !== "";
+  const quantity = hasQuantity ? Number(payload.quantity) : null;
 
-  if (!isValidObjectId(listingId) || !isValidObjectId(sellerId)) {
+  if (!isValidObjectId(sellerId)) {
     return { error: "Lead target is invalid." };
   }
 
-  if (!["whatsapp", "call", "chat"].includes(type)) {
+  if (type && !["whatsapp", "call", "chat", "inquiry", "manual"].includes(type)) {
     return { error: "Lead type is invalid." };
   }
 
-  return { data: { listingId, sellerId, type } };
+  if (source && !["listing", "seller_store", "activity", "whatsapp", "call", "instagram", "facebook", "offline", "other", "manual"].includes(source)) {
+    return { error: "Lead source is invalid." };
+  }
+
+  if (status && !["new", "contacted", "sold", "cancelled", "closed"].includes(status)) {
+    return { error: "Lead status is invalid." };
+  }
+
+  const isTrackedAction = type === "whatsapp" || type === "call" || type === "chat";
+  const resolvedSource =
+    source ||
+    (type === "whatsapp"
+      ? "whatsapp"
+      : type === "call"
+        ? "call"
+        : type === "manual"
+          ? "manual"
+          : "listing");
+  const isExternalOrder = type === "manual" && ["whatsapp", "call", "instagram", "facebook", "offline", "other", "manual"].includes(resolvedSource);
+
+  const hasListingTarget = isValidObjectId(listingId);
+  const hasActivityTarget = isValidObjectId(activityId);
+
+  if ((resolvedSource === "listing" || isTrackedAction) && !hasListingTarget && !hasActivityTarget) {
+    return { error: "Lead target is invalid." };
+  }
+
+  if (resolvedSource === "activity" && !hasActivityTarget) {
+    return { error: "Lead target is invalid." };
+  }
+
+  if (!isTrackedAction) {
+    if (name.length < 2) {
+      return { error: "Lead name is required." };
+    }
+
+    if (!isValidPhoneNumber(phone)) {
+      return { error: "Enter a valid phone number." };
+    }
+
+    if (message.length < 3) {
+      return { error: "Lead message is required." };
+    }
+
+    if (message.length > 1000) {
+      return { error: "Lead message is too long." };
+    }
+  }
+
+  if (customProductName.length > 120) {
+    return { error: "Custom product name is too long." };
+  }
+
+  if (notes.length > 1000) {
+    return { error: "Lead notes are too long." };
+  }
+
+  if (hasUnitPrice && (unitPrice === null || Number.isNaN(unitPrice) || unitPrice < 0)) {
+    return { error: "Lead price is invalid." };
+  }
+
+  if (hasQuantity && (quantity === null || Number.isNaN(quantity) || quantity < 1 || quantity > 999)) {
+    return { error: "Lead quantity is invalid." };
+  }
+
+  if (preferredDate) {
+    const parsedDate = new Date(preferredDate);
+
+    if (!Number.isFinite(parsedDate.getTime())) {
+      return { error: "Preferred date is invalid." };
+    }
+  }
+
+  return {
+    data: {
+      listingId: hasListingTarget ? listingId : "",
+      activityId: hasActivityTarget ? activityId : "",
+      sellerId,
+      type: type || "inquiry",
+      source: resolvedSource,
+      status: status || "new",
+      name,
+      phone,
+      city,
+      preferredDate: preferredDate || "",
+      message,
+      customProductName,
+      unitPrice,
+      quantity,
+      notes,
+      isExternalOrder
+    }
+  };
+}
+
+export function validateActivityProviderRequestPayload(payload: Record<string, unknown>) {
+  const businessName = trimText(payload.businessName);
+  const city = trimText(payload.city);
+  const phone = normalizePhoneNumber(payload.phone);
+  const whatsapp = normalizePhoneNumber(payload.whatsapp);
+  const instagram = trimText(payload.instagram);
+  const facebook = trimText(payload.facebook);
+  const activityType = trimText(payload.activityType);
+  const description = trimText(payload.description);
+
+  if (businessName.length < 2 || businessName.length > 120) {
+    return { error: "Enter a valid business name." };
+  }
+
+  if (city.length < 2 || city.length > 80) {
+    return { error: "Enter a valid city." };
+  }
+
+  if (!isValidPhoneNumber(phone)) {
+    return { error: "Enter a valid phone number." };
+  }
+
+  if (!isValidPhoneNumber(whatsapp)) {
+    return { error: "Enter a valid WhatsApp number." };
+  }
+
+  if (activityType.length < 2 || activityType.length > 80) {
+    return { error: "Enter a valid activity type." };
+  }
+
+  if (description.length < 20 || description.length > 1200) {
+    return { error: "Enter a valid activity provider description." };
+  }
+
+  return {
+    data: {
+      businessName,
+      city,
+      phone,
+      whatsapp,
+      instagram,
+      facebook,
+      activityType,
+      description
+    }
+  };
+}
+
+export function validateActivityPayload(payload: Record<string, unknown>) {
+  const title = trimText(payload.title);
+  const category = trimText(payload.category);
+  const city = trimText(payload.city);
+  const location = trimText(payload.location);
+  const price = Number(payload.price);
+  const priceType = trimText(payload.priceType);
+  const currency = trimText(payload.currency) || "MAD";
+  const duration = trimText(payload.duration);
+  const availableDays = trimText(payload.availableDays);
+  const availableTimes = trimText(payload.availableTimes);
+  const description = trimText(payload.description);
+  const phone = normalizePhoneNumber(payload.phone);
+  const whatsapp = normalizePhoneNumber(payload.whatsapp);
+  const instagram = trimText(payload.instagram);
+  const facebook = trimText(payload.facebook);
+  const maxPeopleValue = trimText(payload.maxPeople);
+  const maxPeople = maxPeopleValue ? Number(maxPeopleValue) : null;
+  const equipmentIncluded = payload.equipmentIncluded === true || payload.equipmentIncluded === "true" || payload.equipmentIncluded === "on";
+  const guideIncluded = payload.guideIncluded === true || payload.guideIncluded === "true" || payload.guideIncluded === "on";
+  const cancellationPolicy = trimText(payload.cancellationPolicy);
+  const status = trimText(payload.status) || "active";
+
+  if (title.length < 3 || title.length > 140) {
+    return { error: "Enter a valid activity title." };
+  }
+
+  if (!["Quad", "Skydiving", "Jet Ski", "Surf", "Hiking", "Horse Riding", "Other"].includes(category)) {
+    return { error: "Enter a valid activity category." };
+  }
+
+  if (city.length < 2 || city.length > 80) {
+    return { error: "Enter a valid city." };
+  }
+
+  if (location.length > 160) {
+    return { error: "Activity location is too long." };
+  }
+
+  if (!Number.isFinite(price) || price < 0) {
+    return { error: "Enter a valid activity price." };
+  }
+
+  if (!["per_person", "total"].includes(priceType)) {
+    return { error: "Enter a valid activity price type." };
+  }
+
+  if (currency !== "MAD") {
+    return { error: "Invalid activity currency." };
+  }
+
+  if (duration.length > 80) {
+    return { error: "Activity duration is too long." };
+  }
+
+  if (availableDays.length > 200) {
+    return { error: "Available days are too long." };
+  }
+
+  if (availableTimes.length > 200) {
+    return { error: "Available times are too long." };
+  }
+
+  if (description.length < 20 || description.length > 2500) {
+    return { error: "Enter a valid activity description." };
+  }
+
+  if (!isValidPhoneNumber(phone)) {
+    return { error: "Enter a valid phone number." };
+  }
+
+  if (!isValidPhoneNumber(whatsapp)) {
+    return { error: "Enter a valid WhatsApp number." };
+  }
+
+  if (maxPeople !== null && (!Number.isFinite(maxPeople) || maxPeople < 1 || maxPeople > 500)) {
+    return { error: "Activity max people is invalid." };
+  }
+
+  if (cancellationPolicy.length > 800) {
+    return { error: "Cancellation policy is too long." };
+  }
+
+  if (!["active", "inactive"].includes(status)) {
+    return { error: "Activity status is invalid." };
+  }
+
+  return {
+    data: {
+      title,
+      category,
+      city,
+      location,
+      price,
+      priceType,
+      currency,
+      duration,
+      availableDays,
+      availableTimes,
+      description,
+      phone,
+      whatsapp,
+      instagram,
+      facebook,
+      maxPeople,
+      equipmentIncluded,
+      guideIncluded,
+      cancellationPolicy,
+      status
+    }
+  };
 }
 
 export function validateLeadStatus(value: unknown) {

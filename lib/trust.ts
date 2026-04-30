@@ -32,11 +32,15 @@ export const leadStatusLabels = {
   ar: {
     new: "جديد",
     contacted: "تم التواصل",
+    sold: "تم البيع",
+    cancelled: "ملغى",
     closed: "مغلق"
   },
   fr: {
     new: "Nouveau",
     contacted: "Contacte",
+    sold: "Vendu",
+    cancelled: "Annule",
     closed: "Ferme"
   }
 } as const;

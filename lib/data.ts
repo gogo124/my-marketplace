@@ -1,8 +1,10 @@
 import { connectToDatabase } from "@/lib/db";
+import { getPublicSellerQuery } from "@/lib/seller";
 import Listing from "@/models/Listing";
 import Conversation from "@/models/Conversation";
 import Message from "@/models/Message";
 import Review from "@/models/Review";
+import User from "@/models/User";
 import { serializeDocument } from "@/lib/utils";
 
 type ListingFilters = {
@@ -51,12 +53,25 @@ function buildListingQuery(filters: ListingFilters = {}) {
   return query;
 }
 
+async function getEligiblePublicSellerIds() {
+  const sellers = await User.find(getPublicSellerQuery()).select("_id").lean();
+  return sellers.map((seller: any) => seller._id);
+}
+
 export async function getListings(filters: ListingFilters = {}) {
   await connectToDatabase();
 
   const query = buildListingQuery(filters);
+  const eligibleSellerIds = await getEligiblePublicSellerIds();
 
-  const listingQuery = Listing.find(query)
+  if (eligibleSellerIds.length === 0) {
+    return [];
+  }
+
+  const listingQuery = Listing.find({
+    ...query,
+    seller: { $in: eligibleSellerIds }
+  })
     .select(
       "title description price type category location phoneNumber whatsappNumber startDate endDate deposit images seller status createdAt"
     )
@@ -78,8 +93,28 @@ export async function getListingsPage(filters: ListingFilters = {}) {
   const page = Math.max(1, Number(filters.page) || 1);
   const pageSize = Math.min(24, Math.max(1, Number(filters.pageSize) || Number(filters.limit) || 12));
   const query = buildListingQuery(filters);
+  const eligibleSellerIds = await getEligiblePublicSellerIds();
+
+  if (eligibleSellerIds.length === 0) {
+    return {
+      listings: [],
+      pagination: {
+        page,
+        pageSize,
+        total: 0,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: page > 1
+      }
+    };
+  }
+
+  const publicQuery = {
+    ...query,
+    seller: { $in: eligibleSellerIds }
+  };
   const [listings, total] = await Promise.all([
-    Listing.find(query)
+    Listing.find(publicQuery)
       .select(
         "title description price type category location phoneNumber whatsappNumber startDate endDate deposit images seller status createdAt"
       )
@@ -88,7 +123,7 @@ export async function getListingsPage(filters: ListingFilters = {}) {
       .skip((page - 1) * pageSize)
       .limit(pageSize)
       .lean(),
-    Listing.countDocuments(query)
+    Listing.countDocuments(publicQuery)
   ]);
 
   return {
@@ -110,7 +145,29 @@ export async function getListingById(id: string) {
   const listing = await Listing.findById(id)
     .populate("seller", "name email avatar sellerVerificationStatus verified")
     .lean();
-  return listing ? serializeDocument(listing) : null;
+
+  if (!listing) {
+    return null;
+  }
+
+  const sellerId = typeof (listing as any).seller === "object" ? (listing as any).seller?._id : (listing as any).seller;
+
+  if (!sellerId) {
+    return null;
+  }
+
+  const activeSeller = await User.findOne({
+    _id: sellerId,
+    ...getPublicSellerQuery()
+  })
+    .select("_id")
+    .lean();
+
+  if (!activeSeller) {
+    return null;
+  }
+
+  return serializeDocument(listing);
 }
 
 export async function getReviewsForListing(listingId: string) {

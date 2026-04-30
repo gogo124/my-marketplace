@@ -21,6 +21,7 @@ import Review from "@/models/Review";
 import RentalRequest from "@/models/RentalRequest";
 import RentalItem from "@/models/RentalItem";
 import AnalyticsEvent from "@/models/AnalyticsEvent";
+import Activity from "@/models/Activity";
 import Story from "@/models/Story";
 import TravelPost from "@/models/TravelPost";
 import User from "@/models/User";
@@ -103,6 +104,7 @@ export async function getAdminDashboardData() {
     reportsCount,
     reservationsCount,
     rentalItemsCount,
+    activitiesCount,
     leadsCount,
     verifiedAgenciesCount,
     verifiedSellersCount,
@@ -112,6 +114,7 @@ export async function getAdminDashboardData() {
     pendingReservationsCount,
     pendingRentalRequestsCount,
     pendingAgenciesCount,
+    pendingActivityProvidersCount,
     recentUsers,
     recentAgencies,
     recentListings,
@@ -129,6 +132,7 @@ export async function getAdminDashboardData() {
     AgencyReservation.countDocuments({}),
     RentalItem.countDocuments({}),
     Lead.countDocuments({}),
+    Activity.countDocuments({}),
     AgencyProfile.countDocuments({ verificationStatus: "verified" }),
     User.countDocuments({
       $or: [{ sellerVerificationStatus: "verified" }, { verified: true }]
@@ -139,6 +143,7 @@ export async function getAdminDashboardData() {
     AgencyReservation.countDocuments({ status: "pending" }),
     RentalRequest.countDocuments({ status: "pending" }),
     AgencyProfile.countDocuments({ verificationStatus: { $ne: "verified" } }),
+    User.countDocuments({ activityProviderStatus: "pending" }),
     User.find({}).sort({ createdAt: -1 }).limit(5).select("name email createdAt role").lean(),
     AgencyProfile.find({})
       .sort({ createdAt: -1 })
@@ -242,6 +247,7 @@ export async function getAdminDashboardData() {
       reportsCount,
       reservationsCount,
       rentalItemsCount,
+      activitiesCount,
       leadsCount,
       verifiedAgenciesCount,
       verifiedSellersCount,
@@ -251,8 +257,9 @@ export async function getAdminDashboardData() {
       pendingReservationsCount,
       pendingRentalRequestsCount,
       pendingAgenciesCount,
+      pendingActivityProvidersCount,
       pendingApprovalsCount:
-        pendingReportsCount + pendingReviewsCount + pendingReservationsCount + pendingRentalRequestsCount + pendingAgenciesCount
+        pendingReportsCount + pendingReviewsCount + pendingReservationsCount + pendingRentalRequestsCount + pendingAgenciesCount + pendingActivityProvidersCount
     },
     recentActivity: serializeDocument(recentActivity) as AdminRecentActivityItem[]
   };
@@ -287,7 +294,9 @@ export async function getAdminUsers(filters?: { role?: string; accountStatus?: s
 
   const users = await User.find(query)
     .sort({ createdAt: -1 })
-    .select("name email role sellerVerificationStatus verified canCreateAgency canCreateRenter createdAt accountStatus")
+    .select(
+      "name email role sellerVerificationStatus verified canCreateAgency canCreateRenter createdAt accountStatus sellerStatus sellerPlan sellerExpiresAt sellerRequestedAt sellerApprovedAt sellerProfile activityProviderStatus activityProviderRequestedAt activityProviderApprovedAt activityProviderProfile"
+    )
     .lean();
 
   return serializeDocument(users);
@@ -560,7 +569,9 @@ export async function getAdminLeads() {
     .populate("sellerId", "name email")
     .populate("buyerId", "name email")
     .populate("listingId", "title")
+    .populate("activityId", "title")
     .sort({ createdAt: -1 })
+    .limit(100)
     .lean();
 
   return serializeDocument(leads);

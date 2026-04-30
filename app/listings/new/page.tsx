@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ListingCard } from "@/components/listing-card";
 import { NewListingForm } from "@/components/new-listing-form";
+import { SellerAccessRequestForm } from "@/components/seller-access-request-form";
 import { getAuthSession } from "@/lib/auth";
 import { getListingsPage } from "@/lib/data";
 import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/seo";
 import { logServerError } from "@/lib/server-log";
+import { getSellerDashboardData } from "@/lib/seller-dashboard";
 
 export async function generateMetadata({
   searchParams
@@ -75,6 +77,13 @@ export default async function NewListingPage({
     logServerError("page.new-listing.auth", error);
     return null;
   });
+  const sellerDashboard =
+    session?.user?.id
+      ? await getSellerDashboardData(session.user.id).catch((error) => {
+          logServerError("page.new-listing.seller", error, { userId: session.user?.id });
+          return null;
+        })
+      : null;
   const { listings: saleListings, pagination } = await getListingsPage({
     type: "sale",
     page: currentPage,
@@ -174,8 +183,36 @@ export default async function NewListingPage({
             ) : null}
           </div>
         </section>
-        {session?.user ? (
+        {session?.user && sellerDashboard?.sellerAccess?.effectiveStatus === "active" ? (
           <NewListingForm />
+        ) : session?.user && sellerDashboard?.sellerAccess?.status === "none" ? (
+          <SellerAccessRequestForm compact />
+        ) : session?.user ? (
+          <section className="rounded-[2.4rem] border border-ink/10 bg-white p-8 shadow-card">
+            <h2 className="text-3xl font-black text-ink">
+              {locale === "ar" ? "النشر مقفول حالياً" : "Publishing is locked"}
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-ink/65">
+              {sellerDashboard?.sellerAccess?.effectiveStatus === "pending"
+                ? locale === "ar"
+                  ? "طلب البيع ديالك مازال قيد المراجعة."
+                  : "Your seller access request is still pending review."
+                : sellerDashboard?.sellerAccess?.effectiveStatus === "suspended"
+                  ? locale === "ar"
+                    ? "حساب البائع موقوف حالياً، لذلك تم قفل النشر."
+                    : "The seller account is suspended, so publishing is locked."
+                  : sellerDashboard?.sellerAccess?.effectiveStatus === "expired"
+                    ? locale === "ar"
+                      ? "صلاحية البيع منتهية، لذلك تم قفل النشر حتى يتم التجديد."
+                      : "Seller access has expired, so publishing is locked until renewal."
+                    : locale === "ar"
+                      ? "هذا الحساب غير مفعل للبيع حالياً."
+                      : "This account is not currently active for selling."}
+            </p>
+            <Link href={withLocale("/seller/dashboard", locale)} className="mt-4 inline-flex rounded-full bg-forest px-5 py-3 font-semibold text-white">
+              {locale === "ar" ? "اذهب إلى لوحة البائع" : "Open seller dashboard"}
+            </Link>
+          </section>
         ) : (
           <section className="rounded-[2.4rem] border border-ink/10 bg-white p-8 shadow-card">
             <h2 className="text-3xl font-black text-ink">{locale === "ar" ? "منتجات للبيع" : "Produits en vente"}</h2>

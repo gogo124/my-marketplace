@@ -128,6 +128,9 @@ export function InboxLayout({
                     </div>
                     <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">{lastMessage}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-[#f97316]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[#c2410c]">
+                        {isArabic ? "المنتج" : "Produit"}
+                      </span>
                       <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
                         {conversation.listing?.price ? `${conversation.listing.price} DH` : isArabic ? "مناقشة" : "Chat"}
                       </span>

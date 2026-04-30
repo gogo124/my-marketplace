@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
+import { getNavigationForUser } from "@/lib/navigation";
 
 type SiteHeaderProps = {
   session: {
@@ -14,6 +15,9 @@ type SiteHeaderProps = {
       role?: "user" | "agency" | "renter" | "admin";
       canCreateAgency?: boolean;
       canCreateRenter?: boolean;
+      sellerStatus?: "none" | "pending" | "active" | "expired" | "suspended" | "rejected";
+      sellerExpiresAt?: string | null;
+      activityProviderStatus?: "none" | "pending" | "active" | "suspended" | "rejected";
     } | null;
   } | null;
 };
@@ -45,17 +49,21 @@ export function SiteHeader({ session }: SiteHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const canCreateAgency = Boolean(session?.user?.canCreateAgency);
   const canCreateRenter = Boolean(session?.user?.canCreateRenter);
-  const isAgency = session?.user?.role === "agency" && !canCreateAgency;
-  const isRenter = session?.user?.role === "renter" && !canCreateRenter;
   const isAdmin = session?.user?.role === "admin";
-  const primaryNavigation = [
-    { href: withLocale("/trips", locale), label: locale === "ar" ? "التريبات" : "Trips", emphasize: true },
-    { href: withLocale("/agencies", locale), label: locale === "ar" ? "وكالات السفر" : "Agencies" },
-    { href: withLocale("/rentals", locale), label: locale === "ar" ? "كراء المعدات" : "Rentals" },
-    { href: withLocale("/listings/new", locale), label: locale === "ar" ? "Marketplace" : "Marketplace" },
-    { href: withLocale("/camping", locale), label: locale === "ar" ? "أماكن التخييم" : "Camping Places" },
-    { href: withLocale("/travel-partners", locale), label: locale === "ar" ? "رفيق سفر" : "Travel Partners" }
-  ];
+  const navigation = getNavigationForUser(session);
+  const primaryNavigation = navigation.primary.map((item) => ({
+    href: withLocale(item.href, locale),
+    label: item.label[locale],
+    emphasize: item.emphasize
+  }));
+  const secondaryNavigation = navigation.secondary.map((item) => ({
+    href: withLocale(item.href, locale),
+    label: item.label[locale]
+  }));
+  const utilityNavigation = navigation.utilities.map((item) => ({
+    href: withLocale(item.href, locale),
+    label: item.label[locale]
+  }));
 
   useEffect(() => {
     setIsOpen(false);
@@ -141,40 +149,38 @@ export function SiteHeader({ session }: SiteHeaderProps) {
             </div>
             {session?.user ? (
               <>
-                <Link href={withLocale("/messages", locale)} className={`${getNavLinkClass(pathname.startsWith("/messages"))} w-full xl:w-auto`}>
-                  {copy.messages}
-                </Link>
-                {isAgency ? (
-                  <Link
-                    href={withLocale("/agency/dashboard", locale)}
-                    className={`${getNavLinkClass(pathname.startsWith("/agency/dashboard"), true)} w-full xl:w-auto`}
-                  >
-                    {copy.agencyDashboard}
-                  </Link>
-                ) : isRenter ? (
-                  <Link
-                    href={withLocale("/renter/dashboard", locale)}
-                    className={`${getNavLinkClass(pathname.startsWith("/renter/dashboard"), true)} w-full xl:w-auto`}
-                  >
-                    {locale === "ar" ? "لوحة الكراء" : "Tableau location"}
-                  </Link>
-                ) : (
-                  <div className="flex flex-col gap-2 xl:flex-row xl:min-w-0">
-                    <Link href={withLocale("/dashboard", locale)} className="w-full rounded-full border border-ink/10 bg-white/80 px-4 py-2 text-center shadow-card xl:w-auto">
-                      {locale === "ar" ? "لوحتي" : "Mon tableau"}
-                    </Link>
-                    {canCreateAgency ? (
-                      <Link href={withLocale("/agency/profile", locale)} className="w-full rounded-full bg-forest px-4 py-2 text-center text-white shadow-card xl:w-auto">
-                        {copy.becomeAgency}
+                {secondaryNavigation.length > 0 ? (
+                  <div className="flex flex-col gap-2 xl:flex-row xl:flex-wrap">
+                    {secondaryNavigation.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`${getNavLinkClass(pathname === item.href.split("?")[0] || pathname.startsWith(item.href.split("?")[0]))} w-full xl:w-auto`}
+                      >
+                        {item.label}
                       </Link>
-                    ) : null}
-                    {canCreateRenter ? (
-                      <Link href={withLocale("/renter/profile", locale)} className="w-full rounded-full border border-ink/10 bg-white/80 px-4 py-2 text-center shadow-card xl:w-auto">
-                        {locale === "ar" ? "أنشئ ملف كراء" : "Creer un profil location"}
-                      </Link>
-                    ) : null}
+                    ))}
                   </div>
-                )}
+                ) : null}
+                {utilityNavigation.length > 0 ? (
+                  <div className="flex flex-col gap-2 xl:flex-row xl:flex-wrap">
+                    {utilityNavigation.map((item) => (
+                      <Link key={item.href} href={item.href} className="w-full rounded-full border border-ink/10 bg-white/80 px-4 py-2 text-center shadow-card xl:w-auto">
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+                {canCreateAgency ? (
+                  <Link href={withLocale("/agency/profile", locale)} className="w-full rounded-full bg-forest px-4 py-2 text-center text-white shadow-card xl:w-auto">
+                    {copy.becomeAgency}
+                  </Link>
+                ) : null}
+                {canCreateRenter ? (
+                  <Link href={withLocale("/renter/profile", locale)} className="w-full rounded-full border border-ink/10 bg-white/80 px-4 py-2 text-center shadow-card xl:w-auto">
+                    {locale === "ar" ? "أنشئ ملف كراء" : "Creer un profil location"}
+                  </Link>
+                ) : null}
                 {isAdmin ? (
                   <Link href={withLocale("/admin", locale)} className={`${getNavLinkClass(pathname.startsWith("/admin"))} w-full xl:w-auto`}>
                     {copy.admin}

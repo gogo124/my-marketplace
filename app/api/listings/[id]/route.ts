@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { createRouteErrorResponse } from "@/lib/api-errors";
 import { connectToDatabase } from "@/lib/db";
+import { canPublishListing, getPublicSellerQuery } from "@/lib/seller";
 import Listing from "@/models/Listing";
+import User from "@/models/User";
 
 export async function GET(
   request: Request,
@@ -20,6 +22,18 @@ export async function GET(
       .lean();
 
     if (!listing) {
+      return NextResponse.json({ error: "Listing not found." }, { status: 404 });
+    }
+
+    const sellerId = typeof (listing as any).seller === "object" ? (listing as any).seller?._id : (listing as any).seller;
+    const activeSeller = await User.findOne({
+      _id: sellerId,
+      ...getPublicSellerQuery()
+    })
+      .select("_id")
+      .lean();
+
+    if (!activeSeller) {
       return NextResponse.json({ error: "Listing not found." }, { status: 404 });
     }
 
@@ -46,6 +60,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (!["active", "inactive"].includes(status)) {
       return NextResponse.json({ error: "Invalid status." }, { status: 400 });
+    }
+
+    if (status === "active") {
+      const currentUser = await User.findById(session.user.id).select("sellerStatus sellerExpiresAt sellerPlan");
+
+      if (!currentUser || !canPublishListing(currentUser as any)) {
+        return NextResponse.json({ error: "Active seller access is required to publish listings." }, { status: 403 });
+      }
     }
 
     const listing = await Listing.findOneAndUpdate(

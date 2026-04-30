@@ -9,6 +9,7 @@ import { resolveLocale, translateApiError } from "@/lib/i18n";
 type RentalRequestFormProps = {
   tripTitle: string;
   isSignedIn: boolean;
+  canRequest?: boolean;
   tripCode?: string;
   tripId?: string;
   hideTripCodeInput?: boolean;
@@ -25,6 +26,7 @@ type RentalRequestFormProps = {
 export function RentalRequestForm({
   tripTitle,
   isSignedIn,
+  canRequest = true,
   tripCode = "",
   tripId,
   hideTripCodeInput = false,
@@ -54,6 +56,9 @@ export function RentalRequestForm({
           send: "إرسال طلب الكراء",
           sending: "جارٍ الإرسال...",
           success: "تم إرسال طلب الكراء.",
+          lockedTitle: "الطلب مقفول",
+          lockedBody: "فتح طلب الكراء يتم فقط بعد تأكيد الحجز والدخول إلى مساحة التريب.",
+          lockedAction: "اذهب إلى لوحة الحساب",
           anyPartner: "أي مزود مناسب",
           anyItem: "أي عنصر مناسب",
           unitPrice: "سعر اليوم",
@@ -74,6 +79,9 @@ export function RentalRequestForm({
           send: "Envoyer la demande",
           sending: "Envoi...",
           success: "La demande de location a ete envoyee.",
+          lockedTitle: "Demande verrouillee",
+          lockedBody: "La demande de location s'ouvre uniquement apres confirmation et acces a l'Espace Trip.",
+          lockedAction: "Aller au tableau de bord",
           anyPartner: "Tout loueur adapte",
           anyItem: "Tout article adapte",
           unitPrice: "Prix / jour",
@@ -111,6 +119,11 @@ export function RentalRequestForm({
     event.preventDefault();
     setError("");
     setSuccess("");
+
+    if (!canRequest) {
+      setError(labels.lockedBody);
+      return;
+    }
 
     if (!isSignedIn) {
       setError(translateApiError("Please sign in to continue", locale));
@@ -172,10 +185,23 @@ export function RentalRequestForm({
         <p className="text-sm font-semibold text-ink">{labels.title}</p>
         <p className="mt-1 text-xs text-ink/60">{tripTitle} • {labels.body}</p>
       </div>
+      {!canRequest ? (
+        <div className="rounded-[1.25rem] border border-dashed border-ink/15 bg-white px-4 py-4 text-sm text-ink/70">
+          <p className="font-semibold text-ink">{labels.lockedTitle}</p>
+          <p className="mt-1 text-xs leading-6 text-ink/60">{labels.lockedBody}</p>
+          <a
+            href={locale === "ar" ? "/dashboard?lang=ar" : "/dashboard?lang=fr"}
+            className="mt-3 inline-flex rounded-full bg-forest px-4 py-2 text-sm font-semibold text-white"
+          >
+            {labels.lockedAction}
+          </a>
+        </div>
+      ) : null}
       <input
         value={customerName}
         onChange={(event) => setCustomerName(event.target.value)}
         placeholder={labels.name}
+        disabled={!canRequest}
         className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
       />
       {!hideTripCodeInput ? (
@@ -190,6 +216,7 @@ export function RentalRequestForm({
           value={phoneNumber}
           onChange={(event) => setPhoneNumber(event.target.value)}
           placeholder={labels.phone}
+          disabled={!canRequest}
           className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
         />
         <input
@@ -197,6 +224,7 @@ export function RentalRequestForm({
           onChange={(event) => setPreferredDate(event.target.value)}
           type="date"
           placeholder={labels.preferredDate}
+          disabled={!canRequest}
           className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
         />
       </div>
@@ -205,6 +233,7 @@ export function RentalRequestForm({
           value={city}
           onChange={(event) => setCity(event.target.value)}
           placeholder={labels.city}
+          disabled={!canRequest}
           className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
         />
         <input
@@ -214,6 +243,7 @@ export function RentalRequestForm({
           min="1"
           max="50"
           placeholder={labels.quantity}
+          disabled={!canRequest}
           className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
         />
       </div>
@@ -224,6 +254,7 @@ export function RentalRequestForm({
         min="1"
         max="60"
         placeholder={labels.duration}
+        disabled={!canRequest}
         className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
       />
       {!lockedRenterId && !lockedRentalItemId ? (
@@ -234,6 +265,7 @@ export function RentalRequestForm({
               setRenterId(event.target.value);
               setRentalItemId("");
             }}
+            disabled={!canRequest}
             className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
           >
             <option value="">{labels.anyPartner}</option>
@@ -246,6 +278,7 @@ export function RentalRequestForm({
           <select
             value={rentalItemId}
             onChange={(event) => setRentalItemId(event.target.value)}
+            disabled={!canRequest}
             className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
           >
             <option value="">{labels.anyItem}</option>
@@ -270,11 +303,12 @@ export function RentalRequestForm({
         onChange={(event) => setNotes(event.target.value)}
         rows={3}
         placeholder={labels.notes}
+        disabled={!canRequest}
         className="w-full rounded-[1.5rem] border border-ink/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-clay/30"
       />
       {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
       {success ? <p className="text-sm font-medium text-forest">{success}</p> : null}
-      <button type="submit" disabled={loading} className="w-full rounded-2xl bg-clay px-4 py-3 font-semibold text-white disabled:opacity-60">
+      <button type="submit" disabled={loading || !canRequest} className="w-full rounded-2xl bg-clay px-4 py-3 font-semibold text-white disabled:opacity-60">
         {loading ? labels.sending : labels.send}
       </button>
     </form>

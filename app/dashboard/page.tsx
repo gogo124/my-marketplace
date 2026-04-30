@@ -27,6 +27,26 @@ export default async function UserDashboardPage({
   const dashboard = await getUserDashboardData(session.user.id);
   const isArabic = locale === "ar";
   const upcomingReservations = dashboard.upcomingReservations.length > 0 ? dashboard.upcomingReservations : dashboard.reservations.slice(0, 4);
+  const quickLinks = [
+    { href: "/agencies", label: isArabic ? "تصفح الرحلات" : "Browse trips", note: isArabic ? "اعثر على رحلة مناسبة" : "Find the right trip" },
+    { href: "/marketplace", label: isArabic ? "Marketplace" : "Marketplace", note: isArabic ? "تصفح المنتجات والمتاجر" : "Browse products and stores" },
+    { href: "/rentals", label: isArabic ? "كراء المعدات" : "Rent equipment", note: isArabic ? "معدات السفر والتخييم" : "Travel and camping gear" },
+    { href: "/travel-partners", label: isArabic ? "رفيق سفر" : "Find travel partner", note: isArabic ? "تواصل مع مسافرين" : "Meet other travelers" }
+  ];
+
+  if (dashboard.sellerAccess?.canPublish) {
+    quickLinks.push({
+      href: "/listings/new",
+      label: isArabic ? "إضافة إعلان" : "Add listing",
+      note: isArabic ? "عرض منتج جديد" : "Publish a new item"
+    });
+  } else if (dashboard.sellerAccess?.effectiveStatus !== "none" || dashboard.stats.listingsCount > 0) {
+    quickLinks.push({
+      href: "/seller/dashboard",
+      label: isArabic ? "لوحة البائع" : "Seller dashboard",
+      note: isArabic ? "حالة البيع والطلبات" : "Seller status and leads"
+    });
+  }
 
   return (
     <div dir={getDirection(locale)} className="space-y-8">
@@ -89,14 +109,35 @@ export default async function UserDashboardPage({
 
       <DashboardQuickLinks
         locale={locale}
-        items={[
-          { href: "/agencies", label: isArabic ? "تصفح الرحلات" : "Browse trips", note: isArabic ? "اعثر على رحلة مناسبة" : "Find the right trip" },
-          { href: "/rentals", label: isArabic ? "كراء المعدات" : "Rent equipment", note: isArabic ? "معدات السفر والتخييم" : "Travel and camping gear" },
-          { href: "/travel-partners", label: isArabic ? "رفيق سفر" : "Find travel partner", note: isArabic ? "تواصل مع مسافرين" : "Meet other travelers" },
-          { href: "/listings/new", label: isArabic ? "إضافة إعلان" : "Add listing", note: isArabic ? "عرض منتج جديد" : "Publish a new item" },
-          { href: "/seller/dashboard", label: isArabic ? "لوحة البائع" : "Seller dashboard", note: isArabic ? "إعلانات البيع والرسائل" : "Sale listings and leads" }
-        ]}
+        items={quickLinks}
       />
+
+      {dashboard.sellerAccess?.effectiveStatus !== "none" || dashboard.stats.listingsCount > 0 ? (
+        <DashboardSection
+          title={isArabic ? "السوق والبائع" : "Marketplace and seller"}
+          body={
+            isArabic
+              ? "دخول سريع إلى حالة البيع والإعلانات الخاصة بك."
+              : "Quick access to your seller status and marketplace activity."
+          }
+        >
+          <div className="rounded-[1.75rem] border border-slate-100 p-5">
+            <p className="text-sm text-slate-500">{isArabic ? "حالة البيع" : "Seller status"}</p>
+            <p className="mt-2 text-2xl font-black text-slate-900">{dashboard.sellerAccess?.effectiveStatus || "none"}</p>
+            <p className="mt-2 text-sm text-slate-500">
+              {isArabic
+                ? `${dashboard.stats.listingsCount} إعلان محفوظ مرتبط بهذا الحساب.`
+                : `${dashboard.stats.listingsCount} saved marketplace listings linked to this account.`}
+            </p>
+            <Link
+              href={withLocale("/seller/dashboard", locale)}
+              className="mt-4 inline-flex rounded-full bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-white"
+            >
+              {isArabic ? "لوحة البائع" : "Seller dashboard"}
+            </Link>
+          </div>
+        </DashboardSection>
+      ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <DashboardSection

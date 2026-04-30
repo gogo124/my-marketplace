@@ -1,6 +1,7 @@
 import AgencyProfile from "@/models/AgencyProfile";
 import AgencyReservation from "@/models/AgencyReservation";
 import AgencyTrip from "@/models/AgencyTrip";
+import Activity from "@/models/Activity";
 import Conversation from "@/models/Conversation";
 import Lead from "@/models/Lead";
 import Listing from "@/models/Listing";
@@ -180,10 +181,12 @@ export async function deleteUserByAdmin(userId: string) {
 
   const agency = await AgencyProfile.findOne({ user: userId }).select("_id logo coverImage").lean();
   const renter = await RenterProfile.findOne({ user: userId }).select("_id logo coverImage").lean();
+  const activities = await Activity.find({ provider: userId }).select("_id").lean();
   const listings = await Listing.find({ seller: userId }).select("_id images").lean();
   const places = await Place.find({ createdBy: userId }).select("_id images").lean();
   const renterItems = await RentalItem.find({ owner: userId }).select("_id images").lean();
   const listingIds = listings.map((listing) => listing._id);
+  const activityIds = activities.map((activity) => activity._id);
   const placeIds = places.map((place) => place._id);
   const travelPostIds = await TravelPost.find({ userId }).distinct("_id");
   const reviewIds = await Review.find({ author: userId }).distinct("_id");
@@ -199,6 +202,7 @@ export async function deleteUserByAdmin(userId: string) {
     renter ? RentalItem.deleteMany({ renter: renter._id }) : Promise.resolve(),
     renter ? AgencyTrip.updateMany({ renterPartners: renter._id }, { $pull: { renterPartners: renter._id } }) : Promise.resolve(),
     agency ? AgencyReservation.deleteMany({ agency: agency._id }) : Promise.resolve(),
+    Activity.deleteMany({ provider: userId }),
     Listing.deleteMany({ seller: userId }),
     Place.deleteMany({ createdBy: userId }),
     TravelPost.deleteMany({ userId }),
@@ -207,7 +211,7 @@ export async function deleteUserByAdmin(userId: string) {
     placeIds.length > 0 ? Review.deleteMany({ place: { $in: placeIds } }) : Promise.resolve(),
     placeIds.length > 0 ? Story.deleteMany({ place: { $in: placeIds } }) : Promise.resolve(),
     Place.updateMany({ savedBy: userId }, { $pull: { savedBy: userId } }),
-    Lead.deleteMany({ $or: [{ sellerId: userId }, { buyerId: userId }] }),
+    Lead.deleteMany({ $or: [{ sellerId: userId }, { buyerId: userId }, ...(activityIds.length > 0 ? [{ activityId: { $in: activityIds } }] : [])] }),
     AgencyReservation.deleteMany({ user: userId }),
     Report.deleteMany({
       $or: [

@@ -260,7 +260,7 @@ export default async function HomePage({
       description: isArabic
         ? "فتح marketplace ديالك باش تشري أو تبيع معدات camping المستعملة أو الجديدة."
         : "Ouvrez le marketplace pour acheter ou vendre du materiel de camping neuf ou occasion.",
-      href: withLocale("/listings/new#sale-products", locale),
+      href: withLocale("/marketplace", locale),
       image: "/images/buy-gear.jpg",
       ctaLabel: isArabic ? "بيع أو شري معدات" : "Open marketplace",
       accent: "#f97316",
@@ -744,7 +744,7 @@ export default async function HomePage({
             <Link href={withLocale("/listings/new#sale-products", locale)} className="rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700">
               {isArabic ? "شوف العروض" : "Voir les offres"}
             </Link>
-            <Link href={withLocale("/listings/new", locale)} className="rounded-full bg-[#f97316] px-4 py-2 font-semibold text-white">
+            <Link href={withLocale("/marketplace", locale)} className="rounded-full bg-[#f97316] px-4 py-2 font-semibold text-white">
               {isArabic ? "نشر إعلان" : "Publier"}
             </Link>
           </div>
@@ -925,7 +925,7 @@ export default async function HomePage({
             <Link href={withLocale("/rentals", locale)} className="rounded-full bg-slate-50 px-4 py-2 transition hover:bg-slate-100">
               {isArabic ? "كراء المعدات" : "Location"}
             </Link>
-            <Link href={withLocale("/listings/new", locale)} className="rounded-full bg-slate-50 px-4 py-2 transition hover:bg-slate-100">
+            <Link href={withLocale("/marketplace", locale)} className="rounded-full bg-slate-50 px-4 py-2 transition hover:bg-slate-100">
               Marketplace
             </Link>
             <Link href={withLocale("/camping", locale)} className="rounded-full bg-slate-50 px-4 py-2 transition hover:bg-slate-100">

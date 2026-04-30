@@ -101,6 +101,9 @@ export default async function ConversationPage({
                   {listing?.location ? ` • ${listing.location}` : ""}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-[#f97316]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#c2410c] shadow-sm">
+                    {locale === "ar" ? "مرجع المنتج" : "Reference produit"}: {listing?.title || copy.marketplaceChat}
+                  </span>
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#0f3d2e] shadow-sm">
                     {listing?.price ? `${listing.price} DH` : copy.marketplaceChat}
                   </span>

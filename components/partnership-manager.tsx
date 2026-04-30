@@ -39,6 +39,7 @@ export function PartnershipManager({
   const [loadingId, setLoadingId] = useState("");
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"error" | "success" | "info">("info");
+  const rejected = directory.filter((entry) => entry.partnershipStatus === "rejected");
 
   const labels =
     safeLocale === "ar"
@@ -47,6 +48,7 @@ export function PartnershipManager({
           accepted: role === "agency" ? "الشركاء المقبولون" : "الوكالات المقبولة",
           incoming: "الطلبات الواردة",
           outgoing: "الطلبات المرسلة",
+          rejected: "الشراكات المرفوضة",
           directory: role === "agency" ? "مزودو الكراء" : "الوكالات المتاحة",
           send: "إرسال طلب",
           resend: "إعادة الإرسال",
@@ -57,13 +59,15 @@ export function PartnershipManager({
           rejectedStatus: "مرفوض",
           none: "لا توجد شراكات حتى الآن.",
           city: "المدينة",
-          verified: "الحالة"
+          verified: "الحالة",
+          status: "حالة الشراكة"
         }
       : {
           title: role === "agency" ? "Partenariats loueurs" : "Partenariats agences",
           accepted: role === "agency" ? "Partenaires acceptes" : "Agences acceptees",
           incoming: "Demandes recues",
           outgoing: "Demandes envoyees",
+          rejected: "Partenariats refuses",
           directory: role === "agency" ? "Loueurs disponibles" : "Agences disponibles",
           send: "Envoyer",
           resend: "Renvoyer",
@@ -74,8 +78,25 @@ export function PartnershipManager({
           rejectedStatus: "Refuse",
           none: "Aucun partenariat pour le moment.",
           city: "Ville",
-          verified: "Statut"
+          verified: "Statut",
+          status: "Etat du partenariat"
         };
+
+  function renderStatusBadge(status: PartnershipEntry["partnershipStatus"]) {
+    if (status === "accepted") {
+      return <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{labels.acceptedStatus}</span>;
+    }
+
+    if (status === "rejected") {
+      return <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">{labels.rejectedStatus}</span>;
+    }
+
+    if (status === "pending") {
+      return <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">{labels.pending}</span>;
+    }
+
+    return null;
+  }
 
   async function sendRequest(targetId: string) {
     setLoadingId(targetId);
@@ -176,6 +197,11 @@ export function PartnershipManager({
     <section className="space-y-6 rounded-[2rem] bg-white p-6 shadow-card">
       <div>
         <h2 className="text-2xl font-black text-ink">{labels.title}</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{accepted.length} {labels.acceptedStatus}</span>
+          <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">{incomingRequests.length + outgoingRequests.length} {labels.pending}</span>
+          <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">{rejected.length} {labels.rejectedStatus}</span>
+        </div>
         {message ? (
           <p className={`mt-3 text-sm font-medium ${messageTone === "error" ? "text-red-600" : messageTone === "success" ? "text-emerald-600" : "text-ink/60"}`}>
             {message}
@@ -189,8 +215,13 @@ export function PartnershipManager({
           {accepted.length > 0 ? (
             accepted.map((entry) => (
               <div key={`accepted-${entry._id}`} className="rounded-[1.25rem] bg-sand p-3">
-                <p className="font-semibold text-ink">{entry.name || "-"}</p>
-                <p className="mt-1 text-sm text-ink/60">{labels.city}: {entry.city || "-"}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-ink">{entry.name || "-"}</p>
+                    <p className="mt-1 text-sm text-ink/60">{labels.city}: {entry.city || "-"}</p>
+                  </div>
+                  {renderStatusBadge("accepted")}
+                </div>
               </div>
             ))
           ) : (
@@ -203,8 +234,13 @@ export function PartnershipManager({
           {incomingRequests.length > 0 ? (
             incomingRequests.map((entry) => (
               <div key={`incoming-${entry._id}`} className="rounded-[1.25rem] bg-sand p-3">
-                <p className="font-semibold text-ink">{entry.name || "-"}</p>
-                <p className="mt-1 text-sm text-ink/60">{labels.city}: {entry.city || "-"}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-ink">{entry.name || "-"}</p>
+                    <p className="mt-1 text-sm text-ink/60">{labels.city}: {entry.city || "-"}</p>
+                  </div>
+                  {renderStatusBadge("pending")}
+                </div>
                 {role === "agency" ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
@@ -247,15 +283,40 @@ export function PartnershipManager({
           {outgoingRequests.length > 0 ? (
             outgoingRequests.map((entry) => (
               <div key={`outgoing-${entry._id}`} className="rounded-[1.25rem] bg-sand p-3">
-                <p className="font-semibold text-ink">{entry.name || "-"}</p>
-                <p className="mt-1 text-sm text-ink/60">{labels.city}: {entry.city || "-"}</p>
-                <p className="mt-3 text-sm font-semibold text-clay">{labels.pending}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-ink">{entry.name || "-"}</p>
+                    <p className="mt-1 text-sm text-ink/60">{labels.city}: {entry.city || "-"}</p>
+                  </div>
+                  {renderStatusBadge("pending")}
+                </div>
               </div>
             ))
           ) : (
             <p className="text-sm text-ink/60">{labels.none}</p>
           )}
         </div>
+      </div>
+
+      <div className="space-y-3 rounded-[1.5rem] border border-ink/10 p-4">
+        <h3 className="text-lg font-bold text-ink">{labels.rejected}</h3>
+        {rejected.length > 0 ? (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {rejected.map((entry) => (
+              <div key={`rejected-${entry._id}`} className="rounded-[1.25rem] bg-rose-50 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-ink">{entry.name || "-"}</p>
+                    <p className="mt-1 text-sm text-ink/60">{labels.city}: {entry.city || "-"}</p>
+                  </div>
+                  {renderStatusBadge("rejected")}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-ink/60">{labels.none}</p>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -275,6 +336,12 @@ export function PartnershipManager({
                 <p className="mt-1 text-xs uppercase tracking-[0.2em] text-ink/45">
                   {labels.verified}: {entry.verificationStatus || "-"}
                 </p>
+                {entry.partnershipStatus !== "none" ? (
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-xs uppercase tracking-[0.2em] text-ink/45">{labels.status}</p>
+                    {renderStatusBadge(entry.partnershipStatus)}
+                  </div>
+                ) : null}
                 <div className="mt-4">
                   {showSendButton ? (
                     <button
@@ -288,13 +355,7 @@ export function PartnershipManager({
                       {isRenter ? labels.send : entry.partnershipStatus === "rejected" ? labels.resend : labels.send}
                     </button>
                   ) : (
-                    <span className="rounded-full bg-sand px-3 py-2 text-sm font-semibold text-ink">
-                      {entry.partnershipStatus === "accepted"
-                        ? labels.acceptedStatus
-                        : entry.partnershipStatus === "pending"
-                          ? labels.pending
-                          : labels.rejectedStatus}
-                    </span>
+                    renderStatusBadge(entry.partnershipStatus)
                   )}
                 </div>
               </div>

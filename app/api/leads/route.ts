@@ -4,8 +4,10 @@ import { requireAuthenticatedUser } from "@/lib/auth-guard";
 import { connectToDatabase } from "@/lib/db";
 import { checkRateLimit, getRequestIdentity } from "@/lib/rate-limit";
 import { validateLeadPayload, validateLeadStatus } from "@/lib/validation";
+import Activity from "@/models/Activity";
 import Lead from "@/models/Lead";
 import Listing from "@/models/Listing";
+import User from "@/models/User";
 
 export async function POST(request: Request) {
   try {
@@ -37,19 +39,49 @@ export async function POST(request: Request) {
 
     await connectToDatabase();
 
-    const listing = await Listing.findOne({
-      _id: validation.data.listingId,
-      seller: validation.data.sellerId
-    }).select("_id");
+    const seller = await User.findById(validation.data.sellerId).select("_id");
 
-    if (!listing) {
-      return NextResponse.json({ error: "Listing not found for this seller." }, { status: 404 });
+    if (!seller) {
+      return NextResponse.json({ error: "Seller not found." }, { status: 404 });
+    }
+
+    let listing = null;
+    let activity = null;
+
+    if (validation.data.listingId) {
+      listing = await Listing.findOne({
+        _id: validation.data.listingId,
+        seller: validation.data.sellerId
+      }).select("_id title");
+
+      if (!listing) {
+        return NextResponse.json({ error: "Listing not found for this seller." }, { status: 404 });
+      }
+    }
+
+    if (validation.data.activityId) {
+      activity = await Activity.findOne({
+        _id: validation.data.activityId,
+        provider: validation.data.sellerId
+      }).select("_id title");
+
+      if (!activity) {
+        return NextResponse.json({ error: "Activity not found for this provider." }, { status: 404 });
+      }
     }
 
     const duplicateWindowStart = new Date(Date.now() - 10 * 60 * 1000);
-    if (session?.user?.id) {
+    const isTrackedAction =
+      validation.data.type === "whatsapp" || validation.data.type === "call" || validation.data.type === "chat";
+
+    if (validation.data.type === "manual" && validation.data.sellerId !== userId) {
+      return NextResponse.json({ error: "Manual leads can only be created for your own seller account." }, { status: 403 });
+    }
+
+    if (session?.user?.id && isTrackedAction && (validation.data.listingId || validation.data.activityId)) {
       const duplicateLead = await Lead.findOne({
         listingId: validation.data.listingId,
+        activityId: validation.data.activityId || null,
         sellerId: validation.data.sellerId,
         buyerId: userId,
         type: validation.data.type,
@@ -62,11 +94,23 @@ export async function POST(request: Request) {
     }
 
     const lead = await Lead.create({
-      listingId: validation.data.listingId,
+      listingId: validation.data.listingId || null,
+      activityId: validation.data.activityId || null,
       sellerId: validation.data.sellerId,
-      buyerId: userId,
+      buyerId: validation.data.type === "manual" ? null : userId,
       type: validation.data.type,
-      status: "new"
+      source: validation.data.source,
+      name: validation.data.name,
+      phone: validation.data.phone,
+      city: validation.data.city,
+      preferredDate: validation.data.preferredDate ? new Date(validation.data.preferredDate) : null,
+      message: validation.data.message,
+      status: validation.data.status || "new",
+      customProductName: validation.data.customProductName || "",
+      unitPrice: validation.data.unitPrice,
+      quantity: validation.data.quantity,
+      notes: validation.data.notes || "",
+      isExternalOrder: Boolean(validation.data.isExternalOrder)
     });
 
     return NextResponse.json({ lead }, { status: 201 });
