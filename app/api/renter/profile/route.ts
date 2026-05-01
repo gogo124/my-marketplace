@@ -106,7 +106,7 @@ export async function POST(request: Request) {
     ).populate("user", "name email avatar role");
 
     await User.findByIdAndUpdate(user.id, { $set: { role: "renter", canCreateRenter: false } });
-    return NextResponse.json({ profile });
+    return NextResponse.json({ profile, redirectTo: "/renter/dashboard" });
   } catch (error) {
     return createRouteErrorResponse(error, "Could not save renter profile.");
   }

@@ -138,6 +138,12 @@ export function RenterProfileForm({ profile }: RenterProfileFormProps) {
       setCoverImage(nextCoverImage);
       setLogoFile(null);
       setCoverImageFile(null);
+      const redirectTo =
+        data && typeof data === "object" && "redirectTo" in data && typeof data.redirectTo === "string"
+          ? data.redirectTo
+          : "/renter/dashboard";
+
+      router.push(redirectTo);
       router.refresh();
     } catch (submissionError) {
       setError(

@@ -15,6 +15,14 @@ function isDuplicateKeyError(error: unknown): error is DuplicateKeyError {
   );
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+
+  return "";
+}
+
 export function createRouteErrorResponse(
   error: unknown,
   fallback: string,
@@ -33,5 +41,7 @@ export function createRouteErrorResponse(
     );
   }
 
-  return NextResponse.json({ error: fallback }, { status: 500 });
+  const developmentMessage = process.env.NODE_ENV !== "production" ? getErrorMessage(error) : "";
+
+  return NextResponse.json({ error: developmentMessage || fallback }, { status: 500 });
 }

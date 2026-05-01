@@ -1063,6 +1063,376 @@ export const siteCopy = {
   en: englishSiteCopy
 } as const;
 
+export const marketingCopy = {
+  ar: {
+    announcement:
+      "رفقاء السفر، التخييم، المعدات والأنشطة في تجربة مغربية أوضح لعشاق الهواء الطلق",
+    menu: "القائمة",
+    close: "إغلاق",
+    publicNav: {
+      travelPartners: "رفيق سفر",
+      camping: "التخييم",
+      marketplace: "المتجر",
+      activities: "الأنشطة",
+      about: "من نحن",
+      contact: "اتصل بنا"
+    },
+    hero: {
+      badge: "Moroccan Trip",
+      title: "اعثر على رفقاء السفر واكتشف أماكن التخييم في المغرب بدون تعقيد",
+      subtitle: "أسهل طريقة للتواصل والاستكشاف وتجربة المغرب في الهواء الطلق.",
+      bullets: [
+        "اعثر على رفيق سفر",
+        "اكتشف أماكن التخييم",
+        "اشتر معدات التخييم",
+        "جرّب أنشطة جديدة"
+      ],
+      primaryCta: "ابحث عن رفيق سفر",
+      secondaryCta: "استكشف التخييم",
+      tertiaryCta: "تصفح المتجر"
+    },
+    trust: {
+      label: "ثقة وسرعة",
+      items: [
+        {
+          title: "تواصل مباشر مع مستخدمين حقيقيين",
+          description: "تواصل مباشرة مع أصحاب الإعلانات ومزودي الأنشطة."
+        },
+        {
+          title: "بدون وسيط",
+          description: "واجهة أخف وتسلسل أوضح يدفع المستخدم إلى الإجراء بسرعة."
+        },
+        {
+          title: "مجتمع سفر مغربي حقيقي",
+          description: "مجتمع مغربي حقيقي للسفر والتخييم والأنشطة الخارجية."
+        }
+      ]
+    },
+    stats: {
+      items: [
+        {
+          title: "منشورات جديدة بشكل منتظم",
+          description: "الصفحة الرئيسية تعرض آخر الخطط والأماكن والأنشطة المنشورة فعلياً."
+        },
+        {
+          title: "مستخدمون ومزودون حقيقيون",
+          description: "الإعلانات والأنشطة تأتي من المجتمع ومن مزودين يمكن الوصول إليهم مباشرة."
+        },
+        {
+          title: "التخييم والرفقاء والأنشطة في مكان واحد",
+          description: "مسار أوضح للعثور على المكان المناسب أو الرفيق المناسب أو النشاط المناسب."
+        }
+      ]
+    },
+    services: {
+      kicker: "الخدمات الأساسية",
+      title: "كل ما تحتاجه لتجربتك الخارجية في المغرب",
+      items: [
+        {
+          key: "travel",
+          eyebrow: "مجتمع الرحلة",
+          title: "رفقاء السفر",
+          description: "اعثر على رفقاء للرحلة أو انشر خطتك القادمة.",
+          cta: "ابحث عن رفيق"
+        },
+        {
+          key: "camping",
+          eyebrow: "أماكن مختارة",
+          title: "التخييم",
+          description: "اكتشف أفضل أماكن التخييم في المغرب.",
+          cta: "استكشف التخييم"
+        },
+        {
+          key: "marketplace",
+          eyebrow: "معدات موثوقة",
+          title: "المتجر",
+          description: "اشتر معدات التخييم من بائعين موثوقين.",
+          cta: "تسوق الآن"
+        },
+        {
+          key: "activities",
+          eyebrow: "مغامرات محلية",
+          title: "الأنشطة",
+          description: "اعثر على أفضل الأنشطة الخارجية واحجزها.",
+          cta: "اكتشف الأنشطة"
+        }
+      ]
+    },
+    live: {
+      kicker: "من المنصة",
+      title: "أحدث ما يكتشفه المستخدمون الآن",
+      subtitle: "تعتمد هذه الأقسام على بيانات حقيقية من المنصة حتى تبقى الصفحة الرئيسية عملية وواضحة.",
+      emptyTravel: "لا توجد منشورات لرفقاء السفر بعد. كن أول من ينشر خطتك.",
+      emptyCamping: "لا توجد أماكن تخييم منشورة حالياً.",
+      emptyActivities: "لا توجد أنشطة منشورة حالياً.",
+      travelTitle: "رفقاء السفر",
+      travelDescription: "خمسة من أحدث خطط السفر المنشورة من المجتمع.",
+      campingTitle: "أماكن التخييم",
+      campingDescription: "خمسة من أحدث أماكن التخييم المتاحة حالياً.",
+      activitiesTitle: "الأنشطة الخارجية",
+      activitiesDescription: "خمسة من أحدث الأنشطة الخارجية المتاحة للاستكشاف.",
+      viewAllTravel: "عرض جميع رفقاء السفر",
+      viewAllCamping: "عرض كل أماكن التخييم",
+      viewAllActivities: "عرض كل الأنشطة",
+      viewPlace: "عرض المكان",
+      viewPlan: "عرض الخطة",
+      findPartner: "ابحث عن رفيق",
+      discoverActivity: "اكتشف النشاط",
+      locationFallback: "المغرب",
+      placeFallbackDescription: "اكتشف هذا المكان وتحقق من التفاصيل الكاملة قبل رحلتك القادمة.",
+      travelFallbackDescription: "اطلع على الخطة الكاملة وتواصل مباشرة إذا كانت مناسبة لك.",
+      activityFallbackDescription: "استكشف تفاصيل النشاط ومعلومات الحجز والتجهيزات المتاحة.",
+      priceOnRequest: "السعر عند الطلب",
+      interestedLabel: "مهتم"
+    }
+  },
+  fr: {
+    announcement:
+      "Partenaires de voyage, camping, equipement et activites dans une experience outdoor marocaine plus claire",
+    menu: "Menu",
+    close: "Fermer",
+    publicNav: {
+      travelPartners: "Partenaire de voyage",
+      camping: "Camping",
+      marketplace: "Marketplace",
+      activities: "Activites",
+      about: "A propos",
+      contact: "Contact"
+    },
+    hero: {
+      badge: "Moroccan Trip",
+      title: "Trouvez des partenaires de voyage et decouvrez les campings du Maroc sans friction",
+      subtitle: "La facon la plus simple de se connecter, explorer et vivre le Maroc outdoor.",
+      bullets: [
+        "Trouver un partenaire de voyage",
+        "Decouvrir des campings",
+        "Acheter du materiel de camping",
+        "Essayer de nouvelles activites"
+      ],
+      primaryCta: "Trouver un partenaire",
+      secondaryCta: "Explorer le camping",
+      tertiaryCta: "Parcourir le marketplace"
+    },
+    trust: {
+      label: "Confiance et rapidite",
+      items: [
+        {
+          title: "Contact direct avec de vraies personnes",
+          description: "Contactez directement les auteurs d'annonces et les prestataires d'activites."
+        },
+        {
+          title: "Sans intermediaire",
+          description: "Une interface plus legere et une hierarchie plus claire accelerent l'action."
+        },
+        {
+          title: "Une vraie communaute outdoor marocaine",
+          description: "Une vraie communaute marocaine autour du voyage, du camping et des activites."
+        }
+      ]
+    },
+    stats: {
+      items: [
+        {
+          title: "Nouvelles publications regulieres",
+          description: "La homepage affiche de vraies annonces recentes au lieu de simples chiffres marketing."
+        },
+        {
+          title: "Vrais utilisateurs et prestataires",
+          description: "Les annonces, lieux et activites viennent de vrais comptes accessibles directement."
+        },
+        {
+          title: "Camping, partenaires et activites au meme endroit",
+          description: "Une interface plus claire pour comparer, contacter et passer a l'action rapidement."
+        }
+      ]
+    },
+    services: {
+      kicker: "Services principaux",
+      title: "Tout ce qu'il vous faut pour vivre le Maroc outdoor",
+      items: [
+        {
+          key: "travel",
+          eyebrow: "Communaute voyage",
+          title: "Partenaires de voyage",
+          description: "Trouvez des compagnons de route ou publiez votre plan.",
+          cta: "Trouver un partenaire"
+        },
+        {
+          key: "camping",
+          eyebrow: "Spots choisis",
+          title: "Camping",
+          description: "Decouvrez les meilleurs campings du Maroc.",
+          cta: "Explorer le camping"
+        },
+        {
+          key: "marketplace",
+          eyebrow: "Equipement fiable",
+          title: "Marketplace",
+          description: "Achetez votre materiel de camping chez des vendeurs de confiance.",
+          cta: "Acheter maintenant"
+        },
+        {
+          key: "activities",
+          eyebrow: "Aventures locales",
+          title: "Activites",
+          description: "Trouvez et reservez les meilleures activites outdoor.",
+          cta: "Decouvrir les activites"
+        }
+      ]
+    },
+    live: {
+      kicker: "Depuis la plateforme",
+      title: "Ce que les utilisateurs decouvrent en ce moment",
+      subtitle:
+        "Ces sections restent branchees sur les vraies donnees de la plateforme pour garder une homepage utile et credible.",
+      emptyTravel: "Aucune annonce de partenaire de voyage pour le moment. Soyez le premier a publier votre plan.",
+      emptyCamping: "Aucun camping publie pour le moment.",
+      emptyActivities: "Aucune activite publiee pour le moment.",
+      travelTitle: "Partenaires de voyage",
+      travelDescription: "Cinq des annonces de voyage les plus recentes publiees par la communaute.",
+      campingTitle: "Campings",
+      campingDescription: "Cinq des campings les plus recents actuellement disponibles.",
+      activitiesTitle: "Activites outdoor",
+      activitiesDescription: "Cinq des activites outdoor les plus recentes a decouvrir.",
+      viewAllTravel: "Voir tous les partenaires",
+      viewAllCamping: "Voir tous les campings",
+      viewAllActivities: "Voir toutes les activites",
+      viewPlace: "Voir le lieu",
+      viewPlan: "Voir le plan",
+      findPartner: "Trouver un partenaire",
+      discoverActivity: "Decouvrir l'activite",
+      locationFallback: "Maroc",
+      placeFallbackDescription: "Consultez ce lieu et verifiez les details utiles avant votre prochain depart.",
+      travelFallbackDescription: "Ouvrez le plan complet et contactez directement si le trajet vous convient.",
+      activityFallbackDescription: "Explorez les details de l'activite, la reservation et les equipements inclus.",
+      priceOnRequest: "Prix sur demande",
+      interestedLabel: "interesses"
+    }
+  },
+  en: {
+    announcement:
+      "Travel partners, camping, gear and activities in a clearer Morocco outdoor experience",
+    menu: "Menu",
+    close: "Close",
+    publicNav: {
+      travelPartners: "Travel Partner",
+      camping: "Camping",
+      marketplace: "Marketplace",
+      activities: "Activities",
+      about: "About",
+      contact: "Contact"
+    },
+    hero: {
+      badge: "Moroccan Trip",
+      title: "Find travel partners and discover camping places in Morocco with less friction",
+      subtitle: "The easiest way to connect, explore, and experience Morocco outdoors.",
+      bullets: [
+        "Find a travel partner",
+        "Discover camping places",
+        "Buy camping gear",
+        "Try new activities"
+      ],
+      primaryCta: "Find Travel Partner",
+      secondaryCta: "Explore Camping",
+      tertiaryCta: "Browse Marketplace"
+    },
+    trust: {
+      label: "Trust and speed",
+      items: [
+        {
+          title: "Direct contact with real users",
+          description: "Reach posters and activity providers directly."
+        },
+        {
+          title: "No middleman",
+          description: "A lighter interface and clearer hierarchy push users faster to action."
+        },
+        {
+          title: "A real Morocco travel community",
+          description: "A real Moroccan outdoor community for travel, camping and activities."
+        }
+      ]
+    },
+    stats: {
+      items: [
+        {
+          title: "New posts are added regularly",
+          description: "The homepage highlights recent live content instead of inflated marketing numbers."
+        },
+        {
+          title: "Real users and providers",
+          description: "Listings, places and activities come from real accounts you can reach directly."
+        },
+        {
+          title: "Camping, partners and activities in one place",
+          description: "A clearer path to compare options, contact people and move faster."
+        }
+      ]
+    },
+    services: {
+      kicker: "Core services",
+      title: "Everything you need for your outdoor experience in Morocco",
+      items: [
+        {
+          key: "travel",
+          eyebrow: "Community plans",
+          title: "Travel Partners",
+          description: "Find travel companions or post your plan.",
+          cta: "Find a Partner"
+        },
+        {
+          key: "camping",
+          eyebrow: "Curated spots",
+          title: "Camping",
+          description: "Discover the best camping spots in Morocco.",
+          cta: "Explore Camping"
+        },
+        {
+          key: "marketplace",
+          eyebrow: "Trusted gear",
+          title: "Marketplace",
+          description: "Buy camping gear from trusted sellers.",
+          cta: "Shop Now"
+        },
+        {
+          key: "activities",
+          eyebrow: "Local adventures",
+          title: "Activities",
+          description: "Find and book the best outdoor activities.",
+          cta: "Discover Activities"
+        }
+      ]
+    },
+    live: {
+      kicker: "From the platform",
+      title: "What people are discovering right now",
+      subtitle: "These sections stay connected to real platform data so the homepage remains useful, current and credible.",
+      emptyTravel: "No travel partner posts yet. Be the first to post your plan.",
+      emptyCamping: "No camping places published yet.",
+      emptyActivities: "No activities published yet.",
+      travelTitle: "Travel Partners",
+      travelDescription: "Five of the latest travel partner posts shared by the community.",
+      campingTitle: "Camping Places",
+      campingDescription: "Five of the latest camping places currently available.",
+      activitiesTitle: "Outdoor Activities",
+      activitiesDescription: "Five of the latest outdoor activities ready to explore.",
+      viewAllTravel: "View all travel partners",
+      viewAllCamping: "View all camping places",
+      viewAllActivities: "View all activities",
+      viewPlace: "View place",
+      viewPlan: "View plan",
+      findPartner: "Find partner",
+      discoverActivity: "Discover activity",
+      locationFallback: "Morocco",
+      placeFallbackDescription: "Open this place to check the full details before your next trip.",
+      travelFallbackDescription: "Open the full plan and contact the poster directly if it fits.",
+      activityFallbackDescription: "Explore the activity details, booking info and included equipment.",
+      priceOnRequest: "Price on request",
+      interestedLabel: "interested"
+    }
+  }
+} as const;
+
 export const uiDictionary = {
   ar: {
     hero: {
