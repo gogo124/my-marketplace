@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { getApiError, parseApiResponse } from "@/lib/api";
-import { resolveLocale, translateApiError, withLocale } from "@/lib/i18n";
+import { resolveLocale, SiteLocale, translateApiError, withLocale } from "@/lib/i18n";
 
 export function ResetPasswordForm({
   token,
   locale = "ar"
 }: {
   token: string;
-  locale?: "ar" | "fr";
+  locale?: SiteLocale;
 }) {
   const safeLocale = resolveLocale(locale);
   const [password, setPassword] = useState("");

@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { FeatureDisabledPage } from "@/components/feature-disabled-page";
 import { RentalItemCard } from "@/components/rental-item-card";
 import { getAuthSession } from "@/lib/auth";
+import { FEATURES } from "@/lib/features";
 import { getPublicRentalItems } from "@/lib/renter";
 import { formatLocaleNumber, getDirection, resolveLocale, withLocale } from "@/lib/i18n";
 import { logServerError } from "@/lib/server-log";
@@ -13,6 +15,11 @@ export default async function RentalsPage({
 }) {
   const { lang, q = "", city = "", availability = "", category = "", sort = "newest" } = await searchParams;
   const locale = resolveLocale(lang);
+
+  if (!FEATURES.rentals) {
+    return <FeatureDisabledPage locale={locale} feature="rentals" />;
+  }
+
   const session = await getAuthSession().catch((error) => {
     logServerError("page.rentals.auth", error, { locale });
     return null;

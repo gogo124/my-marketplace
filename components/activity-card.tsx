@@ -46,7 +46,7 @@ export function ActivityCard({ activity, locale = "ar" }: { activity: any; local
           {activity.equipmentIncluded ? <span className="rounded-full bg-slate-50 px-3 py-1">{isArabic ? "المعدات متوفرة" : "Equipment included"}</span> : null}
         </div>
         <Link href={withLocale(`/activities/${activity._id}`, safeLocale)} className="inline-flex rounded-full bg-forest px-4 py-2 text-sm font-semibold text-white">
-          {isArabic ? "عرض النشاط" : "View activity"}
+          {isArabic ? "اكتشف النشاط" : "Explore activity"}
         </Link>
       </div>
     </article>

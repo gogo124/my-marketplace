@@ -4,12 +4,12 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
 import { absoluteUrl } from "@/lib/seo";
-import { formatLocaleDate, formatLocalePrice, getDirection, resolveLocale, withLocale } from "@/lib/i18n";
+import { formatLocaleDate, formatLocalePrice, getDirection, resolveLocale, SiteLocale, withLocale } from "@/lib/i18n";
 import { getTripSpaceData } from "@/lib/trip-space";
 
 export const dynamic = "force-dynamic";
 
-function buildTripSpaceSchemas(data: Awaited<ReturnType<typeof getTripSpaceData>>, locale: "ar" | "fr") {
+function buildTripSpaceSchemas(data: Awaited<ReturnType<typeof getTripSpaceData>>, locale: SiteLocale) {
   if (!data) {
     return [];
   }

@@ -2,6 +2,7 @@ import type { FilterQuery } from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import Listing from "@/models/Listing";
 import User from "@/models/User";
+import { withMemoryCache } from "@/lib/simple-cache";
 import { serializeDocument } from "@/lib/utils";
 
 export type SellerStatus = "none" | "pending" | "active" | "expired" | "suspended" | "rejected";
@@ -232,36 +233,39 @@ export async function getPublicSellerStoreData(slug: string) {
 
 export async function getPublicSellerDirectory(limit = 12) {
   await connectToDatabase();
+  const safeLimit = Math.max(1, limit);
 
-  const sellers = await User.find(getPublicSellerQuery())
-    .select(
-      "name email avatar sellerStatus sellerPlan sellerExpiresAt sellerApprovedAt sellerRequestedAt sellerProfile sellerVerificationStatus verified"
-    )
-    .sort({ sellerApprovedAt: -1, updatedAt: -1, createdAt: -1 })
-    .limit(Math.max(1, limit))
-    .lean();
+  return withMemoryCache(`public-seller-directory:${safeLimit}`, 60_000, async () => {
+    const sellers = await User.find(getPublicSellerQuery())
+      .select(
+        "name email avatar sellerStatus sellerPlan sellerExpiresAt sellerApprovedAt sellerRequestedAt sellerProfile sellerVerificationStatus verified"
+      )
+      .sort({ sellerApprovedAt: -1, updatedAt: -1, createdAt: -1 })
+      .limit(safeLimit)
+      .lean();
 
-  const sellerIds = sellers.map((seller: any) => seller._id);
-  const normalizedSellers = serializeDocument(sellers) as any[];
-  const listingCounts = await Listing.aggregate([
-    {
-      $match: {
-        seller: { $in: sellerIds },
-        status: "active"
+    const sellerIds = sellers.map((seller: any) => seller._id);
+    const normalizedSellers = serializeDocument(sellers) as any[];
+    const listingCounts = await Listing.aggregate([
+      {
+        $match: {
+          seller: { $in: sellerIds },
+          status: "active"
+        }
+      },
+      {
+        $group: {
+          _id: "$seller",
+          count: { $sum: 1 }
+        }
       }
-    },
-    {
-      $group: {
-        _id: "$seller",
-        count: { $sum: 1 }
-      }
-    }
-  ]);
-  const listingCountBySellerId = new Map(listingCounts.map((entry) => [String(entry._id), Number(entry.count || 0)]));
+    ]);
+    const listingCountBySellerId = new Map(listingCounts.map((entry) => [String(entry._id), Number(entry.count || 0)]));
 
-  return normalizedSellers.map((seller) => ({
-    ...seller,
-    storeSlug: getSellerStoreSlug(seller),
-    activeListingsCount: listingCountBySellerId.get(String(seller._id)) || 0
-  }));
+    return normalizedSellers.map((seller) => ({
+      ...seller,
+      storeSlug: getSellerStoreSlug(seller),
+      activeListingsCount: listingCountBySellerId.get(String(seller._id)) || 0
+    }));
+  });
 }

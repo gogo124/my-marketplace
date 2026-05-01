@@ -12,7 +12,7 @@ import { LightboxImage } from "@/components/lightbox-image";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getPlaceById } from "@/lib/camping";
-import { formatLocaleDate, getDirection, resolveLocale, withLocale } from "@/lib/i18n";
+import { formatLocaleDate, getDirection, resolveLocale, SiteLocale, withLocale } from "@/lib/i18n";
 import { canUserReviewPlace } from "@/lib/reviews";
 import { formatPrice } from "@/lib/utils";
 
@@ -24,7 +24,7 @@ function buildMapEmbedUrl(place: any) {
   return "";
 }
 
-function getBestTimeHint(place: any, locale: "ar" | "fr") {
+function getBestTimeHint(place: any, locale: SiteLocale) {
   const season = String(place.bestSeason || "").toLowerCase();
 
   if (season.includes("print") || season.includes("ربيع")) {

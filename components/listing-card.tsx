@@ -125,7 +125,7 @@ export function ListingCard({ listing, locale = "ar" }: ListingCardProps) {
             onClick={() => trackAnalyticsEvent("listing_click", { listing_id: listing._id, category, type: listing.type || "sale" })}
             className="inline-flex items-center gap-2 rounded-full bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-white transition duration-300 group-hover:translate-x-1"
           >
-            {safeLocale === "ar" ? "عرض التفاصيل" : "Voir le detail"}
+            {safeLocale === "ar" ? "استكشف المنتج" : "Explore"}
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14" />
               <path d="m12 5 7 7-7 7" />

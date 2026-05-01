@@ -10,6 +10,11 @@ export const agencyVerificationLabels = {
     unverified: "Non verifie",
     pending: "En attente",
     verified: "Verifie"
+  },
+  en: {
+    unverified: "Unverified",
+    pending: "Pending review",
+    verified: "Verified"
   }
 } as const;
 
@@ -23,6 +28,10 @@ export const sellerVerificationLabels = {
   fr: {
     unverified: "Non verifie",
     verified: "Verifie"
+  },
+  en: {
+    unverified: "Unverified",
+    verified: "Verified"
   }
 } as const;
 
@@ -42,6 +51,13 @@ export const leadStatusLabels = {
     sold: "Vendu",
     cancelled: "Annule",
     closed: "Ferme"
+  },
+  en: {
+    new: "New",
+    contacted: "Contacted",
+    sold: "Sold",
+    cancelled: "Cancelled",
+    closed: "Closed"
   }
 } as const;
 
@@ -59,6 +75,12 @@ export const reservationStatusLabels = {
     confirmed: "Confirme",
     completed: "Termine",
     cancelled: "Annule"
+  },
+  en: {
+    pending: "Pending",
+    confirmed: "Confirmed",
+    completed: "Completed",
+    cancelled: "Cancelled"
   }
 } as const;
 
@@ -76,6 +98,12 @@ export const rentalRequestStatusLabels = {
     approved: "Approuve",
     delivered: "Livre",
     returned: "Retourne"
+  },
+  en: {
+    pending: "Pending",
+    approved: "Approved",
+    delivered: "Delivered",
+    returned: "Returned"
   }
 } as const;
 

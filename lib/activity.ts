@@ -3,6 +3,7 @@ import { serializeDocument } from "@/lib/utils";
 import Activity from "@/models/Activity";
 import Lead from "@/models/Lead";
 import User from "@/models/User";
+import { withMemoryCache } from "@/lib/simple-cache";
 
 export type ActivityProviderStatus = "none" | "pending" | "active" | "suspended" | "rejected";
 
@@ -72,6 +73,13 @@ export function getPublicActivityQuery() {
   };
 }
 
+async function getPublicActivityProviderIds() {
+  return withMemoryCache("public-activity-provider-ids", 60_000, async () => {
+    const providerIds = await User.find(getPublicActivityQuery()).select("_id").lean();
+    return providerIds.map((provider: any) => provider._id);
+  });
+}
+
 export async function getPublicActivities(filters?: {
   q?: string;
   city?: string;
@@ -86,8 +94,7 @@ export async function getPublicActivities(filters?: {
   const q = String(filters?.q || "").trim();
   const city = String(filters?.city || "").trim();
   const category = String(filters?.category || "").trim();
-  const providerIds = await User.find(getPublicActivityQuery()).select("_id").lean();
-  const providerIdList = providerIds.map((provider: any) => provider._id);
+  const providerIdList = await getPublicActivityProviderIds();
 
   if (providerIdList.length === 0) {
     return {
@@ -120,6 +127,9 @@ export async function getPublicActivities(filters?: {
 
   const [activities, total] = await Promise.all([
     Activity.find(query)
+      .select(
+        "title category city location price priceType currency duration description images maxPeople equipmentIncluded guideIncluded provider status createdAt"
+      )
       .populate("provider", "name email avatar activityProviderStatus activityProviderProfile")
       .sort({ createdAt: -1 })
       .skip((page - 1) * pageSize)
@@ -145,6 +155,9 @@ export async function getActivityById(activityId: string) {
   await connectToDatabase();
 
   const activity = await Activity.findById(activityId)
+    .select(
+      "title category city location price priceType currency duration availableDays availableTimes description images phone whatsapp instagram facebook maxPeople equipmentIncluded guideIncluded cancellationPolicy provider status createdAt"
+    )
     .populate("provider", "name email avatar activityProviderStatus activityProviderProfile")
     .lean();
 

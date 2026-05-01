@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getApiError, parseApiResponse } from "@/lib/api";
 import { trackAnalyticsEvent } from "@/lib/analytics";
-import { resolveLocale, siteCopy, translateApiError, withLocale } from "@/lib/i18n";
+import { resolveLocale, SiteLocale, siteCopy, translateApiError, withLocale } from "@/lib/i18n";
 import { isValidPhoneNumber } from "@/lib/validation";
 
 export function ContactSellerForm({
@@ -21,7 +21,7 @@ export function ContactSellerForm({
   sellerId: string;
   phoneNumber?: string;
   whatsappNumber?: string;
-  locale?: "ar" | "fr";
+  locale?: SiteLocale;
 }) {
   const router = useRouter();
   const pathname = usePathname();

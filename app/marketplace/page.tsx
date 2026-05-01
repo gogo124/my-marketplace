@@ -5,10 +5,12 @@ import { ListingCard } from "@/components/listing-card";
 import { VerificationBadge } from "@/components/verification-badge";
 import { getAuthSession } from "@/lib/auth";
 import { getListingsPage } from "@/lib/data";
-import { getDirection, resolveLocale, withLocale } from "@/lib/i18n";
+import { getDirection, resolveLocale, uiDictionary, withLocale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/seo";
 import { getPublicSellerDirectory, getSellerAccessSnapshot } from "@/lib/seller";
 import { logServerError } from "@/lib/server-log";
+
+export const revalidate = 60;
 
 type MarketplaceSearchParams = {
   lang?: string;
@@ -45,6 +47,7 @@ export default async function MarketplacePage({
   const { lang, page = "1", q = "", category = "", location = "" } = await searchParams;
   const locale = resolveLocale(lang);
   const isArabic = locale === "ar";
+  const ui = uiDictionary[locale];
   const currentPage = Math.max(1, Number(page) || 1);
   const session = await getAuthSession().catch(() => null);
 
@@ -166,9 +169,7 @@ export default async function MarketplacePage({
             placeholder={isArabic ? "المدينة أو المنطقة" : "Ville ou region"}
             className="rounded-2xl border border-ink/10 bg-white px-4 py-3 outline-none transition focus:ring-2 focus:ring-clay/30"
           />
-          <button className="rounded-2xl bg-clay px-5 py-3 font-semibold text-white transition hover:brightness-105">
-            {isArabic ? "بحث" : "Rechercher"}
-          </button>
+          <button className="rounded-2xl bg-clay px-5 py-3 font-semibold text-white transition hover:brightness-105">{ui.buttons.search}</button>
         </form>
       </section>
 
@@ -217,7 +218,7 @@ export default async function MarketplacePage({
                     <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
                       {seller.activeListingsCount} {isArabic ? "إعلان نشط" : "annonces actives"}
                     </span>
-                    <span className="text-sm font-semibold text-[#0f3d2e]">{isArabic ? "فتح المتجر" : "Ouvrir"}</span>
+                    <span className="text-sm font-semibold text-[#0f3d2e]">{isArabic ? "استكشف المتجر" : "Explore"}</span>
                   </div>
                 </Link>
               );
@@ -239,10 +240,29 @@ export default async function MarketplacePage({
         </div>
 
         {listingsPage.listings.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {listingsPage.listings.map((listing: any) => (
-              <ListingCard key={listing._id} listing={listing} locale={locale} />
-            ))}
+          <div className="space-y-5">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {listingsPage.listings.map((listing: any) => (
+                <ListingCard key={listing._id} listing={listing} locale={locale} />
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-sm text-ink/60">
+              <span>
+                {listingsPage.pagination.page} / {listingsPage.pagination.totalPages}
+              </span>
+              <div className="flex gap-3">
+                {listingsPage.pagination.hasPreviousPage ? (
+                  <Link href={withLocale(`/marketplace?page=${currentPage - 1}&q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(location)}`, locale)} className="rounded-full border border-ink/10 px-4 py-2">
+                    {locale === "ar" ? "السابق" : "Previous"}
+                  </Link>
+                ) : null}
+                {listingsPage.pagination.hasNextPage ? (
+                  <Link href={withLocale(`/marketplace?page=${currentPage + 1}&q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(location)}`, locale)} className="rounded-full border border-ink/10 px-4 py-2">
+                    {locale === "ar" ? "التالي" : "Next"}
+                  </Link>
+                ) : null}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="rounded-[2rem] border border-dashed border-ink/20 bg-white p-10 text-center text-sm text-ink/60 shadow-card">

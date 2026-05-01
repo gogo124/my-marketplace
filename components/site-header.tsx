@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
+import { getDirection, resolveLocale, siteCopy, SiteLocale, withLocale } from "@/lib/i18n";
 import { getNavigationForUser } from "@/lib/navigation";
 
 type SiteHeaderProps = {
@@ -22,7 +22,7 @@ type SiteHeaderProps = {
   } | null;
 };
 
-function buildLink(pathname: string, nextLocale: "ar" | "fr", searchParams: URLSearchParams) {
+function buildLink(pathname: string, nextLocale: SiteLocale, searchParams: URLSearchParams) {
   const params = new URLSearchParams(searchParams.toString());
   params.set("lang", nextLocale);
   const query = params.toString();
@@ -41,6 +41,10 @@ function getNavLinkClass(isActive: boolean, emphasize = false) {
   return "rounded-full border border-ink/10 bg-white/80 px-4 py-2 text-center shadow-card";
 }
 
+function getNavigationLabel(labels: { ar: string; fr: string }, locale: SiteLocale) {
+  return locale === "ar" ? labels.ar : labels.fr;
+}
+
 export function SiteHeader({ session }: SiteHeaderProps) {
   const pathname = usePathname() || "/";
   const searchParams = useSearchParams();
@@ -53,16 +57,16 @@ export function SiteHeader({ session }: SiteHeaderProps) {
   const navigation = getNavigationForUser(session);
   const primaryNavigation = navigation.primary.map((item) => ({
     href: withLocale(item.href, locale),
-    label: item.label[locale],
+    label: getNavigationLabel(item.label, locale),
     emphasize: item.emphasize
   }));
   const secondaryNavigation = navigation.secondary.map((item) => ({
     href: withLocale(item.href, locale),
-    label: item.label[locale]
+    label: getNavigationLabel(item.label, locale)
   }));
   const utilityNavigation = navigation.utilities.map((item) => ({
     href: withLocale(item.href, locale),
-    label: item.label[locale]
+    label: getNavigationLabel(item.label, locale)
   }));
 
   useEffect(() => {
@@ -73,8 +77,8 @@ export function SiteHeader({ session }: SiteHeaderProps) {
     <header className="sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl">
       <div className="border-b border-forest/10 bg-[#0f3d2e] px-4 py-2 text-center text-xs font-semibold text-white/90 sm:px-6">
         {locale === "ar"
-          ? "كلشي ديال التريب فبلاصة وحدة: Trips، وكالات، كراء، Marketplace، وأماكن تخييم"
-          : "Tout pour ton trip au Maroc : trips, agences, location, marketplace et spots camping"}
+          ? "رفيق السفر، أماكن التخييم، المعدات والأنشطة في تجربة أوضح داخل المغرب"
+          : "Travel partners, camping, gear and activities in a clearer Morocco outdoor experience"}
       </div>
       <div dir={getDirection(locale)} className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between gap-3 min-w-0">
@@ -106,6 +110,12 @@ export function SiteHeader({ session }: SiteHeaderProps) {
                 className={`rounded-full px-3 py-1.5 ${locale === "fr" ? "bg-forest text-white" : "text-ink/60"}`}
               >
                 FR
+              </Link>
+              <Link
+                href={buildLink(pathname, "en", searchParams)}
+                className={`rounded-full px-3 py-1.5 ${locale === "en" ? "bg-forest text-white" : "text-ink/60"}`}
+              >
+                EN
               </Link>
             </div>
           </div>
@@ -146,6 +156,12 @@ export function SiteHeader({ session }: SiteHeaderProps) {
               >
                 FR
               </Link>
+              <Link
+                href={buildLink(pathname, "en", searchParams)}
+                className={`rounded-full px-3 py-1.5 ${locale === "en" ? "bg-forest text-white" : "text-ink/60"}`}
+              >
+                EN
+              </Link>
             </div>
             {session?.user ? (
               <>
@@ -178,7 +194,7 @@ export function SiteHeader({ session }: SiteHeaderProps) {
                 ) : null}
                 {canCreateRenter ? (
                   <Link href={withLocale("/renter/profile", locale)} className="w-full rounded-full border border-ink/10 bg-white/80 px-4 py-2 text-center shadow-card xl:w-auto">
-                    {locale === "ar" ? "أنشئ ملف كراء" : "Creer un profil location"}
+                    {locale === "ar" ? "أنشئ ملف كراء" : locale === "fr" ? "Creer un profil location" : "Create rental profile"}
                   </Link>
                 ) : null}
                 {isAdmin ? (
@@ -200,11 +216,11 @@ export function SiteHeader({ session }: SiteHeaderProps) {
                 <Link href={withLocale("/login", locale)} className={`${getNavLinkClass(pathname === "/login")} w-full xl:w-auto`}>
                   {copy.login}
                 </Link>
-                <Link href={withLocale("/agencies", locale)} className="w-full rounded-full border border-forest/20 bg-sand/70 px-4 py-2 text-center font-semibold text-forest shadow-card xl:w-auto">
-                  {locale === "ar" ? "وجد التريب ديالك" : "Trouver ton trip"}
+                <Link href={withLocale("/travel-partners", locale)} className="w-full rounded-full border border-forest/20 bg-sand/70 px-4 py-2 text-center font-semibold text-forest shadow-card xl:w-auto">
+                  {locale === "ar" ? "ابحث عن رفيق" : locale === "fr" ? "Trouver un partenaire" : "Find a partner"}
                 </Link>
                 <Link href={withLocale("/register", locale)} className="w-full rounded-full bg-forest px-4 py-2 text-center text-white shadow-card xl:w-auto">
-                  {locale === "ar" ? "ابدأ الآن" : "Creer un compte"}
+                  {locale === "ar" ? "ابدأ الآن" : locale === "fr" ? "Creer un compte" : "Create account"}
                 </Link>
               </>
             )}

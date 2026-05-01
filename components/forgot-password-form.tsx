@@ -2,9 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import { getApiError, parseApiResponse } from "@/lib/api";
-import { resolveLocale, translateApiError } from "@/lib/i18n";
+import { resolveLocale, SiteLocale, translateApiError } from "@/lib/i18n";
 
-export function ForgotPasswordForm({ locale = "ar" }: { locale?: "ar" | "fr" }) {
+export function ForgotPasswordForm({ locale = "ar" }: { locale?: SiteLocale }) {
   const safeLocale = resolveLocale(locale);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);

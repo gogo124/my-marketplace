@@ -1,5 +1,6 @@
 "use client";
 
+import { SiteLocale } from "@/lib/i18n";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 
 export function ActivityContactActions({
@@ -17,7 +18,7 @@ export function ActivityContactActions({
   whatsappDigits: string;
   phoneDigits: string;
   isSignedIn: boolean;
-  locale: "ar" | "fr";
+  locale: SiteLocale;
 }) {
   async function trackLead(type: "whatsapp" | "call") {
     if (!isSignedIn) {

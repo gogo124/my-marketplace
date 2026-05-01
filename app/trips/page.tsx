@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { FeatureDisabledPage } from "@/components/feature-disabled-page";
 import AgenciesPage from "@/app/agencies/page";
+import { FEATURES } from "@/lib/features";
 import { buildPageMetadata } from "@/lib/seo";
 import { resolveLocale } from "@/lib/i18n";
 
@@ -23,10 +25,16 @@ export async function generateMetadata({
   });
 }
 
-export default function TripsPage({
+export default async function TripsPage({
   searchParams
 }: {
   searchParams: Promise<{ lang?: string; q?: string; city?: string; destination?: string; verified?: string; rating?: string; sort?: string }>;
 }) {
+  if (!FEATURES.trips) {
+    const params = await searchParams;
+    const locale = resolveLocale(params.lang);
+    return <FeatureDisabledPage locale={locale} feature="trips" />;
+  }
+
   return AgenciesPage({ searchParams } as any);
 }

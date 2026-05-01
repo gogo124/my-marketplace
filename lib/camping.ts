@@ -7,6 +7,7 @@ import Review from "@/models/Review";
 import Story from "@/models/Story";
 import TravelPost from "@/models/TravelPost";
 import User from "@/models/User";
+import { withMemoryCache } from "@/lib/simple-cache";
 
 type PlaceFilters = {
   q?: string;
@@ -99,62 +100,72 @@ function scorePlace(place: any) {
 
 export async function getPlaces(filters: PlaceFilters = {}) {
   await connectToDatabase();
+  const query = buildPlaceSearchQuery(filters);
 
-  const placeQuery = Place.find(buildPlaceSearchQuery(filters))
-    .select("name city category description bestSeason safety images mapLink createdBy savedBy createdAt")
-    .populate("createdBy", "name avatar")
-    .sort({ createdAt: -1 });
+  const loadPlaces = async () => {
+    const placeQuery = Place.find(query)
+      .select("name city category description bestSeason safety images mapLink coordinates status createdBy savedBy createdAt")
+      .populate("createdBy", "name avatar")
+      .sort({ createdAt: -1 });
 
-  if (typeof filters.limit === "number" && filters.limit > 0) {
-    placeQuery.limit(filters.limit);
+    if (typeof filters.limit === "number" && filters.limit > 0) {
+      placeQuery.limit(filters.limit);
+    }
+
+    const places = await placeQuery.lean();
+
+    const placeIds = places.map((place) => place._id);
+    const [reviews, stories] = await Promise.all([
+      Review.find({
+        place: { $in: placeIds },
+        ...(filters.includePending ? {} : { status: "approved" })
+      })
+        .select("place rating")
+        .lean(),
+      Story.find({
+        place: { $in: placeIds },
+        ...(filters.includePending ? {} : { status: "approved" })
+      })
+        .select("place")
+        .lean()
+    ]);
+
+    const reviewSummary = reviews.reduce<Record<string, { total: number; count: number }>>((acc, review: any) => {
+      const placeId = String(review.place);
+      acc[placeId] ??= { total: 0, count: 0 };
+      acc[placeId].total += Number(review.rating || 0);
+      acc[placeId].count += 1;
+      return acc;
+    }, {});
+
+    const storySummary = stories.reduce<Record<string, number>>((acc, story: any) => {
+      const placeId = String(story.place);
+      acc[placeId] = (acc[placeId] || 0) + 1;
+      return acc;
+    }, {});
+
+    return serializeDocument(
+      places.map((place: any) => {
+        const summary = reviewSummary[String(place._id)] || { total: 0, count: 0 };
+        const savedCount = Array.isArray(place.savedBy) ? place.savedBy.length : 0;
+        return {
+          ...place,
+          isSaved: filters.userId ? place.savedBy?.some((id: any) => String(id) === filters.userId) : false,
+          savedCount,
+          reviewCount: summary.count,
+          ratingAverage: summary.count > 0 ? Number((summary.total / summary.count).toFixed(1)) : 0,
+          storyCount: storySummary[String(place._id)] || 0
+        };
+      })
+    ) as any[];
+  };
+
+  if (filters.userId || filters.savedOnly || filters.includePending) {
+    return loadPlaces();
   }
 
-  const places = await placeQuery.lean();
-
-  const placeIds = places.map((place) => place._id);
-  const [reviews, stories] = await Promise.all([
-    Review.find({
-      place: { $in: placeIds },
-      ...(filters.includePending ? {} : { status: "approved" })
-    })
-      .select("place rating")
-      .lean(),
-    Story.find({
-      place: { $in: placeIds },
-      ...(filters.includePending ? {} : { status: "approved" })
-    })
-      .select("place")
-      .lean()
-  ]);
-
-  const reviewSummary = reviews.reduce<Record<string, { total: number; count: number }>>((acc, review: any) => {
-    const placeId = String(review.place);
-    acc[placeId] ??= { total: 0, count: 0 };
-    acc[placeId].total += Number(review.rating || 0);
-    acc[placeId].count += 1;
-    return acc;
-  }, {});
-
-  const storySummary = stories.reduce<Record<string, number>>((acc, story: any) => {
-    const placeId = String(story.place);
-    acc[placeId] = (acc[placeId] || 0) + 1;
-    return acc;
-  }, {});
-
-  return serializeDocument(
-    places.map((place: any) => {
-      const summary = reviewSummary[String(place._id)] || { total: 0, count: 0 };
-      const savedCount = Array.isArray(place.savedBy) ? place.savedBy.length : 0;
-      return {
-        ...place,
-        isSaved: filters.userId ? place.savedBy?.some((id: any) => String(id) === filters.userId) : false,
-        savedCount,
-        reviewCount: summary.count,
-        ratingAverage: summary.count > 0 ? Number((summary.total / summary.count).toFixed(1)) : 0,
-        storyCount: storySummary[String(place._id)] || 0
-      };
-    })
-  ) as any[];
+  const cacheKey = `places:${JSON.stringify({ query, limit: filters.limit || null })}`;
+  return withMemoryCache(cacheKey, 60_000, loadPlaces);
 }
 
 export async function getTrendingPlaces(limit = 6) {
@@ -210,6 +221,7 @@ export async function getPlaceById(placeId: string, userId?: string) {
         { destination: { $regex: escapeRegExp(place.city), $options: "i" } }
       ]
     })
+      .select("title destination city description startDate endDate seatsTotal seatsBooked images agency status createdAt")
       .populate("agency", "name city")
       .sort({ startDate: 1 })
       .limit(6)
@@ -223,6 +235,7 @@ export async function getPlaceById(placeId: string, userId?: string) {
         { description: { $regex: escapeRegExp(place.name), $options: "i" } }
       ]
     })
+      .select("title description price type category location phoneNumber whatsappNumber startDate endDate deposit images seller status createdAt")
       .populate("seller", "name sellerVerificationStatus verified")
       .sort({ createdAt: -1 })
       .limit(6)
@@ -233,6 +246,7 @@ export async function getPlaceById(placeId: string, userId?: string) {
         { destination: { $regex: escapeRegExp(place.city), $options: "i" } }
       ]
     })
+      .select("destination city date description phoneNumber gender profileImage coverImage interestedUserIds userId createdAt")
       .populate("userId", "name avatar")
       .sort({ date: 1, createdAt: -1 })
       .limit(8)

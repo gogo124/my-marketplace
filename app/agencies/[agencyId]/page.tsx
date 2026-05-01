@@ -3,10 +3,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AgencyTripCard } from "@/components/agency-trip-card";
+import { FeatureDisabledPage } from "@/components/feature-disabled-page";
 import { ReportForm } from "@/components/report-form";
 import { VerificationBadge } from "@/components/verification-badge";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
+import { FEATURES } from "@/lib/features";
 import { getAgencyProfileById, getAgencyTrips } from "@/lib/agency";
 import { formatLocaleDate, getDirection, resolveLocale, siteCopy, translateApiError, withLocale } from "@/lib/i18n";
 import { absoluteUrl, buildPageMetadata } from "@/lib/seo";
@@ -55,6 +57,11 @@ export default async function AgencyProfilePage({
   const { lang, q = "", city = "", region = "" } = await searchParams;
   const locale = resolveLocale(lang);
   const copy = siteCopy[locale];
+
+  if (!FEATURES.agencies) {
+    return <FeatureDisabledPage locale={locale} feature="agencies" />;
+  }
+
   const [profile, trips, session] = await Promise.all([
     getAgencyProfileById(agencyId),
     getAgencyTrips(agencyId),

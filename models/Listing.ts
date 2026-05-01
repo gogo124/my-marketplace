@@ -29,6 +29,10 @@ const ListingSchema = new Schema(
   { timestamps: true }
 );
 
+ListingSchema.index({ status: 1, type: 1, createdAt: -1 });
+ListingSchema.index({ status: 1, location: 1, category: 1, createdAt: -1 });
+ListingSchema.index({ seller: 1, status: 1, createdAt: -1 });
+
 export type ListingDocument = InferSchemaType<typeof ListingSchema> & { _id: string };
 
 const Listing = (models.Listing as Model<ListingDocument>) || model("Listing", ListingSchema);

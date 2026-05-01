@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { VerificationBadge } from "@/components/verification-badge";
+import { FeatureDisabledPage } from "@/components/feature-disabled-page";
+import { FEATURES } from "@/lib/features";
 import { getAgencyProfiles } from "@/lib/agency";
 import { formatLocaleNumber, getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/seo";
@@ -37,6 +39,11 @@ export default async function AgenciesPage({
   const { lang, q = "", city = "", destination = "", verified = "", rating = "", sort = "recommended" } = await searchParams;
   const locale = resolveLocale(lang);
   const copy = siteCopy[locale];
+
+  if (!FEATURES.agencies) {
+    return <FeatureDisabledPage locale={locale} feature="agencies" />;
+  }
+
   let agencies: any[] = [];
 
   try {

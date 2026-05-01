@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
+import dynamicImport from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { TravelPostCard } from "@/components/travel-post-card";
-import { TravelPostForm } from "@/components/travel-post-form";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/seo";
-import { getTravelPosts } from "@/lib/travel-posts";
+import { getTravelPostsPage } from "@/lib/travel-posts";
+
+const TravelPostForm = dynamicImport(() => import("@/components/travel-post-form").then((module) => module.TravelPostForm), {
+  loading: () => <div className="h-[520px] animate-pulse rounded-[2.75rem] bg-white/70 shadow-card" />
+});
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   searchParams
@@ -35,18 +41,23 @@ export async function generateMetadata({
 export default async function TravelPartnersPage({
   searchParams
 }: {
-  searchParams: Promise<{ lang?: string; destination?: string; city?: string; date?: string; gender?: string }>;
+  searchParams: Promise<{ lang?: string; destination?: string; city?: string; date?: string; gender?: string; page?: string }>;
 }) {
-  const { lang, destination = "", city = "", date = "", gender = "" } = await searchParams;
+  const { lang, destination = "", city = "", date = "", gender = "", page = "1" } = await searchParams;
   const locale = resolveLocale(lang);
   const copy = siteCopy[locale];
   const session = await getAuthSession().catch(() => null);
+  const currentPage = Math.max(1, Number(page) || 1);
   const loginHref = buildLoginPath(
     "/travel-partners",
-    `lang=${locale}${destination ? `&destination=${encodeURIComponent(destination)}` : ""}${city ? `&city=${encodeURIComponent(city)}` : ""}${date ? `&date=${encodeURIComponent(date)}` : ""}${gender ? `&gender=${encodeURIComponent(gender)}` : ""}`,
+    `lang=${locale}${destination ? `&destination=${encodeURIComponent(destination)}` : ""}${city ? `&city=${encodeURIComponent(city)}` : ""}${date ? `&date=${encodeURIComponent(date)}` : ""}${gender ? `&gender=${encodeURIComponent(gender)}` : ""}${currentPage ? `&page=${currentPage}` : ""}`,
     locale
   );
-  const posts = await getTravelPosts({ destination, city, date, gender, userId: session?.user?.id }).catch(() => []);
+  const result = await getTravelPostsPage({ destination, city, date, gender, userId: session?.user?.id, page: currentPage, pageSize: 12 }).catch(() => ({
+    posts: [],
+    pagination: { page: 1, pageSize: 12, total: 0, totalPages: 1, hasNextPage: false, hasPreviousPage: false }
+  }));
+  const posts = result.posts;
 
   return (
     <main dir={locale === "ar" ? "rtl" : "ltr"} className="page-shell space-y-10">
@@ -204,8 +215,8 @@ export default async function TravelPartnersPage({
             <p className="text-sm text-ink/60">
               {posts.length > 0
                 ? locale === "ar"
-                  ? `${posts.length} إعلان مطابق للفلتر الحالي مع وجهة، تاريخ، وإشارات ثقة أوضح.`
-                  : `${posts.length} annonces correspondent au filtre actuel avec destination, date et signaux de confiance plus clairs.`
+                  ? `${result.pagination.total} إعلان مطابق للفلتر الحالي مع وجهة، تاريخ، وإشارات ثقة أوضح.`
+                  : `${result.pagination.total} matching posts with destination, date and clearer trust signals.`
                 : copy.cardsBody}
             </p>
           </div>
@@ -217,16 +228,35 @@ export default async function TravelPartnersPage({
         </div>
 
         {posts.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {posts.map((post: any) => (
-              <TravelPostCard
-                key={post._id}
-                locale={locale}
-                post={post}
-                canReport={Boolean(session?.user)}
-                isSignedIn={Boolean(session?.user)}
-              />
-            ))}
+          <div className="space-y-5">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {posts.map((post: any) => (
+                <TravelPostCard
+                  key={post._id}
+                  locale={locale}
+                  post={post}
+                  canReport={Boolean(session?.user)}
+                  isSignedIn={Boolean(session?.user)}
+                />
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-sm text-ink/60">
+              <span>
+                {result.pagination.page} / {result.pagination.totalPages}
+              </span>
+              <div className="flex gap-3">
+                {result.pagination.hasPreviousPage ? (
+                  <Link href={withLocale(`/travel-partners?destination=${encodeURIComponent(destination)}&city=${encodeURIComponent(city)}&date=${encodeURIComponent(date)}&gender=${encodeURIComponent(gender)}&page=${currentPage - 1}`, locale)} className="rounded-full border border-ink/10 px-4 py-2">
+                    {locale === "ar" ? "السابق" : "Previous"}
+                  </Link>
+                ) : null}
+                {result.pagination.hasNextPage ? (
+                  <Link href={withLocale(`/travel-partners?destination=${encodeURIComponent(destination)}&city=${encodeURIComponent(city)}&date=${encodeURIComponent(date)}&gender=${encodeURIComponent(gender)}&page=${currentPage + 1}`, locale)} className="rounded-full border border-ink/10 px-4 py-2">
+                    {locale === "ar" ? "التالي" : "Next"}
+                  </Link>
+                ) : null}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="glass-panel rounded-[2rem] border border-dashed border-ink/20 p-12 text-center">

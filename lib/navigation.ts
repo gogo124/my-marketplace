@@ -1,3 +1,5 @@
+import { isPublicPathEnabled } from "@/lib/features";
+
 function getSellerStoreSlug(user: { id?: string | null; name?: string | null }) {
   const rawName = String(user?.name || "")
     .toLowerCase()
@@ -54,6 +56,10 @@ export type NavigationLink = {
   emphasize?: boolean;
 };
 
+function filterNavigationLinks(links: NavigationLink[]) {
+  return links.filter((link) => isPublicPathEnabled(link.href));
+}
+
 type SessionLike = {
   user?: {
     id?: string | null;
@@ -80,17 +86,14 @@ export function getNavigationForUser(session: SessionLike) {
   const activityActive = activityAccess.isActive;
   const hasActivityWorkspace = activityAccess.status !== "none";
 
-  const publicDiscovery: NavigationLink[] = [
-    { href: "/trips", label: { ar: "التريبات", fr: "Trips" }, emphasize: true },
-    { href: "/agencies", label: { ar: "وكالات السفر", fr: "Agencies" } },
-    { href: "/marketplace", label: { ar: "Marketplace", fr: "Marketplace" } },
-    { href: "/rentals", label: { ar: "كراء المعدات", fr: "Rentals" } },
+  const publicDiscovery = filterNavigationLinks([
+    { href: "/travel-partners", label: { ar: "رفيق السفر", fr: "Travel Partners" }, emphasize: true },
+    { href: "/camping", label: { ar: "أماكن التخييم", fr: "Camping" } },
+    { href: "/marketplace", label: { ar: "المتجر", fr: "Marketplace" } },
     { href: "/activities", label: { ar: "الأنشطة", fr: "Activities" } },
-    { href: "/camping", label: { ar: "أماكن التخييم", fr: "Camping Places" } },
-    { href: "/travel-partners", label: { ar: "رفيق سفر", fr: "Travel Partners" } },
     { href: "/about", label: { ar: "من نحن", fr: "About" } },
     { href: "/contact", label: { ar: "اتصل بنا", fr: "Contact" } }
-  ];
+  ]);
 
   if (!isAuthenticated) {
     return {
@@ -133,13 +136,13 @@ export function getNavigationForUser(session: SessionLike) {
         { href: "/agency/rental-requests", label: { ar: "طلبات الكراء", fr: "Rental Requests" } },
         { href: "/messages", label: { ar: "الرسائل", fr: "Messages" } }
       ],
-      secondary: [
+      secondary: filterNavigationLinks([
         { href: "/agencies", label: { ar: "الوكالات العلنية", fr: "Public Agencies" } },
         { href: "/trips", label: { ar: "الرحلات العلنية", fr: "Public Trips" } },
         ...(hasSellerWorkspace ? [{ href: "/seller/dashboard", label: { ar: "لوحة البائع", fr: "Seller Dashboard" } }] : []),
         ...(hasActivityWorkspace ? [{ href: "/activity/dashboard", label: { ar: "لوحة الأنشطة", fr: "Activity Dashboard" } }] : []),
         { href: "/dashboard", label: { ar: "لوحتي", fr: "My Dashboard" } }
-      ],
+      ]),
       utilities: []
     };
   }
@@ -153,13 +156,13 @@ export function getNavigationForUser(session: SessionLike) {
         { href: "/renter/dashboard", label: { ar: "الشراكات", fr: "Partnerships" } },
         { href: "/messages", label: { ar: "الرسائل", fr: "Messages" } }
       ],
-      secondary: [
+      secondary: filterNavigationLinks([
         { href: "/trips", label: { ar: "الرحلات العلنية", fr: "Public Trips" } },
         { href: "/agencies", label: { ar: "الوكالات العلنية", fr: "Public Agencies" } },
         ...(sellerActive ? [{ href: "/seller/dashboard", label: { ar: "لوحة البائع", fr: "Seller Dashboard" } }] : []),
         ...(activityActive ? [{ href: "/activity/dashboard", label: { ar: "لوحة الأنشطة", fr: "Activity Dashboard" } }] : []),
         { href: "/dashboard", label: { ar: "لوحتي", fr: "My Dashboard" } }
-      ],
+      ]),
       utilities: []
     };
   }
@@ -173,11 +176,11 @@ export function getNavigationForUser(session: SessionLike) {
         { href: "/seller/dashboard", label: { ar: "الطلبات", fr: "Leads & Orders" } },
         { href: "/messages", label: { ar: "الرسائل", fr: "Messages" } }
       ],
-      secondary: [
+      secondary: filterNavigationLinks([
         { href: "/marketplace", label: { ar: "المتاجر", fr: "Seller Stores" } },
         ...(activityActive ? [{ href: "/activity/dashboard", label: { ar: "لوحة الأنشطة", fr: "Activity Dashboard" } }] : []),
         { href: "/dashboard", label: { ar: "لوحتي", fr: "My Dashboard" } }
-      ],
+      ]),
       utilities: []
     };
   }
@@ -198,12 +201,12 @@ export function getNavigationForUser(session: SessionLike) {
 
   return {
     primary: publicDiscovery,
-    secondary: [
+    secondary: filterNavigationLinks([
       { href: "/messages", label: { ar: "الرسائل", fr: "Messages" } },
       { href: "/dashboard", label: { ar: "لوحتي", fr: "My Dashboard" } },
       ...(hasSellerWorkspace ? [{ href: "/seller/dashboard", label: { ar: "لوحة البائع", fr: "Seller Dashboard" } }] : []),
       ...(hasActivityWorkspace ? [{ href: "/activity/dashboard", label: { ar: "لوحة الأنشطة", fr: "Activity Dashboard" } }] : [])
-    ],
+    ]),
     utilities: []
   };
 }

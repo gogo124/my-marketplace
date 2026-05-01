@@ -4,8 +4,10 @@ import { DashboardEmptyState, DashboardHero, DashboardMetricGrid, DashboardQuick
 import { SavedListingsSummary } from "@/components/saved-listings-summary";
 import { StatusBadge } from "@/components/status-badge";
 import { getAuthSession } from "@/lib/auth";
-import { getDirection, resolveLocale, withLocale } from "@/lib/i18n";
+import { getDirection, resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
 import { getUserDashboardData } from "@/lib/user-dashboard";
+
+export const dynamic = "force-dynamic";
 
 function getConversationPeer(conversation: any, currentUserId: string) {
   return conversation.participants?.find((participant: any) => participant._id !== currentUserId);
@@ -19,6 +21,7 @@ export default async function UserDashboardPage({
   const { lang } = await searchParams;
   const locale = resolveLocale(lang);
   const session = await getAuthSession();
+  const copy = siteCopy[locale];
 
   if (!session?.user?.id) {
     redirect(withLocale("/login", locale));
@@ -28,10 +31,10 @@ export default async function UserDashboardPage({
   const isArabic = locale === "ar";
   const upcomingReservations = dashboard.upcomingReservations.length > 0 ? dashboard.upcomingReservations : dashboard.reservations.slice(0, 4);
   const quickLinks = [
-    { href: "/agencies", label: isArabic ? "تصفح الرحلات" : "Browse trips", note: isArabic ? "اعثر على رحلة مناسبة" : "Find the right trip" },
-    { href: "/marketplace", label: isArabic ? "Marketplace" : "Marketplace", note: isArabic ? "تصفح المنتجات والمتاجر" : "Browse products and stores" },
-    { href: "/rentals", label: isArabic ? "كراء المعدات" : "Rent equipment", note: isArabic ? "معدات السفر والتخييم" : "Travel and camping gear" },
-    { href: "/travel-partners", label: isArabic ? "رفيق سفر" : "Find travel partner", note: isArabic ? "تواصل مع مسافرين" : "Meet other travelers" }
+    { href: "/agencies", label: isArabic ? "تصفح الرحلات" : locale === "fr" ? "Browse trips" : "Browse trips", note: isArabic ? "اعثر على رحلة مناسبة" : locale === "fr" ? "Find the right trip" : "Find the right trip" },
+    { href: "/marketplace", label: "Marketplace", note: isArabic ? "تصفح المنتجات والمتاجر" : locale === "fr" ? "Browse products and stores" : "Browse products and stores" },
+    { href: "/rentals", label: isArabic ? "كراء المعدات" : locale === "fr" ? "Rent equipment" : "Rent equipment", note: isArabic ? "معدات السفر والتخييم" : locale === "fr" ? "Travel and camping gear" : "Travel and camping gear" },
+    { href: "/travel-partners", label: isArabic ? "رفيق سفر" : locale === "fr" ? "Find travel partner" : "Find travel partner", note: isArabic ? "تواصل مع مسافرين" : locale === "fr" ? "Meet other travelers" : "Meet other travelers" }
   ];
 
   if (dashboard.sellerAccess?.canPublish) {

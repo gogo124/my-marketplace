@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { resolveLocale } from "@/lib/i18n";
+import { resolveLocale, SiteLocale } from "@/lib/i18n";
 
 export function SellerStoreActions({
   storePath,
@@ -9,7 +9,7 @@ export function SellerStoreActions({
   sellerName
 }: {
   storePath: string;
-  locale?: "ar" | "fr";
+  locale?: SiteLocale;
   sellerName?: string;
 }) {
   const safeLocale = resolveLocale(locale);

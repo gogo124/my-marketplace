@@ -10,7 +10,7 @@ import { trackAnalyticsEvent } from "@/lib/analytics";
 import { formatLocaleDate, localizeRecordField, siteCopy, translateApiError } from "@/lib/i18n";
 
 type TravelPostCardProps = {
-  locale: "ar" | "fr";
+  locale: "ar" | "fr" | "en";
   canReport?: boolean;
   isSignedIn: boolean;
   post: {
@@ -197,6 +197,7 @@ export function TravelPostCard({ locale, canReport = false, isSignedIn, post }: 
             className="inline-flex w-full items-center justify-center rounded-full bg-forest px-4 py-3 font-semibold text-white shadow-card transition hover:bg-[#14533f] disabled:opacity-60"
           >
             {locale === "ar" ? "تواصل عبر واتساب" : "Contacter sur WhatsApp"}
+            {locale === "en" ? "Contact on WhatsApp" : null}
           </a>
           <a
             href={phoneDigits ? `tel:${phoneDigits}` : "#"}

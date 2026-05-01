@@ -6,6 +6,7 @@ import Message from "@/models/Message";
 import Review from "@/models/Review";
 import User from "@/models/User";
 import { serializeDocument } from "@/lib/utils";
+import { withMemoryCache } from "@/lib/simple-cache";
 
 type ListingFilters = {
   q?: string;
@@ -54,8 +55,10 @@ function buildListingQuery(filters: ListingFilters = {}) {
 }
 
 async function getEligiblePublicSellerIds() {
-  const sellers = await User.find(getPublicSellerQuery()).select("_id").lean();
-  return sellers.map((seller: any) => seller._id);
+  return withMemoryCache("public-seller-ids", 60_000, async () => {
+    const sellers = await User.find(getPublicSellerQuery()).select("_id").lean();
+    return sellers.map((seller: any) => seller._id);
+  });
 }
 
 export async function getListings(filters: ListingFilters = {}) {

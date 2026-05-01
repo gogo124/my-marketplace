@@ -1,12 +1,17 @@
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { PlaceDirectory } from "@/components/place-directory";
 import { PlaceForm } from "@/components/place-form";
+import { CardGridSkeleton } from "@/components/page-skeletons";
 import { getCampingHighlights, getPlaces } from "@/lib/camping";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { getDirection, resolveLocale, withLocale } from "@/lib/i18n";
 import { logServerError } from "@/lib/server-log";
+
+const PlaceDirectory = dynamic(() => import("@/components/place-directory").then((module) => module.PlaceDirectory), {
+  loading: () => <CardGridSkeleton count={4} />
+});
 
 export default async function CampingPage({
   searchParams
@@ -140,7 +145,7 @@ export default async function CampingPage({
                     <p className="text-sm text-ink/60">{place.city} • {place.safety}</p>
                   </div>
                   <span className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-forest shadow-sm">
-                    {locale === "ar" ? "اكتشف" : "Voir"}
+                    {locale === "ar" ? "احجز الآن" : "Explore"}
                   </span>
                 </Link>
               ))
@@ -175,7 +180,7 @@ export default async function CampingPage({
                     </p>
                   </div>
                   <span className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-forest shadow-sm">
-                    {locale === "ar" ? "تقييم" : "Top"}
+                    {locale === "ar" ? "اكتشف" : "Explore"}
                   </span>
                 </Link>
               ))

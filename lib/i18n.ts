@@ -1,8 +1,8 @@
-export type SiteLocale = "ar" | "fr";
+export type SiteLocale = "ar" | "fr" | "en";
 export const SITE_LOCALE_COOKIE = "site-locale";
 
 export function resolveLocale(value?: string): SiteLocale {
-  return value === "fr" ? "fr" : "ar";
+  return value === "fr" || value === "en" ? value : "ar";
 }
 
 export function isRtl(locale: SiteLocale) {
@@ -19,7 +19,7 @@ export function withLocale(path: string, locale: SiteLocale) {
 }
 
 export function formatLocaleDate(value: string | Date, locale: SiteLocale, options?: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-MA" : "fr-FR", options || {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US", options || {
     day: "2-digit",
     month: "short",
     year: "numeric"
@@ -27,14 +27,14 @@ export function formatLocaleDate(value: string | Date, locale: SiteLocale, optio
 }
 
 export function formatLocaleDateTime(value: string | Date, locale: SiteLocale) {
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-MA" : "fr-FR", {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US", {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
 }
 
 export function formatLocaleNumber(value: number, locale: SiteLocale) {
-  return new Intl.NumberFormat(locale === "ar" ? "ar-MA" : "fr-FR").format(value);
+  return new Intl.NumberFormat(locale === "ar" ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US").format(value);
 }
 
 export function formatLocalePrice(value: number, locale: SiteLocale) {
@@ -53,10 +53,14 @@ export function localizeField<T extends Record<string, any>>(value: unknown, loc
       return localizedValue;
     }
 
-    const fallbackValue = (value as Record<string, unknown>)[locale === "ar" ? "fr" : "ar"];
+    const fallbackKeys = locale === "ar" ? ["fr", "en"] : locale === "fr" ? ["en", "ar"] : ["fr", "ar"];
 
-    if (typeof fallbackValue === "string" && fallbackValue.trim()) {
-      return fallbackValue;
+    for (const fallbackKey of fallbackKeys) {
+      const fallbackValue = (value as Record<string, unknown>)[fallbackKey];
+
+      if (typeof fallbackValue === "string" && fallbackValue.trim()) {
+        return fallbackValue;
+      }
     }
   }
 
@@ -83,20 +87,27 @@ export function localizeRecordField<T extends Record<string, any>>(
     return localizeField(directValue, locale, fallback);
   }
 
-  const suffix = locale === "ar" ? "Ar" : "Fr";
-  const snakeSuffix = locale === "ar" ? "_ar" : "_fr";
+  const suffix = locale === "ar" ? "Ar" : locale === "fr" ? "Fr" : "En";
+  const snakeSuffix = locale === "ar" ? "_ar" : locale === "fr" ? "_fr" : "_en";
   const suffixedValue = record[`${field}${suffix}`] || record[`${field}${snakeSuffix}`];
 
   if (typeof suffixedValue === "string" && suffixedValue.trim()) {
     return suffixedValue;
   }
 
-  const alternateSuffix = locale === "ar" ? "Fr" : "Ar";
-  const alternateSnakeSuffix = locale === "ar" ? "_fr" : "_ar";
-  const fallbackValue = record[`${field}${alternateSuffix}`] || record[`${field}${alternateSnakeSuffix}`];
+  const fallbackSuffixes =
+    locale === "ar"
+      ? [["Fr", "_fr"], ["En", "_en"]]
+      : locale === "fr"
+        ? [["En", "_en"], ["Ar", "_ar"]]
+        : [["Fr", "_fr"], ["Ar", "_ar"]];
 
-  if (typeof fallbackValue === "string" && fallbackValue.trim()) {
-    return fallbackValue;
+  for (const [alternateSuffix, alternateSnakeSuffix] of fallbackSuffixes) {
+    const fallbackValue = record[`${field}${alternateSuffix}`] || record[`${field}${alternateSnakeSuffix}`];
+
+    if (typeof fallbackValue === "string" && fallbackValue.trim()) {
+      return fallbackValue;
+    }
   }
 
   return fallback;
@@ -361,12 +372,7 @@ const apiErrorDictionary = {
   }
 } as const;
 
-export function translateApiError(message: string, locale: SiteLocale) {
-  const localized = apiErrorDictionary[message as keyof typeof apiErrorDictionary];
-  return localized ? localized[locale] : message;
-}
-
-export const siteCopy = {
+const baseSiteCopy = {
   ar: {
     brand: "Moroccan Trip",
     home: "الرئيسية",
@@ -866,3 +872,263 @@ export const siteCopy = {
     agencyLeadsHeroBody: "Consultez les intentions de contact et les dernieres conversations de la plateforme."
   }
 } as const;
+
+const englishSiteCopy: Record<keyof typeof baseSiteCopy.fr, string> = {
+  ...baseSiteCopy.fr,
+  home: "Home",
+  agencies: "Agencies",
+  sell: "Sell",
+  rent: "Rent",
+  sale: "Sale",
+  rental: "Rental",
+  messages: "Messages",
+  login: "Log in",
+  register: "Create account",
+  signOut: "Sign out",
+  travelPartners: "Travel partner",
+  agencyDashboard: "Agency dashboard",
+  agencyProfile: "Agency profile",
+  becomeAgency: "Create your agency",
+  admin: "Admin",
+  clear: "Clear",
+  search: "Search",
+  filter: "Filter",
+  loading: "Loading...",
+  send: "Send",
+  sending: "Sending...",
+  delete: "Delete",
+  edit: "Edit",
+  update: "Update",
+  add: "Add",
+  seller: "Seller",
+  marketplaceUser: "Marketplace user",
+  viewDetails: "View details",
+  status: "Status",
+  active: "Active",
+  inactive: "Inactive",
+  rating: "Rating",
+  noRatings: "No ratings yet",
+  noReviews: "No reviews",
+  noReviewsYet: "No reviews yet.",
+  reviews: "Reviews",
+  leaveReview: "Leave a review",
+  selectRating: "Select rating",
+  writeReview: "Write your review",
+  submitReview: "Submit review",
+  report: "Report",
+  reportListing: "Report listing",
+  reportSeller: "Report seller",
+  reportAgency: "Report agency",
+  reportOwner: "Report owner",
+  reportPost: "Report post",
+  reportReview: "Report review",
+  reportUser: "Report user",
+  reportSubmitted: "Report submitted.",
+  cancelReport: "Cancel report",
+  selectReason: "Select reason",
+  optionalDetails: "Optional details",
+  submitReport: "Submit report",
+  verified: "Verified",
+  unverified: "Unverified",
+  pendingReview: "Pending review",
+  travelPageTitle: "Find a travel partner",
+  travelPageBody: "Create a structured travel post, filter by destination and date, and connect with people sharing the same plan.",
+  destination: "Destination",
+  travelDate: "Travel date",
+  phoneNumber: "Phone number",
+  whatsappNumber: "WhatsApp number",
+  phonePlaceholder: "Example: 212612345678",
+  publishTitle: "Publish a travel partner post",
+  publishBody: "Share your next plan, city or destination, and the key details that matter.",
+  description: "Description",
+  publish: "Publish post",
+  cardsTitle: "Traveler posts",
+  cardsBody: "Latest posts published by the community.",
+  noPostsTitle: "No results right now",
+  noPostsBody: "Try different filters or be the first to publish a new travel post.",
+  postedBy: "Posted by",
+  loadingTitle: "Loading travel partners",
+  loadingBody: "We are fetching the latest posts and organizing the results for you.",
+  contactAction: "WhatsApp",
+  callAction: "Call",
+  chatAction: "In-app chat",
+  searchPlaceholder: "Example: Marrakech, Chefchaouen, Agadir",
+  searchByCity: "Search by city",
+  filterByDate: "Filter by date",
+  contactTravelers: "Contact travelers",
+  travelSide: "Traveler side",
+  browseAgenciesTrips: "Browse agencies and trips, then contact or book.",
+  backToAgencies: "Back to agencies",
+  agencyDiscovery: "Agency discovery",
+  agencyDiscoveryBody: "Travel-focused search for agencies and organized trips.",
+  agenciesCount: "agencies",
+  searchAgencyPlaceholder: "Search agency name or description",
+  city: "City",
+  activeTrips: "Active trips",
+  openSeats: "Open seats",
+  viewAgency: "View agency",
+  contact: "Contact",
+  noAgencies: "No agencies match your current search.",
+  trust: "Trust",
+  profileComplete: "Profile complete",
+  trips: "Trips",
+  agencyTrips: "Agency trips",
+  agencyTripsBody: "Search and book available trips published by this agency.",
+  searchTripPlaceholder: "Search trip, city or destination",
+  reserveThisTrip: "Book this trip",
+  seatsLeft: "Seats left",
+  yourFullName: "Your full name",
+  guestFullName: "Guest full name",
+  seats: "Seats",
+  reserveSeats: "Book seats",
+  tripFull: "Trip full",
+  reservationSent: "Reservation request sent successfully.",
+  memberSince: "Member since",
+  loginHeroKicker: "Member access",
+  loginHeroTitle: "Sign in and manage your activity in one place.",
+  loginHeroBody: "Access your listings, replies and conversations from one workspace.",
+  needAccount: "Need an account?",
+  registerHeroKicker: "Create account",
+  registerHeroTitle: "Join the platform and publish your first offer.",
+  registerHeroBody: "Registration data is stored securely and passwords remain encrypted.",
+  alreadyRegistered: "Already have an account?",
+  welcomeBack: "Welcome back",
+  createSellerAccount: "Create your account",
+  loginFormBody: "Sign in to publish listings and reply to buyers.",
+  registerFormBody: "Create an account to publish listings and chat safely.",
+  fullName: "Full name",
+  emailAddress: "Email address",
+  password: "Password",
+  continueWithGoogle: "Continue with Google",
+  connectingGoogle: "Connecting to Google...",
+  or: "or",
+  pleaseWait: "Please wait...",
+  title: "Title",
+  price: "Price",
+  location: "Location",
+  deposit: "Deposit",
+  startDate: "Start date",
+  endDate: "End date",
+  contactSeller: "Contact seller",
+  contactSellerBody: "Start with a short message. Contact actions are tracked as leads.",
+  defaultSellerMessage: "Hello, is this offer still available?",
+  openAction: "Open",
+  writeReply: "Write your reply",
+  sendReply: "Send reply",
+  inbox: "Inbox",
+  inboxBody: "Your active conversations with sellers and buyers.",
+  chattingWith: "Chatting with",
+  noConversations: "No conversations yet. Message a seller from any listing.",
+  conversation: "Conversation",
+  marketplaceChat: "Marketplace chat",
+  noMessages: "No messages yet.",
+  logInToContact: "Log in to contact the seller and start a conversation.",
+  adminRestricted: "Restricted area",
+  accessDenied: "Access denied",
+  adminOnlyMessage: "This area is only available to users with the admin role.",
+  backHome: "Back home",
+  adminPlatformControl: "Platform control",
+  adminPlatformBody: "Review activity, verify profiles and moderate content from one place.",
+  overview: "Overview",
+  users: "Users",
+  listings: "Listings",
+  reservations: "Reservations",
+  leads: "Leads",
+  reports: "Reports",
+  agencyOwner: "Agency owner",
+  privateNavigation: "Private navigation",
+  agencyOwnerBody: "Manage your agency through a small private workspace.",
+  viewPublicProfile: "View public profile",
+  becomeAnAgency: "Become an agency",
+  agencyDashboardTitle: "Agency dashboard",
+  agencyDashboardBody: "Track trips, reservations, seats and leads from one page.",
+  agencyProfileTitle: "Agency profile",
+  agencyProfileHeroTitle: "Manage your public agency information.",
+  agencyProfileHeroBody: "Update the profile travelers see before they contact or book. A strong profile builds trust faster.",
+  becomeAgencyTitle: "Create your agency profile to unlock the private agency workspace.",
+  becomeAgencyBody: "Complete this profile once. After saving, your account becomes an agency account.",
+  agencyTripsTitle: "Agency trips",
+  agencyTripsHeroTitle: "Create, edit and publish organized trips.",
+  agencyTripsHeroBody: "Manage dates, pricing, capacity and visibility from one page.",
+  agencyReservationsTitle: "Agency reservations",
+  agencyReservationsHeroTitle: "Review traveler reservations in one place.",
+  agencyReservationsHeroBody: "Track recent requests, booked seats and contact details.",
+  agencyLeadsTitle: "Agency leads",
+  agencyLeadsHeroTitle: "Track leads and inbound messages.",
+  agencyLeadsHeroBody: "See contact intent and the latest platform conversations."
+};
+
+export const siteCopy = {
+  ...baseSiteCopy,
+  en: englishSiteCopy
+} as const;
+
+export const uiDictionary = {
+  ar: {
+    hero: {
+      title: "اعثر على رفيق السفر واكتشف أماكن التخييم في المغرب بسهولة"
+    },
+    nav: {
+      activities: "الأنشطة",
+      marketplace: "المتجر",
+      travelPartners: "رفيق السفر",
+      camping: "التخييم"
+    },
+    buttons: {
+      bookNow: "احجز الآن",
+      explore: "استكشف",
+      search: "بحث",
+      viewAllActivities: "عرض جميع الأنشطة",
+      browseMarketplace: "تصفح المعدات",
+      findTravelPartner: "ابحث عن رفيق السفر"
+    }
+  },
+  fr: {
+    hero: {
+      title: "Trouver un partenaire de voyage et decouvrir le camping au Maroc facilement"
+    },
+    nav: {
+      activities: "Activites",
+      marketplace: "Marketplace",
+      travelPartners: "Partenaires de voyage",
+      camping: "Camping"
+    },
+    buttons: {
+      bookNow: "Reserver",
+      explore: "Explorer",
+      search: "Rechercher",
+      viewAllActivities: "Voir toutes les activites",
+      browseMarketplace: "Parcourir le marketplace",
+      findTravelPartner: "Trouver un partenaire"
+    }
+  },
+  en: {
+    hero: {
+      title: "Find a travel partner and discover camping places in Morocco easily"
+    },
+    nav: {
+      activities: "Activities",
+      marketplace: "Marketplace",
+      travelPartners: "Travel partners",
+      camping: "Camping"
+    },
+    buttons: {
+      bookNow: "Book now",
+      explore: "Explore",
+      search: "Search",
+      viewAllActivities: "View all activities",
+      browseMarketplace: "Browse marketplace",
+      findTravelPartner: "Find travel partner"
+    }
+  }
+} as const;
+
+export function translateApiError(message: string, locale: SiteLocale) {
+  const localized = apiErrorDictionary[message as keyof typeof apiErrorDictionary];
+  if (!localized) {
+    return message;
+  }
+
+  const fallbackLocale = locale === "ar" ? "ar" : "fr";
+  return localized[fallbackLocale];
+}

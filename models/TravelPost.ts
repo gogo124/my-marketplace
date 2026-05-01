@@ -37,6 +37,8 @@ const TravelPostSchema = new Schema(
 );
 
 TravelPostSchema.index({ destination: 1, city: 1, date: 1, createdAt: -1 });
+TravelPostSchema.index({ createdAt: -1, date: 1 });
+TravelPostSchema.index({ city: 1, gender: 1, createdAt: -1 });
 
 export type TravelPostDocument = InferSchemaType<typeof TravelPostSchema> & { _id: string };
 
