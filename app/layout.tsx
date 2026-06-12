@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Suspense } from "react";
 import { cookies, headers } from "next/headers";
 import { Alexandria } from "next/font/google";
@@ -135,6 +136,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           </Suspense>
           <div id="main-content">{children}</div>
         </AuthProvider>
+        <div className="xedsxw425193" />
+        <Script
+          id="kadam-popunder"
+          src="https://hdbkell.com/code/xedsxw425193"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
