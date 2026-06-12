@@ -109,6 +109,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={locale} dir={getDirection(locale)}>
       <head>
+        <meta
+          name="kadam-verification"
+          content="kadame93154983ced1455a68d39b8a15c3a94"
+        />
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8159536831776873"
