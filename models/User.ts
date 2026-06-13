@@ -49,29 +49,6 @@ const UserSchema = new Schema(
       description: { type: String, default: "", trim: true },
       whatTheySell: { type: String, default: "", trim: true }
     },
-    activityProviderStatus: {
-      type: String,
-      enum: ["none", "pending", "active", "suspended", "rejected"],
-      default: "none"
-    },
-    activityProviderRequestedAt: {
-      type: Date,
-      default: null
-    },
-    activityProviderApprovedAt: {
-      type: Date,
-      default: null
-    },
-    activityProviderProfile: {
-      businessName: { type: String, default: "", trim: true },
-      city: { type: String, default: "", trim: true },
-      phone: { type: String, default: "", trim: true },
-      whatsapp: { type: String, default: "", trim: true },
-      instagram: { type: String, default: "", trim: true },
-      facebook: { type: String, default: "", trim: true },
-      activityType: { type: String, default: "", trim: true },
-      description: { type: String, default: "", trim: true }
-    },
     verified: {
       type: Boolean,
       default: false
@@ -84,7 +61,6 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false
     },
-    savedPlaceIds: [{ type: Schema.Types.ObjectId, ref: "Place" }],
     accountStatus: {
       type: String,
       enum: ["active", "disabled"],

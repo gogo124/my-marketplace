@@ -8,7 +8,6 @@ import Listing from "@/models/Listing";
 import Place from "@/models/Place";
 import Report from "@/models/Report";
 import Review from "@/models/Review";
-import Story from "@/models/Story";
 import TravelPost from "@/models/TravelPost";
 import User from "@/models/User";
 
@@ -26,8 +25,6 @@ async function targetExists(targetType: string, targetId: string) {
       return Boolean(await Review.findById(targetId).select("_id"));
     case "place":
       return Boolean(await Place.findById(targetId).select("_id"));
-    case "story":
-      return Boolean(await Story.findById(targetId).select("_id"));
     default:
       return false;
   }

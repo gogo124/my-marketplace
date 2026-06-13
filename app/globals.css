@@ -103,7 +103,7 @@ textarea {
   overflow: hidden;
   background-color: #0f3d2e;
   background-image: url("/images/hero-main.jpg");
-  background-position: center;
+  background-position: center 58%;
   background-repeat: no-repeat;
   background-size: cover;
 }
@@ -164,4 +164,19 @@ textarea {
     animation: none !important;
     transition: none !important;
   }
+}
+
+.partner-carousel-track {
+  animation: partner-carousel-scroll 28s linear infinite;
+}
+.partner-carousel:hover .partner-carousel-track {
+  animation-play-state: paused;
+}
+@keyframes partner-carousel-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-50% - 0.625rem)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .partner-carousel { overflow-x: auto; }
+  .partner-carousel-track { animation: none; }
 }

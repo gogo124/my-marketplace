@@ -13,21 +13,15 @@ export function AdminSidebar() {
     { href: "/admin", label: copy.overview },
     { href: "/admin/users", label: copy.users },
     { href: "/admin/agencies", label: copy.agencies },
-    { href: "/admin/activity-providers", label: locale === "ar" ? "مزودو الأنشطة" : "Activity providers" },
     { href: "/admin/activities", label: locale === "ar" ? "الأنشطة" : "Activities" },
     { href: "/admin/trips", label: copy.trips },
     { href: "/admin/places", label: locale === "ar" ? "أماكن التخييم" : "Lieux camping" },
-    { href: "/admin/listings", label: copy.listings },
+    { href: "/admin/affiliate-products", label: locale === "ar" ? "منتجات الأفلييت" : "Affiliate products" },
+    { href: "/admin/affiliate-partners", label: locale === "ar" ? "شركاء الأفلييت" : "Affiliate Partners" },
+    { href: "/admin/contact-messages", label: locale === "ar" ? "رسائل التواصل" : "Contact Messages" },
     { href: "/admin/travel-posts", label: copy.travelPartners },
-    { href: "/admin/reservations", label: copy.reservations },
-    { href: "/admin/rental-requests", label: locale === "ar" ? "طلبات الكراء" : "Demandes location" },
     { href: "/admin/partnerships", label: locale === "ar" ? "الشراكات" : "Partenariats" },
-    { href: "/admin/leads", label: copy.leads },
     { href: "/admin/reports", label: copy.reports },
-    { href: "/admin/reviews", label: copy.reviews },
-    { href: "/admin/place-reviews", label: locale === "ar" ? "مراجعات الأماكن" : "Avis lieux" },
-    { href: "/admin/stories", label: locale === "ar" ? "قصص الرحلات" : "Recits voyage" },
-    { href: "/admin/messages", label: copy.messages }
   ];
 
   return (

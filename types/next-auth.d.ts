@@ -13,9 +13,6 @@ declare module "next-auth" {
     sellerExpiresAt?: string | null;
     sellerRequestedAt?: string | null;
     sellerApprovedAt?: string | null;
-    activityProviderStatus?: "none" | "pending" | "active" | "suspended" | "rejected";
-    activityProviderRequestedAt?: string | null;
-    activityProviderApprovedAt?: string | null;
   }
 
   interface Session {
@@ -30,9 +27,6 @@ declare module "next-auth" {
       sellerExpiresAt?: string | null;
       sellerRequestedAt?: string | null;
       sellerApprovedAt?: string | null;
-      activityProviderStatus?: "none" | "pending" | "active" | "suspended" | "rejected";
-      activityProviderRequestedAt?: string | null;
-      activityProviderApprovedAt?: string | null;
       name?: string | null;
       email?: string | null;
       image?: string | null;
@@ -51,8 +45,5 @@ declare module "next-auth/jwt" {
     sellerExpiresAt?: string | null;
     sellerRequestedAt?: string | null;
     sellerApprovedAt?: string | null;
-    activityProviderStatus?: "none" | "pending" | "active" | "suspended" | "rejected";
-    activityProviderRequestedAt?: string | null;
-    activityProviderApprovedAt?: string | null;
   }
 }

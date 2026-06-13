@@ -5,7 +5,6 @@ import { serializeDocument } from "@/lib/utils";
 import AgencyProfile from "@/models/AgencyProfile";
 import AgencyTrip from "@/models/AgencyTrip";
 import RentalItem from "@/models/RentalItem";
-import RentalRequest from "@/models/RentalRequest";
 import RenterProfile from "@/models/RenterProfile";
 import Review from "@/models/Review";
 
@@ -205,13 +204,7 @@ export async function getRenterDashboardData(userId: string) {
 
   const [items, rentalRequests, partnerships, reviews] = await Promise.all([
     RentalItem.find({ renter: profile._id }).sort({ createdAt: -1 }).lean(),
-    RentalRequest.find({ renter: profile._id })
-      .populate("trip", "title city region tripCode")
-      .populate("agency", "name city")
-      .populate("rentalItem", "title itemType")
-      .sort({ createdAt: -1 })
-      .limit(30)
-      .lean(),
+    Promise.resolve([]),
     getRenterPartnershipData(String(profile._id)),
     Review.find({ author: userId })
       .populate("listing", "title")

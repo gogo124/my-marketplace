@@ -3,7 +3,6 @@ import { deleteAgencyByAdmin } from "@/lib/admin-delete";
 import { getAdminApiSession } from "@/lib/admin";
 import { connectToDatabase } from "@/lib/db";
 import AgencyProfile from "@/models/AgencyProfile";
-import User from "@/models/User";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -36,14 +35,6 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Agency not found." }, { status: 404 });
     }
 
-    if (agency.user?._id) {
-      await User.findByIdAndUpdate(agency.user._id, {
-        $set: {
-          sellerVerificationStatus: verificationStatus === "verified" ? "verified" : "unverified",
-          verified: verificationStatus === "verified"
-        }
-      });
-    }
 
     return NextResponse.json({ agency });
   } catch (error) {

@@ -6,7 +6,7 @@ import { getApiError, parseApiResponse } from "@/lib/api";
 import { resolveLocale, SiteLocale, siteCopy, translateApiError } from "@/lib/i18n";
 
 type ReportFormProps = {
-  targetType: "listing" | "agency" | "travel-post" | "user" | "review" | "place" | "story";
+  targetType: "listing" | "agency" | "travel-post" | "user" | "review";
   targetId: string;
   title?: string;
   compact?: boolean;

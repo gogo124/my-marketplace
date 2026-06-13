@@ -1,54 +1,30 @@
 import { InferSchemaType, Model, Schema, model, models } from "mongoose";
 
-const ActivitySchema = new Schema(
-  {
-    provider: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
-    title: { type: String, required: true, trim: true },
-    category: {
-      type: String,
-      enum: ["Quad", "Skydiving", "Jet Ski", "Surf", "Hiking", "Horse Riding", "Other"],
-      required: true
-    },
-    city: { type: String, required: true, trim: true },
-    location: { type: String, default: "", trim: true },
-    price: { type: Number, required: true, min: 0 },
-    priceType: {
-      type: String,
-      enum: ["per_person", "total"],
-      default: "per_person"
-    },
-    currency: {
-      type: String,
-      enum: ["MAD"],
-      default: "MAD"
-    },
-    duration: { type: String, default: "", trim: true },
-    availableDays: { type: String, default: "", trim: true },
-    availableTimes: { type: String, default: "", trim: true },
-    description: { type: String, required: true, trim: true },
-    images: [{ type: String, trim: true }],
-    phone: { type: String, default: "", trim: true },
-    whatsapp: { type: String, default: "", trim: true },
-    instagram: { type: String, default: "", trim: true },
-    facebook: { type: String, default: "", trim: true },
-    maxPeople: { type: Number, default: null },
-    equipmentIncluded: { type: Boolean, default: false },
-    guideIncluded: { type: Boolean, default: false },
-    cancellationPolicy: { type: String, default: "", trim: true },
-    status: {
-      type: String,
-      enum: ["active", "inactive"],
-      default: "active"
-    }
-  },
-  { timestamps: true }
-);
-
-ActivitySchema.index({ provider: 1, createdAt: -1 });
-ActivitySchema.index({ status: 1, category: 1, city: 1, createdAt: -1 });
-
+const ActivitySchema = new Schema({
+  slug: { type: String, required: true, trim: true, lowercase: true },
+  image: { type: String, required: true, trim: true },
+  galleryImages: [{ type: String, trim: true }],
+  ogImage: { type: String, trim: true, default: "" },
+  title: { type: String, required: true, trim: true },
+  metaTitle: { type: String, trim: true, default: "" },
+  metaDescription: { type: String, trim: true, default: "" },
+  shortDescription: { type: String, required: true, trim: true },
+  description: { type: String, required: true, trim: true },
+  category: { type: String, required: true, trim: true },
+  location: { type: String, required: true, trim: true },
+  affiliateUrl: { type: String, required: true, trim: true },
+  price: { type: Number, required: true, min: 0 },
+  currency: { type: String, enum: ["MAD", "EUR", "USD"], default: "MAD" },
+  discountedPrice: { type: Number, min: 0, default: null },
+  types: [{ type: String, required: true, trim: true }],
+  featured: { type: Boolean, default: false },
+  status: { type: String, enum: ["draft", "published"], default: "draft" },
+  viewCount: { type: Number, min: 0, default: 0 },
+  bookClickCount: { type: Number, min: 0, default: 0 }
+}, { timestamps: true });
+ActivitySchema.index({ slug: 1 }, { unique: true, sparse: true });
+ActivitySchema.index({ status: 1, featured: -1, createdAt: -1 });
+ActivitySchema.index({ types: 1, status: 1, createdAt: -1 });
 export type ActivityDocument = InferSchemaType<typeof ActivitySchema> & { _id: string };
-
-const Activity = (models.Activity as Model<ActivityDocument>) || model("Activity", ActivitySchema);
-
+const Activity = (models.AffiliateActivity as Model<ActivityDocument>) || model("AffiliateActivity", ActivitySchema);
 export default Activity;

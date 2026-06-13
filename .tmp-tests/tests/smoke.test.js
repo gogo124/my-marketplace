@@ -61,10 +61,6 @@ const invalidTravelPost = (0, validation_1.validateTravelPostPayload)({
     gender: "female"
 });
 strict_1.default.ok("error" in invalidTravelPost, "expected past travel date to fail");
-strict_1.default.equal((0, validation_1.validateLeadStatus)("contacted"), true, "expected contacted lead status to be valid");
-strict_1.default.equal((0, validation_1.validateLeadStatus)("spam"), false, "expected invalid lead status to fail");
-strict_1.default.equal((0, validation_1.validateReservationStatus)("confirmed"), true, "expected confirmed reservation status to be valid");
-strict_1.default.equal((0, validation_1.validateReservationStatus)("canceled"), false, "expected unsupported reservation status to fail");
 strict_1.default.equal((0, i18n_1.resolveLocale)("fr"), "fr", "expected french locale query to resolve to fr");
 strict_1.default.equal((0, i18n_1.getDirection)("fr"), "ltr", "expected french locale to use ltr");
 strict_1.default.equal((0, i18n_1.resolveLocale)(undefined), "ar", "expected default locale to remain arabic");

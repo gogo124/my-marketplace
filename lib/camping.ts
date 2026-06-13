@@ -1,300 +1,41 @@
-import { serializeDocument } from "@/lib/utils";
+import { AFFILIATE_CURRENCIES, parseAffiliatePrice } from "@/lib/affiliate-price";
+import { CAMPING_FEATURES, CAMPING_TYPES } from "@/lib/camping-options";
 import { connectToDatabase } from "@/lib/db";
-import AgencyTrip from "@/models/AgencyTrip";
-import Listing from "@/models/Listing";
+import { serializeDocument } from "@/lib/utils";
 import Place from "@/models/Place";
-import Review from "@/models/Review";
-import Story from "@/models/Story";
-import TravelPost from "@/models/TravelPost";
-import User from "@/models/User";
-import { withMemoryCache } from "@/lib/simple-cache";
 
-type PlaceFilters = {
-  q?: string;
-  city?: string;
-  category?: string;
-  bestSeason?: string;
-  safety?: string;
-  savedOnly?: boolean;
-  userId?: string;
-  includePending?: boolean;
-  limit?: number;
-};
+export type CampingValidationField = "name" | "slug" | "description" | "image" | "galleryImages" | "ogImage" | "affiliateUrl" | "price" | "currency" | "discountedPrice" | "location" | "category" | "types";
+export type CampingValidationErrors = Partial<Record<CampingValidationField, string>>;
+const clean = (value: unknown) => typeof value === "string" ? value.trim() : "";
+const list = (value: unknown) => Array.isArray(value) ? Array.from(new Set(value.map(clean).filter(Boolean))).slice(0, 30) : [];
+const isHttpUrl = (value: string) => { try { return ["http:", "https:"].includes(new URL(value).protocol); } catch { return false; } };
+const isImageUrl = (value: string) => value.startsWith("/") || isHttpUrl(value);
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const slugifyPlace = (value: string) => value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 100);
 
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export function validatePlacePayload(payload: unknown) {
+  const input = (payload || {}) as Record<string, unknown>;
+  const name = clean(input.name); const slug = slugifyPlace(clean(input.slug) || name); const description = clean(input.description); const shortDescription = clean(input.shortDescription); const metaTitle = clean(input.metaTitle); const metaDescription = clean(input.metaDescription); const ogImage = clean(input.ogImage); const image = clean(input.image); const galleryImages = list(input.galleryImages); const affiliateUrl = clean(input.affiliateUrl); const price = parseAffiliatePrice(input.price); const currency = clean(input.currency) || "MAD"; const discountedPrice = parseAffiliatePrice(input.discountedPrice); const location = clean(input.location); const category = clean(input.category); const submittedTypes = list(input.types); const types = submittedTypes.filter((type) => (CAMPING_TYPES as readonly string[]).includes(type)); const features = list(input.features).filter((feature) => (CAMPING_FEATURES as readonly string[]).includes(feature)); const featured = input.featured === true; const recommended = input.recommended === true; const status = input.status === "published" ? "published" : "draft";
+  const fields: CampingValidationErrors = {};
+  if (name.length < 3) fields.name = "Camping name must contain at least 3 characters.";
+  if (!slug) fields.slug = "Enter a valid slug or a name that can generate one.";
+  if (description.length < 20) fields.description = "Full description must contain at least 20 characters.";
+  if (!image) fields.image = "Upload a main image to Cloudinary."; else if (!isImageUrl(image)) fields.image = "The uploaded main image URL is invalid.";
+  if (galleryImages.some((item) => !isImageUrl(item))) fields.galleryImages = "One or more gallery image URLs are invalid.";
+  if (ogImage && !isImageUrl(ogImage)) fields.ogImage = "The uploaded Open Graph image URL is invalid.";
+  if (!affiliateUrl) fields.affiliateUrl = "Enter the Visit Now affiliate URL."; else if (!isHttpUrl(affiliateUrl)) fields.affiliateUrl = "Affiliate URL must start with http:// or https://.";
+  if (price === null) fields.price = "Enter a valid price of 0 or more.";
+  if (!(AFFILIATE_CURRENCIES as readonly string[]).includes(currency)) fields.currency = "Select MAD, EUR, or USD.";
+  if (discountedPrice !== null && price !== null && discountedPrice >= price) fields.discountedPrice = "Discounted price must be lower than the regular price.";
+  if (location.length < 2) fields.location = "Location must contain at least 2 characters.";
+  if (category.length < 2) fields.category = "Category must contain at least 2 characters.";
+  if (!types.length) fields.types = submittedTypes.length ? "The selected camping types are not recognized." : "Select at least one camping type.";
+  if (Object.keys(fields).length) return { error: Object.values(fields)[0]!, fields };
+  return { data: { name, slug, description, shortDescription, metaTitle, metaDescription, ogImage, image, galleryImages, affiliateUrl, price: price!, currency, discountedPrice, location, category, types, features, featured, recommended, status } };
 }
 
-export function parseCoordinatesFromMapInput(value: unknown) {
-  const raw = typeof value === "string" ? value.trim() : "";
-
-  if (!raw) {
-    return null;
-  }
-
-  const coordinateMatch =
-    raw.match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/) ||
-    raw.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/) ||
-    raw.match(/[?&](?:q|ll|query)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
-
-  if (!coordinateMatch) {
-    return null;
-  }
-
-  const lat = Number(coordinateMatch[1]);
-  const lng = Number(coordinateMatch[2]);
-
-  if (Number.isNaN(lat) || Number.isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-    return null;
-  }
-
-  return { lat, lng };
-}
-
-function buildPlaceSearchQuery(filters: PlaceFilters) {
-  const query: Record<string, unknown> = {};
-
-  if (!filters.includePending) {
-    query.status = "approved";
-  }
-
-  if (filters.city?.trim()) {
-    query.city = { $regex: escapeRegExp(filters.city.trim()), $options: "i" };
-  }
-
-  if (filters.category?.trim()) {
-    query.category = { $regex: escapeRegExp(filters.category.trim()), $options: "i" };
-  }
-
-  if (filters.bestSeason?.trim()) {
-    query.bestSeason = { $regex: escapeRegExp(filters.bestSeason.trim()), $options: "i" };
-  }
-
-  if (filters.safety?.trim()) {
-    query.safety = { $regex: escapeRegExp(filters.safety.trim()), $options: "i" };
-  }
-
-  if (filters.q?.trim()) {
-    const search = escapeRegExp(filters.q.trim());
-    query.$or = [
-      { name: { $regex: search, $options: "i" } },
-      { city: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
-      { category: { $regex: search, $options: "i" } }
-    ];
-  }
-
-  if (filters.savedOnly && filters.userId) {
-    query.savedBy = filters.userId;
-  }
-
-  return query;
-}
-
-function scorePlace(place: any) {
-  const savedCount = Array.isArray(place.savedBy) ? place.savedBy.length : 0;
-  const reviewCount = Number(place.reviewCount || 0);
-  const ratingAverage = Number(place.ratingAverage || 0);
-  return savedCount * 3 + reviewCount * 2 + ratingAverage;
-}
-
-export async function getPlaces(filters: PlaceFilters = {}) {
-  await connectToDatabase();
-  const query = buildPlaceSearchQuery(filters);
-
-  const loadPlaces = async () => {
-    const placeQuery = Place.find(query)
-      .select("name city category description bestSeason safety images mapLink coordinates status createdBy savedBy createdAt")
-      .populate("createdBy", "name avatar")
-      .sort({ createdAt: -1 });
-
-    if (typeof filters.limit === "number" && filters.limit > 0) {
-      placeQuery.limit(filters.limit);
-    }
-
-    const places = await placeQuery.lean();
-
-    const placeIds = places.map((place) => place._id);
-    const [reviews, stories] = await Promise.all([
-      Review.find({
-        place: { $in: placeIds },
-        ...(filters.includePending ? {} : { status: "approved" })
-      })
-        .select("place rating")
-        .lean(),
-      Story.find({
-        place: { $in: placeIds },
-        ...(filters.includePending ? {} : { status: "approved" })
-      })
-        .select("place")
-        .lean()
-    ]);
-
-    const reviewSummary = reviews.reduce<Record<string, { total: number; count: number }>>((acc, review: any) => {
-      const placeId = String(review.place);
-      acc[placeId] ??= { total: 0, count: 0 };
-      acc[placeId].total += Number(review.rating || 0);
-      acc[placeId].count += 1;
-      return acc;
-    }, {});
-
-    const storySummary = stories.reduce<Record<string, number>>((acc, story: any) => {
-      const placeId = String(story.place);
-      acc[placeId] = (acc[placeId] || 0) + 1;
-      return acc;
-    }, {});
-
-    return serializeDocument(
-      places.map((place: any) => {
-        const summary = reviewSummary[String(place._id)] || { total: 0, count: 0 };
-        const savedCount = Array.isArray(place.savedBy) ? place.savedBy.length : 0;
-        return {
-          ...place,
-          isSaved: filters.userId ? place.savedBy?.some((id: any) => String(id) === filters.userId) : false,
-          savedCount,
-          reviewCount: summary.count,
-          ratingAverage: summary.count > 0 ? Number((summary.total / summary.count).toFixed(1)) : 0,
-          storyCount: storySummary[String(place._id)] || 0
-        };
-      })
-    ) as any[];
-  };
-
-  if (filters.userId || filters.savedOnly || filters.includePending) {
-    return loadPlaces();
-  }
-
-  const cacheKey = `places:${JSON.stringify({ query, limit: filters.limit || null })}`;
-  return withMemoryCache(cacheKey, 60_000, loadPlaces);
-}
-
-export async function getTrendingPlaces(limit = 6) {
-  const places = await getPlaces();
-  return places.sort((a: any, b: any) => scorePlace(b) - scorePlace(a)).slice(0, limit);
-}
-
-export async function getBestPlaces(limit = 6) {
-  const places = await getPlaces();
-  return places
-    .filter((place: any) => Number(place.reviewCount || 0) > 0)
-    .sort((a: any, b: any) => Number(b.ratingAverage || 0) - Number(a.ratingAverage || 0) || Number(b.reviewCount || 0) - Number(a.reviewCount || 0))
-    .slice(0, limit);
-}
-
-export async function getCampingHighlights(limit = 6) {
-  const places = await getPlaces({ limit: Math.max(limit * 3, 12) });
-
-  return {
-    trendingPlaces: [...places].sort((a: any, b: any) => scorePlace(b) - scorePlace(a)).slice(0, limit),
-    bestPlaces: places
-      .filter((place: any) => Number(place.reviewCount || 0) > 0)
-      .sort(
-        (a: any, b: any) =>
-          Number(b.ratingAverage || 0) - Number(a.ratingAverage || 0) ||
-          Number(b.reviewCount || 0) - Number(a.reviewCount || 0)
-      )
-      .slice(0, limit)
-  };
-}
-
-export async function getPlaceById(placeId: string, userId?: string) {
-  await connectToDatabase();
-
-  const place = await Place.findById(placeId).populate("createdBy", "name avatar").lean();
-
-  if (!place) {
-    return null;
-  }
-
-  const [reviews, stories, trips, products, travelers] = await Promise.all([
-    Review.find({ place: placeId, status: "approved" })
-      .populate("author", "name avatar")
-      .populate("providerReplyBy", "name")
-      .sort({ createdAt: -1 })
-      .lean(),
-    Story.find({ place: placeId, status: "approved" }).populate("author", "name avatar").sort({ createdAt: -1 }).lean(),
-    AgencyTrip.find({
-      status: "active",
-      $or: [
-        { city: { $regex: escapeRegExp(place.city), $options: "i" } },
-        { destination: { $regex: escapeRegExp(place.name), $options: "i" } },
-        { destination: { $regex: escapeRegExp(place.city), $options: "i" } }
-      ]
-    })
-      .select("title destination city description startDate endDate seatsTotal seatsBooked images agency status createdAt")
-      .populate("agency", "name city")
-      .sort({ startDate: 1 })
-      .limit(6)
-      .lean(),
-    Listing.find({
-      status: "active",
-      type: "sale",
-      $or: [
-        { location: { $regex: escapeRegExp(place.city), $options: "i" } },
-        { category: { $regex: escapeRegExp(place.category), $options: "i" } },
-        { description: { $regex: escapeRegExp(place.name), $options: "i" } }
-      ]
-    })
-      .select("title description price type category location phoneNumber whatsappNumber startDate endDate deposit images seller status createdAt")
-      .populate("seller", "name sellerVerificationStatus verified")
-      .sort({ createdAt: -1 })
-      .limit(6)
-      .lean(),
-    TravelPost.find({
-      $or: [
-        { destination: { $regex: escapeRegExp(place.name), $options: "i" } },
-        { destination: { $regex: escapeRegExp(place.city), $options: "i" } }
-      ]
-    })
-      .select("destination city date description phoneNumber gender profileImage coverImage interestedUserIds userId createdAt")
-      .populate("userId", "name avatar")
-      .sort({ date: 1, createdAt: -1 })
-      .limit(8)
-      .lean()
-  ]);
-
-  const reviewCount = reviews.length;
-  const ratingAverage = reviewCount > 0 ? Number((reviews.reduce((sum: number, review: any) => sum + Number(review.rating || 0), 0) / reviewCount).toFixed(1)) : 0;
-  const isSaved = userId ? Array.isArray(place.savedBy) && place.savedBy.some((id: any) => String(id) === userId) : false;
-
-  return serializeDocument({
-    ...place,
-    isSaved,
-    savedCount: Array.isArray(place.savedBy) ? place.savedBy.length : 0,
-    reviewCount,
-    ratingAverage,
-    reviews,
-    stories,
-    trips,
-    products,
-    travelers
-  }) as any;
-}
-
-export async function getSavedPlacesForUser(userId: string) {
-  return getPlaces({ savedOnly: true, userId });
-}
-
-export async function toggleSavedPlace(userId: string, placeId: string) {
-  await connectToDatabase();
-
-  const user = await User.findById(userId).select("savedPlaceIds").lean();
-  const alreadySaved = Boolean(user?.savedPlaceIds?.some((id: any) => String(id) === placeId));
-
-  await Promise.all([
-    User.updateOne(
-      { _id: userId },
-      alreadySaved ? { $pull: { savedPlaceIds: placeId } } : { $addToSet: { savedPlaceIds: placeId } }
-    ),
-    Place.updateOne(
-      { _id: placeId },
-      alreadySaved ? { $pull: { savedBy: userId } } : { $addToSet: { savedBy: userId } }
-    )
-  ]);
-
-  const updatedPlace = await Place.findById(placeId).select("savedBy").lean();
-  return {
-    saved: !alreadySaved,
-    savedCount: Array.isArray(updatedPlace?.savedBy) ? updatedPlace.savedBy.length : 0
-  };
-}
+export async function getPlaces(filters: any = {}) { await connectToDatabase(); const query: Record<string, unknown> = { status: "published" }; if (clean(filters.q)) query.name = { $regex: escapeRegex(clean(filters.q)), $options: "i" }; for (const key of ["location", "category"]) if (clean(filters[key])) query[key] = clean(filters[key]); if (clean(filters.type)) query.types = clean(filters.type); if (clean(filters.feature)) query.features = clean(filters.feature); if (filters.featured) query.featured = true; if (filters.recommended) query.recommended = true; const sort: Record<string, 1 | -1> = filters.sort === "popular" ? { viewCount: -1, clickCount: -1 } : filters.sort === "featured" ? { featured: -1, createdAt: -1 } : { createdAt: -1 }; return serializeDocument(await Place.find(query).sort(sort).limit(filters.limit || 0).lean()) as any[]; }
+export async function getPlaceBySlug(slug: string) { await connectToDatabase(); return serializeDocument(await Place.findOne({ status: "published", ...(/^[a-f\d]{24}$/i.test(slug) ? { $or: [{ slug }, { _id: slug }] } : { slug }) }).lean()) as any | null; }
+export async function getRelatedPlaces(place: any, limit = 4) { await connectToDatabase(); return serializeDocument(await Place.find({ _id: { $ne: place._id }, status: "published", $or: [{ location: place.location }, { category: place.category }, { types: { $in: place.types || [] } }, { features: { $in: place.features || [] } }] }).sort({ featured: -1, viewCount: -1 }).limit(limit).lean()) as any[]; }
+export async function getPlaceFilterOptions() { await connectToDatabase(); const [locations, categories] = await Promise.all([Place.distinct("location", { status: "published" }), Place.distinct("category", { status: "published" })]); return { locations: locations.filter(Boolean).sort() as string[], categories: categories.filter(Boolean).sort() as string[] }; }
+export async function getPlacesForAdmin() { await connectToDatabase(); return serializeDocument(await Place.find({}).sort({ createdAt: -1 }).lean()) as any[]; }

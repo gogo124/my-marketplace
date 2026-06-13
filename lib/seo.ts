@@ -5,6 +5,10 @@ export function getSiteUrl() {
 }
 
 export function absoluteUrl(path: string) {
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return new URL(normalizedPath, getSiteUrl()).toString();
 }

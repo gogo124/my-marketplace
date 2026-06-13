@@ -4,12 +4,10 @@ import { ensureTripCodeForTrip } from "@/lib/trip-code";
 import { getProfileCompleteness } from "@/lib/trust";
 import { serializeDocument } from "@/lib/utils";
 import AgencyProfile from "@/models/AgencyProfile";
-import AgencyReservation from "@/models/AgencyReservation";
 import AgencyTrip from "@/models/AgencyTrip";
 import Conversation from "@/models/Conversation";
 import Lead from "@/models/Lead";
 import RentalItem from "@/models/RentalItem";
-import RentalRequest from "@/models/RentalRequest";
 import Review from "@/models/Review";
 
 type AgencyDirectoryFilters = {
@@ -31,7 +29,7 @@ export async function getAgencyProfileById(agencyId: string) {
 
   const [trips, reservations] = await Promise.all([
     AgencyTrip.find({ agency: agencyId, status: "active" }).select("seatsTotal seatsBooked").lean(),
-    AgencyReservation.countDocuments({ agency: agencyId })
+    Promise.resolve(0)
   ]);
 
   const serializedProfile = serializeDocument(profile) as any;
@@ -220,11 +218,7 @@ export async function getAgencyTrips(agencyId: string) {
 export async function getAgencyReservations(agencyId: string) {
   await connectToDatabase();
 
-  const reservations = await AgencyReservation.find({ agency: agencyId })
-    .populate("trip", "title destination startDate endDate seatsTotal seatsBooked")
-    .populate("user", "name email")
-    .sort({ createdAt: -1 })
-    .lean();
+  const reservations = await Promise.resolve([]);
 
   return serializeDocument(reservations);
 }
@@ -279,11 +273,7 @@ export async function getAgencyDashboardData(userId: string) {
       .populate("renterPartners", "name city verificationStatus")
       .sort({ createdAt: -1 })
       .lean(),
-    AgencyReservation.find({ agency: profile._id })
-      .populate("trip", "title destination startDate endDate seatsTotal seatsBooked tripCode")
-      .populate("user", "name email")
-      .sort({ createdAt: -1 })
-      .lean(),
+    Promise.resolve([]),
     Lead.find({ sellerId: userId }).sort({ createdAt: -1 }).limit(20).lean(),
     Conversation.find({ participants: userId })
       .populate("listing", "title price")
@@ -291,13 +281,7 @@ export async function getAgencyDashboardData(userId: string) {
       .sort({ lastMessageAt: -1 })
       .limit(20)
       .lean(),
-    RentalRequest.find({ agency: profile._id })
-      .populate("trip", "title city region")
-      .populate("renter", "name city")
-      .populate("rentalItem", "title itemType")
-      .sort({ createdAt: -1 })
-      .limit(30)
-      .lean(),
+    Promise.resolve([]),
     Review.find({ author: userId })
       .populate("listing", "title")
       .populate("place", "name city")

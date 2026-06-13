@@ -1,98 +1,16 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import { Compass, Search, SlidersHorizontal } from "lucide-react";
 import { ActivityCard } from "@/components/activity-card";
-import { uiDictionary } from "@/lib/i18n";
-import { getPublicActivities } from "@/lib/activity";
+import { ACTIVITY_TYPES } from "@/lib/activity-types";
+import { getActivityFilterOptions, getPublishedActivities } from "@/lib/activity";
 import { getDirection, resolveLocale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/seo";
-
 export const revalidate = 60;
-
-export async function generateMetadata({
-  searchParams
-}: {
-  searchParams: Promise<{ lang?: string }>;
-}): Promise<Metadata> {
-  const { lang } = await searchParams;
-  const locale = resolveLocale(lang);
-
-  return buildPageMetadata({
-    title: locale === "ar" ? "الأنشطة | Moroccan Trip" : "Activities | Moroccan Trip",
-    description:
-      locale === "ar"
-        ? "اكتشف أنشطة ومغامرات في المغرب من مزودين نشطين داخل Moroccan Trip."
-        : "Discover adventure activities in Morocco from active providers on Moroccan Trip.",
-    path: "/activities",
-    image: "/images/hero-main.jpg"
-  });
-}
-
-export default async function ActivitiesPage({
-  searchParams
-}: {
-  searchParams: Promise<{ lang?: string; q?: string; city?: string; category?: string; page?: string }>;
-}) {
-  const { lang, q = "", city = "", category = "", page = "1" } = await searchParams;
-  const locale = resolveLocale(lang);
-  const isArabic = locale === "ar";
-  const ui = uiDictionary[locale];
-  const currentPage = Math.max(1, Number(page) || 1);
-  const result = await getPublicActivities({ q, city, category, page: currentPage, pageSize: 12 });
-
-  return (
-    <main dir={getDirection(locale)} className="page-shell space-y-8">
-      <section className="image-surface rounded-[2.75rem] px-8 py-10 text-white shadow-card">
-        <p className="text-sm uppercase tracking-[0.3em] text-white/60">{isArabic ? "أنشطة ومغامرات" : locale === "fr" ? "Activities & adventures" : "Activities & adventures"}</p>
-        <h1 className="mt-4 text-4xl font-black">{isArabic ? "اكتشف الأنشطة والمغامرات في المغرب" : locale === "fr" ? "Discover activities and adventures in Morocco" : "Discover activities and adventures in Morocco"}</h1>
-        <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75">
-          {isArabic
-            ? "Quad، Jet Ski، Hiking، Surf وغيرها من الأنشطة العلنية بمعلومات أوضح وتواصل مباشر."
-            : locale === "fr"
-              ? "Quad, Jet Ski, Hiking, Surf, and more public activities with clearer information and direct contact."
-              : "Quad, Jet Ski, Hiking, Surf, and more public activities with clearer information and direct contact."}
-        </p>
-      </section>
-
-      <section className="rounded-[2rem] bg-white p-5 shadow-card">
-        <form action="/activities" className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_0.8fr_auto]">
-          <input type="hidden" name="lang" value={locale} />
-          <input name="q" defaultValue={q} placeholder={isArabic ? "ابحث عن نشاط" : locale === "fr" ? "Search activities" : "Search activities"} className="rounded-[1.25rem] border border-ink/10 px-4 py-3" />
-          <input name="city" defaultValue={city} placeholder={isArabic ? "المدينة" : locale === "fr" ? "City" : "City"} className="rounded-[1.25rem] border border-ink/10 px-4 py-3" />
-          <select name="category" defaultValue={category} className="rounded-[1.25rem] border border-ink/10 px-4 py-3">
-            <option value="">{isArabic ? "كل الفئات" : locale === "fr" ? "All categories" : "All categories"}</option>
-            {["Quad", "Skydiving", "Jet Ski", "Surf", "Hiking", "Horse Riding", "Other"].map((item) => <option key={item} value={item}>{item}</option>)}
-          </select>
-          <button className="rounded-[1.25rem] bg-forest px-5 py-3 font-semibold text-white">{ui.buttons.search}</button>
-        </form>
-      </section>
-
-      {result.activities.length > 0 ? (
-        <section className="space-y-5">
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {result.activities.map((activity: any) => <ActivityCard key={activity._id} activity={activity} locale={locale} />)}
-          </div>
-          <div className="flex items-center justify-between text-sm text-ink/60">
-            <span>
-              {result.pagination.total} {isArabic ? "نشاط" : locale === "fr" ? "activities" : "activities"}
-            </span>
-            <div className="flex gap-3">
-              {result.pagination.hasPreviousPage ? (
-                <a href={`/activities?lang=${locale}&q=${encodeURIComponent(q)}&city=${encodeURIComponent(city)}&category=${encodeURIComponent(category)}&page=${currentPage - 1}`} className="rounded-full border border-ink/10 px-4 py-2">
-                  {isArabic ? "السابق" : locale === "fr" ? "Previous" : "Previous"}
-                </a>
-              ) : null}
-              {result.pagination.hasNextPage ? (
-                <a href={`/activities?lang=${locale}&q=${encodeURIComponent(q)}&city=${encodeURIComponent(city)}&category=${encodeURIComponent(category)}&page=${currentPage + 1}`} className="rounded-full border border-ink/10 px-4 py-2">
-                  {isArabic ? "التالي" : locale === "fr" ? "Next" : "Next"}
-                </a>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      ) : (
-        <section className="rounded-[2rem] border border-dashed border-ink/20 bg-white p-8 text-sm text-ink/60 shadow-card">
-          {isArabic ? "لا توجد أنشطة مطابقة حالياً." : locale === "fr" ? "No matching activities right now." : "No matching activities right now."}
-        </section>
-      )}
-    </main>
-  );
+export const metadata: Metadata = buildPageMetadata({ title: "Activities and experiences in Morocco", description: "Find and book outdoor adventures, tours, water sports, and cultural experiences across Morocco.", path: "/activities", image: "/images/activities.jpg" });
+export default async function ActivitiesPage({ searchParams }: { searchParams: Promise<{ lang?: string; q?: string; category?: string; location?: string; type?: string }> }) {
+  const { lang, q = "", category = "", location = "", type = "" } = await searchParams; const locale = resolveLocale(lang); const isArabic = locale === "ar"; const [activities, options] = await Promise.all([getPublishedActivities({ q, category, location, type }), getActivityFilterOptions()]);
+  return <main dir={getDirection(locale)} className="page-shell max-w-[1440px] space-y-14 pb-24 sm:space-y-20"><section className="relative min-h-[620px] overflow-hidden rounded-[2.5rem] bg-emerald-950 shadow-[0_35px_100px_rgba(15,61,46,.28)] sm:rounded-[3rem]"><Image src="/images/activities.jpg" alt="Outdoor adventure activities in Morocco" fill priority sizes="100vw" className="object-cover object-[center_42%]" /><div className="absolute inset-0 bg-[linear-gradient(112deg,rgba(2,18,13,.97),rgba(15,61,46,.75)_58%,rgba(249,115,22,.32))]" /><div className="relative flex min-h-[620px] items-end px-6 py-10 sm:px-10 sm:py-14 lg:px-16 lg:py-16"><div className="max-w-4xl text-white"><p className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[.28em] backdrop-blur">Affiliate Activities</p><h1 className="mt-6 text-4xl font-black leading-[1.03] tracking-[-.04em] sm:text-6xl lg:text-7xl">{isArabic ? "اكتشف أفضل الأنشطة والتجارب" : "Discover unforgettable activities"}</h1><p className="mt-6 max-w-3xl text-base leading-8 text-white/78 sm:text-lg">{isArabic ? "اختر تجربتك وانتقل مباشرة إلى موقع الشريك للحجز." : "Choose your next adventure and continue directly to the trusted affiliate partner to book."}</p><div className="mt-8 flex flex-wrap gap-3 text-xs font-bold text-white/85"><span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Adventure experiences</span><span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Direct booking access</span><span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Across Morocco</span></div></div></div></section>
+  <section className="sticky top-3 z-20 rounded-[2rem] border border-white/80 bg-white/95 p-4 shadow-[0_20px_60px_rgba(15,61,46,.13)] backdrop-blur-xl sm:p-5"><div className="mb-4 flex items-center gap-3"><span className="rounded-full bg-orange-50 p-2.5 text-clay"><SlidersHorizontal className="h-5 w-5" /></span><div><h2 className="font-black text-ink">Find an experience</h2><p className="text-xs text-ink/45">{activities.length} activities available</p></div></div><form className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.5fr_repeat(3,minmax(0,1fr))_auto]"><input type="hidden" name="lang" value={locale} /><label className="relative md:col-span-2 xl:col-span-1"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" /><input name="q" defaultValue={q} placeholder="Search by activity title" className="w-full rounded-[1.15rem] border border-ink/10 bg-sand/30 py-3.5 pl-11 pr-4 text-sm outline-none focus:border-clay focus:bg-white" /></label><select name="category" defaultValue={category} className="rounded-[1.15rem] border border-ink/10 bg-sand/30 px-4 py-3.5 text-sm font-semibold"><option value="">All categories</option>{options.categories.map((item) => <option key={item} value={item}>{item}</option>)}</select><select name="location" defaultValue={location} className="rounded-[1.15rem] border border-ink/10 bg-sand/30 px-4 py-3.5 text-sm font-semibold"><option value="">All locations</option>{options.locations.map((item) => <option key={item} value={item}>{item}</option>)}</select><select name="type" defaultValue={type} className="rounded-[1.15rem] border border-ink/10 bg-sand/30 px-4 py-3.5 text-sm font-semibold"><option value="">All activity types</option>{ACTIVITY_TYPES.map((item) => <option key={item}>{item}</option>)}</select><button className="rounded-[1.15rem] bg-forest px-6 py-3.5 text-sm font-black text-white shadow-[0_12px_28px_rgba(15,61,46,.2)] transition hover:bg-clay">Discover</button></form></section>
+  <section className="rounded-[2.75rem] bg-[linear-gradient(145deg,#edf7f2,#ffffff_58%,#fff4e8)] p-5 shadow-[0_30px_90px_rgba(15,61,46,.11)] sm:p-9 lg:p-12"><div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[.25em] text-clay">Experiences worth remembering</p><h2 className="mt-3 text-3xl font-black tracking-[-.03em] text-ink sm:text-5xl">Adventure starts here</h2></div><p className="max-w-lg text-sm leading-7 text-ink/55">Explore outdoor adventures, guided experiences, and unforgettable ways to see Morocco.</p></div>{activities.length ? <div className="mt-9 grid gap-8 md:grid-cols-2 xl:grid-cols-3">{activities.map((activity) => <ActivityCard key={activity._id} activity={activity} locale={locale} />)}</div> : <div className="mt-9 rounded-[2.5rem] border border-dashed border-ink/15 bg-white p-12 text-center text-ink/60"><Compass className="mx-auto h-16 w-16 text-clay/60" /><h2 className="mt-4 text-2xl font-black">No published activities match your search</h2></div>}</section></main>;
 }

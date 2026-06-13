@@ -17,7 +17,6 @@ type SiteHeaderProps = {
       canCreateRenter?: boolean;
       sellerStatus?: "none" | "pending" | "active" | "expired" | "suspended" | "rejected";
       sellerExpiresAt?: string | null;
-      activityProviderStatus?: "none" | "pending" | "active" | "suspended" | "rejected";
     } | null;
   } | null;
 };

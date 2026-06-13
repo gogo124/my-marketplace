@@ -17,6 +17,11 @@ exports.agencyVerificationLabels = {
         unverified: "Non verifie",
         pending: "En attente",
         verified: "Verifie"
+    },
+    en: {
+        unverified: "Unverified",
+        pending: "Pending review",
+        verified: "Verified"
     }
 };
 exports.sellerVerificationLabels = {
@@ -27,42 +32,73 @@ exports.sellerVerificationLabels = {
     fr: {
         unverified: "Non verifie",
         verified: "Verifie"
+    },
+    en: {
+        unverified: "Unverified",
+        verified: "Verified"
     }
 };
 exports.leadStatusLabels = {
     ar: {
         new: "جديد",
         contacted: "تم التواصل",
+        sold: "تم البيع",
+        cancelled: "ملغى",
         closed: "مغلق"
     },
     fr: {
         new: "Nouveau",
         contacted: "Contacte",
+        sold: "Vendu",
+        cancelled: "Annule",
         closed: "Ferme"
+    },
+    en: {
+        new: "New",
+        contacted: "Contacted",
+        sold: "Sold",
+        cancelled: "Cancelled",
+        closed: "Closed"
     }
 };
 exports.reservationStatusLabels = {
     ar: {
-        new: "جديد",
-        contacted: "تم التواصل",
-        confirmed: "مؤكد"
+        pending: "قيد الانتظار",
+        confirmed: "مؤكد",
+        completed: "مكتمل",
+        cancelled: "ملغى"
     },
     fr: {
-        new: "Nouveau",
-        contacted: "Contacte",
-        confirmed: "Confirme"
+        pending: "En attente",
+        confirmed: "Confirme",
+        completed: "Termine",
+        cancelled: "Annule"
+    },
+    en: {
+        pending: "Pending",
+        confirmed: "Confirmed",
+        completed: "Completed",
+        cancelled: "Cancelled"
     }
 };
 exports.rentalRequestStatusLabels = {
     ar: {
         pending: "قيد الانتظار",
-        accepted: "مقبول",
-        rejected: "مرفوض"
+        approved: "مقبول",
+        delivered: "تم التسليم",
+        returned: "تم الإرجاع"
     },
     fr: {
         pending: "En attente",
-        accepted: "Accepte",
-        rejected: "Refuse"
+        approved: "Approuve",
+        delivered: "Livre",
+        returned: "Retourne"
+    },
+    en: {
+        pending: "Pending",
+        approved: "Approved",
+        delivered: "Delivered",
+        returned: "Returned"
     }
 };
 function getAgencyVerificationLabel(status, locale) {
@@ -75,7 +111,7 @@ function getLeadStatusLabel(status, locale) {
     return exports.leadStatusLabels[locale][status || "new"] || exports.leadStatusLabels[locale].new;
 }
 function getReservationStatusLabel(status, locale) {
-    return exports.reservationStatusLabels[locale][status || "new"] || exports.reservationStatusLabels[locale].new;
+    return exports.reservationStatusLabels[locale][status || "pending"] || exports.reservationStatusLabels[locale].pending;
 }
 function getRentalRequestStatusLabel(status, locale) {
     return exports.rentalRequestStatusLabels[locale][status || "pending"] || exports.rentalRequestStatusLabels[locale].pending;

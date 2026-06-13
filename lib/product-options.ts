@@ -1,0 +1,3 @@
+export const PRODUCT_BADGE_SUGGESTIONS = ["Featured", "Best Seller", "Popular", "New", "Limited Offer", "Recommended", "Top Rated"] as const;
+export const PRODUCT_FEATURE_SUGGESTIONS = ["Free Shipping", "Fast Delivery", "Express Delivery", "Easy Returns", "Warranty Included", "Secure Purchase", "Verified Product", "Best Seller", "Popular", "Recommended", "Limited Offer", "Exclusive Deal", "Top Pick", "New Arrival", "Official Store", "Premium Quality", "Eco Friendly", "Money Back Guarantee"] as const;
+export const QUICK_INFO_LABELS = ["Shipping Available", "Delivery Time", "Warranty Period", "Brand", "Product Condition", "Stock Status", "Discount Available"] as const;

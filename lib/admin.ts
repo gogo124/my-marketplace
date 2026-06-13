@@ -9,7 +9,6 @@ import { getSessionUser, getUserPermissions, requireAdminPermission } from "@/li
 import { serializeDocument } from "@/lib/utils";
 import AgencyProfile from "@/models/AgencyProfile";
 import AgencyRenterPartnership from "@/models/AgencyRenterPartnership";
-import AgencyReservation from "@/models/AgencyReservation";
 import AgencyTrip from "@/models/AgencyTrip";
 import Conversation from "@/models/Conversation";
 import Lead from "@/models/Lead";
@@ -18,11 +17,8 @@ import Message from "@/models/Message";
 import Place from "@/models/Place";
 import Report from "@/models/Report";
 import Review from "@/models/Review";
-import RentalRequest from "@/models/RentalRequest";
 import RentalItem from "@/models/RentalItem";
 import AnalyticsEvent from "@/models/AnalyticsEvent";
-import Activity from "@/models/Activity";
-import Story from "@/models/Story";
 import TravelPost from "@/models/TravelPost";
 import User from "@/models/User";
 
@@ -91,194 +87,6 @@ export async function getAdminApiSession() {
   }
 }
 
-export async function getAdminDashboardData() {
-  await connectToDatabase();
-
-  const [
-    usersCount,
-    agenciesCount,
-    listingsCount,
-    travelPostsCount,
-    reviewsCount,
-    messagesCount,
-    reportsCount,
-    reservationsCount,
-    rentalItemsCount,
-    activitiesCount,
-    leadsCount,
-    verifiedAgenciesCount,
-    verifiedSellersCount,
-    activeListingsCount,
-    pendingReportsCount,
-    pendingReviewsCount,
-    pendingReservationsCount,
-    pendingRentalRequestsCount,
-    pendingAgenciesCount,
-    pendingActivityProvidersCount,
-    recentUsers,
-    recentAgencies,
-    recentListings,
-    recentTravelPosts,
-    recentReviews,
-    recentMessages
-  ] = await Promise.all([
-    User.countDocuments({}),
-    AgencyProfile.countDocuments({}),
-    Listing.countDocuments({}),
-    TravelPost.countDocuments({}),
-    Review.countDocuments({}),
-    Message.countDocuments({}),
-    Report.countDocuments({}),
-    AgencyReservation.countDocuments({}),
-    RentalItem.countDocuments({}),
-    Lead.countDocuments({}),
-    Activity.countDocuments({}),
-    AgencyProfile.countDocuments({ verificationStatus: "verified" }),
-    User.countDocuments({
-      $or: [{ sellerVerificationStatus: "verified" }, { verified: true }]
-    }),
-    Listing.countDocuments({ status: "active" }),
-    Report.countDocuments({ status: "pending" }),
-    Review.countDocuments({ status: "pending" }),
-    AgencyReservation.countDocuments({ status: "pending" }),
-    RentalRequest.countDocuments({ status: "pending" }),
-    AgencyProfile.countDocuments({ verificationStatus: { $ne: "verified" } }),
-    User.countDocuments({ activityProviderStatus: "pending" }),
-    User.find({}).sort({ createdAt: -1 }).limit(5).select("name email createdAt role").lean(),
-    AgencyProfile.find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate("user", "name email")
-      .select("name city verificationStatus createdAt")
-      .lean(),
-    Listing.find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate("seller", "name email")
-      .select("title type status createdAt")
-      .lean(),
-    TravelPost.find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate("userId", "name email")
-      .select("destination date createdAt")
-      .lean(),
-    Review.find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate("author", "name email")
-      .populate("listing", "title")
-      .select("rating comment createdAt")
-      .lean(),
-    Message.find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate("sender", "name email")
-      .populate({
-        path: "conversation",
-        populate: { path: "listing", select: "title" },
-        select: "listing"
-      })
-      .select("body createdAt")
-      .lean()
-  ]);
-
-  const recentActivity = [
-    ...recentUsers.map((user: any) => ({
-      id: String(user._id),
-      type: "user" as const,
-      title: user.name || user.email || "User",
-      subtitle: `New ${user.role || "user"} account`,
-      createdAt: String(user.createdAt),
-      href: "/admin/users"
-    })),
-    ...recentAgencies.map((agency: any) => ({
-      id: String(agency._id),
-      type: "agency" as const,
-      title: agency.name || "Agency",
-      subtitle: `${agency.city || "Unknown city"} • ${agency.verificationStatus || "unverified"}`,
-      createdAt: String(agency.createdAt),
-      href: "/admin/agencies"
-    })),
-    ...recentListings.map((listing: any) => ({
-      id: String(listing._id),
-      type: "listing" as const,
-      title: listing.title || "Listing",
-      subtitle: `${listing.type || "sale"} • ${listing.status || "active"}`,
-      createdAt: String(listing.createdAt),
-      href: "/admin/listings"
-    })),
-    ...recentTravelPosts.map((post: any) => ({
-      id: String(post._id),
-      type: "travel-post" as const,
-      title: post.destination || "Travel post",
-      subtitle: `Travel partner post`,
-      createdAt: String(post.createdAt),
-      href: "/admin/travel-posts"
-    })),
-    ...recentReviews.map((review: any) => ({
-      id: String(review._id),
-      type: "review" as const,
-      title: review.listing?.title || "Review",
-      subtitle: `${review.rating || 0}/5 review`,
-      createdAt: String(review.createdAt),
-      href: "/admin/reviews"
-    })),
-    ...recentMessages.map((message: any) => ({
-      id: String(message._id),
-      type: "message" as const,
-      title: message.conversation?.listing?.title || "Conversation message",
-      subtitle: String(message.body || "").slice(0, 60),
-      createdAt: String(message.createdAt),
-      href: "/admin/messages"
-    }))
-  ]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 12);
-
-  return {
-    stats: {
-      usersCount,
-      agenciesCount,
-      listingsCount,
-      travelPostsCount,
-      reviewsCount,
-      messagesCount,
-      reportsCount,
-      reservationsCount,
-      rentalItemsCount,
-      activitiesCount,
-      leadsCount,
-      verifiedAgenciesCount,
-      verifiedSellersCount,
-      activeListingsCount,
-      pendingReportsCount,
-      pendingReviewsCount,
-      pendingReservationsCount,
-      pendingRentalRequestsCount,
-      pendingAgenciesCount,
-      pendingActivityProvidersCount,
-      pendingApprovalsCount:
-        pendingReportsCount + pendingReviewsCount + pendingReservationsCount + pendingRentalRequestsCount + pendingAgenciesCount + pendingActivityProvidersCount
-    },
-    recentActivity: serializeDocument(recentActivity) as AdminRecentActivityItem[]
-  };
-}
-
-export async function getAdminRentalRequests(status?: string) {
-  await connectToDatabase();
-
-  const rentalRequests = await RentalRequest.find(status ? { status } : {})
-    .populate("trip", "title city")
-    .populate("agency", "name city")
-    .populate("renter", "name city")
-    .populate("rentalItem", "title itemType")
-    .sort({ createdAt: -1 })
-    .lean();
-
-  return sortPendingFirst(serializeDocument(rentalRequests) as any[]);
-}
-
 export async function getAdminUsers(filters?: { role?: string; accountStatus?: string }) {
   await connectToDatabase();
 
@@ -295,7 +103,7 @@ export async function getAdminUsers(filters?: { role?: string; accountStatus?: s
   const users = await User.find(query)
     .sort({ createdAt: -1 })
     .select(
-      "name email role sellerVerificationStatus verified canCreateAgency canCreateRenter createdAt accountStatus sellerStatus sellerPlan sellerExpiresAt sellerRequestedAt sellerApprovedAt sellerProfile activityProviderStatus activityProviderRequestedAt activityProviderApprovedAt activityProviderProfile"
+      "name email role sellerVerificationStatus verified canCreateAgency canCreateRenter createdAt accountStatus sellerStatus sellerPlan sellerExpiresAt sellerRequestedAt sellerApprovedAt sellerProfile"
     )
     .lean();
 
@@ -464,30 +272,6 @@ export async function getAdminPlaces() {
   return serializeDocument(places);
 }
 
-export async function getAdminPlaceReviews() {
-  await connectToDatabase();
-
-  const reviews = await Review.find({ place: { $ne: null } })
-    .populate("author", "name email")
-    .populate("place", "name city")
-    .sort({ createdAt: -1 })
-    .lean();
-
-  return serializeDocument(reviews);
-}
-
-export async function getAdminStories() {
-  await connectToDatabase();
-
-  const stories = await Story.find({})
-    .populate("author", "name email")
-    .populate("place", "name city")
-    .sort({ createdAt: -1 })
-    .lean();
-
-  return serializeDocument(stories);
-}
-
 export async function getAdminReports(status?: string) {
   await connectToDatabase();
 
@@ -510,11 +294,8 @@ export async function getAdminReports(status?: string) {
         target = await AgencyProfile.findById(report.targetId).select("name verificationStatus").lean();
         href = target ? `/agencies/${report.targetId}` : "/admin/agencies";
       } else if (report.targetType === "place") {
-        target = await Place.findById(report.targetId).select("name city status").lean();
-        href = target ? `/camping/${report.targetId}` : "/admin/places";
-      } else if (report.targetType === "story") {
-        target = await Story.findById(report.targetId).populate("place", "name").select("title place").lean();
-        href = target?.place?._id ? `/camping/${target.place._id}` : "/admin/stories";
+        target = await Place.findById(report.targetId).select("name location status slug").lean();
+        href = target ? `/camping/${target.slug || report.targetId}` : "/admin/places";
       } else if (report.targetType === "travel-post") {
         target = await TravelPost.findById(report.targetId).select("destination").lean();
         href = "/travel-partners";
@@ -535,19 +316,6 @@ export async function getAdminReports(status?: string) {
   );
 
   return sortPendingFirst(hydratedReports);
-}
-
-export async function getAdminReservations(status?: string) {
-  await connectToDatabase();
-
-  const reservations = await AgencyReservation.find(status ? { status } : {})
-    .populate("trip", "title destination tripCode")
-    .populate("agency", "name")
-    .populate("user", "name email")
-    .sort({ createdAt: -1 })
-    .lean();
-
-  return sortPendingFirst(serializeDocument(reservations) as any[]);
 }
 
 export async function getAdminPartnerships() {

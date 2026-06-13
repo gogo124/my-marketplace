@@ -75,23 +75,6 @@ export default async function AdminReportsPage({
                       label="Resolve"
                     />
                   ) : null}
-                  {report.targetType === "listing" ? (
-                    <>
-                      <AdminMutationButton
-                        endpoint={`/api/admin/listings/${report.targetId}`}
-                        body={{ status: "inactive" }}
-                        label="Disable listing"
-                        variant="neutral"
-                      />
-                      <AdminMutationButton
-                        endpoint={`/api/admin/listings/${report.targetId}`}
-                        method="DELETE"
-                        label="Delete listing"
-                        variant="danger"
-                        confirmText="Delete this reported listing?"
-                      />
-                    </>
-                  ) : null}
                   {report.targetType === "travel-post" ? (
                     <AdminMutationButton
                       endpoint={`/api/admin/travel-posts/${report.targetId}`}
@@ -99,15 +82,6 @@ export default async function AdminReportsPage({
                       label="Delete post"
                       variant="danger"
                       confirmText="Delete this reported travel post?"
-                    />
-                  ) : null}
-                  {report.targetType === "review" ? (
-                    <AdminMutationButton
-                      endpoint={`/api/admin/reviews/${report.targetId}`}
-                      method="DELETE"
-                      label="Delete review"
-                      variant="danger"
-                      confirmText="Delete this reported review?"
                     />
                   ) : null}
                   {report.targetType === "user" ? (
@@ -144,15 +118,7 @@ export default async function AdminReportsPage({
                       />
                     </>
                   ) : null}
-                  {report.targetType === "story" ? (
-                    <AdminMutationButton
-                      endpoint={`/api/admin/stories/${report.targetId}`}
-                      method="DELETE"
-                      label="Delete story"
-                      variant="danger"
-                      confirmText="Delete this reported story?"
-                    />
-                  ) : null}
+
                   <AdminMutationButton
                     endpoint={`/api/admin/reports/${report._id}`}
                     method="DELETE"

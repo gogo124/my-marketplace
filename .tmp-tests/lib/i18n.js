@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.siteCopy = exports.SITE_LOCALE_COOKIE = void 0;
+exports.uiDictionary = exports.marketingCopy = exports.siteCopy = exports.SITE_LOCALE_COOKIE = void 0;
 exports.resolveLocale = resolveLocale;
 exports.isRtl = isRtl;
 exports.getDirection = getDirection;
@@ -14,7 +14,7 @@ exports.localizeRecordField = localizeRecordField;
 exports.translateApiError = translateApiError;
 exports.SITE_LOCALE_COOKIE = "site-locale";
 function resolveLocale(value) {
-    return value === "fr" ? "fr" : "ar";
+    return value === "fr" || value === "en" ? value : "ar";
 }
 function isRtl(locale) {
     return locale === "ar";
@@ -27,20 +27,20 @@ function withLocale(path, locale) {
     return `${path}${separator}lang=${locale}`;
 }
 function formatLocaleDate(value, locale, options) {
-    return new Intl.DateTimeFormat(locale === "ar" ? "ar-MA" : "fr-FR", options || {
+    return new Intl.DateTimeFormat(locale === "ar" ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US", options || {
         day: "2-digit",
         month: "short",
         year: "numeric"
     }).format(new Date(value));
 }
 function formatLocaleDateTime(value, locale) {
-    return new Intl.DateTimeFormat(locale === "ar" ? "ar-MA" : "fr-FR", {
+    return new Intl.DateTimeFormat(locale === "ar" ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US", {
         dateStyle: "medium",
         timeStyle: "short"
     }).format(new Date(value));
 }
 function formatLocaleNumber(value, locale) {
-    return new Intl.NumberFormat(locale === "ar" ? "ar-MA" : "fr-FR").format(value);
+    return new Intl.NumberFormat(locale === "ar" ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US").format(value);
 }
 function formatLocalePrice(value, locale) {
     return `${formatLocaleNumber(value, locale)} DH`;
@@ -54,9 +54,12 @@ function localizeField(value, locale, fallback = "") {
         if (typeof localizedValue === "string" && localizedValue.trim()) {
             return localizedValue;
         }
-        const fallbackValue = value[locale === "ar" ? "fr" : "ar"];
-        if (typeof fallbackValue === "string" && fallbackValue.trim()) {
-            return fallbackValue;
+        const fallbackKeys = locale === "ar" ? ["fr", "en"] : locale === "fr" ? ["en", "ar"] : ["fr", "ar"];
+        for (const fallbackKey of fallbackKeys) {
+            const fallbackValue = value[fallbackKey];
+            if (typeof fallbackValue === "string" && fallbackValue.trim()) {
+                return fallbackValue;
+            }
         }
     }
     return fallback;
@@ -72,17 +75,22 @@ function localizeRecordField(record, field, locale, fallback = "") {
     if (directValue && typeof directValue === "object") {
         return localizeField(directValue, locale, fallback);
     }
-    const suffix = locale === "ar" ? "Ar" : "Fr";
-    const snakeSuffix = locale === "ar" ? "_ar" : "_fr";
+    const suffix = locale === "ar" ? "Ar" : locale === "fr" ? "Fr" : "En";
+    const snakeSuffix = locale === "ar" ? "_ar" : locale === "fr" ? "_fr" : "_en";
     const suffixedValue = record[`${field}${suffix}`] || record[`${field}${snakeSuffix}`];
     if (typeof suffixedValue === "string" && suffixedValue.trim()) {
         return suffixedValue;
     }
-    const alternateSuffix = locale === "ar" ? "Fr" : "Ar";
-    const alternateSnakeSuffix = locale === "ar" ? "_fr" : "_ar";
-    const fallbackValue = record[`${field}${alternateSuffix}`] || record[`${field}${alternateSnakeSuffix}`];
-    if (typeof fallbackValue === "string" && fallbackValue.trim()) {
-        return fallbackValue;
+    const fallbackSuffixes = locale === "ar"
+        ? [["Fr", "_fr"], ["En", "_en"]]
+        : locale === "fr"
+            ? [["En", "_en"], ["Ar", "_ar"]]
+            : [["Fr", "_fr"], ["Ar", "_ar"]];
+    for (const [alternateSuffix, alternateSnakeSuffix] of fallbackSuffixes) {
+        const fallbackValue = record[`${field}${alternateSuffix}`] || record[`${field}${alternateSnakeSuffix}`];
+        if (typeof fallbackValue === "string" && fallbackValue.trim()) {
+            return fallbackValue;
+        }
     }
     return fallback;
 }
@@ -119,6 +127,34 @@ const apiErrorDictionary = {
         ar: "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.",
         fr: "Le mot de passe doit contenir au moins 6 caracteres."
     },
+    "Password must be at least 8 characters long.": {
+        ar: "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.",
+        fr: "Le mot de passe doit contenir au moins 8 caracteres."
+    },
+    "Password must contain letters and numbers.": {
+        ar: "يجب أن تحتوي كلمة المرور على حروف وأرقام.",
+        fr: "Le mot de passe doit contenir des lettres et des chiffres."
+    },
+    "Enter a valid email address.": {
+        ar: "أدخل بريداً إلكترونياً صالحاً.",
+        fr: "Entrez une adresse email valide."
+    },
+    "Enter a valid full name.": {
+        ar: "أدخل اسماً كاملاً صالحاً.",
+        fr: "Entrez un nom complet valide."
+    },
+    "Disposable email addresses are not allowed.": {
+        ar: "لا يُسمح بعناوين البريد المؤقتة.",
+        fr: "Les adresses email temporaires ne sont pas autorisees."
+    },
+    "Registration blocked.": {
+        ar: "تم رفض طلب التسجيل.",
+        fr: "Inscription refusee."
+    },
+    "Invalid request origin.": {
+        ar: "مصدر الطلب غير صالح.",
+        fr: "Origine de requete non valide."
+    },
     "Email is already registered.": {
         ar: "البريد الإلكتروني مستخدم بالفعل.",
         fr: "Cet email est deja utilise."
@@ -126,6 +162,34 @@ const apiErrorDictionary = {
     "Registration failed.": {
         ar: "فشل إنشاء الحساب.",
         fr: "Echec de l'inscription."
+    },
+    "Missing email or password.": {
+        ar: "البريد الإلكتروني وكلمة المرور مطلوبان.",
+        fr: "L'email et le mot de passe sont obligatoires."
+    },
+    "Invalid credentials.": {
+        ar: "بيانات تسجيل الدخول غير صحيحة.",
+        fr: "Identifiants invalides."
+    },
+    "This account has been disabled.": {
+        ar: "تم تعطيل هذا الحساب.",
+        fr: "Ce compte a ete desactive."
+    },
+    "Authentication service is not configured.": {
+        ar: "إعدادات تسجيل الدخول غير مكتملة.",
+        fr: "La configuration de l'authentification est incomplete."
+    },
+    "Authentication service is unavailable.": {
+        ar: "خدمة تسجيل الدخول غير متاحة حالياً.",
+        fr: "Le service d'authentification est indisponible pour le moment."
+    },
+    "Unable to sign in right now.": {
+        ar: "تعذر تسجيل الدخول حالياً.",
+        fr: "Connexion impossible pour le moment."
+    },
+    "Unable to create a session right now.": {
+        ar: "تعذر إنشاء الجلسة حالياً.",
+        fr: "Impossible de creer la session pour le moment."
     },
     "Could not create listing.": {
         ar: "تعذر إنشاء الإعلان.",
@@ -191,6 +255,14 @@ const apiErrorDictionary = {
         ar: "تمت محاولات كثيرة لإرسال التقييم. حاول لاحقاً.",
         fr: "Trop de tentatives d'avis. Reessayez plus tard."
     },
+    "Too many registration attempts. Please try again later.": {
+        ar: "محاولات التسجيل كثيرة جداً. حاول لاحقاً.",
+        fr: "Trop de tentatives d'inscription. Reessayez plus tard."
+    },
+    "Too many profile update attempts. Please try again later.": {
+        ar: "محاولات تحديث الملف كثيرة جداً. حاول لاحقاً.",
+        fr: "Trop de tentatives de mise a jour du profil. Reessayez plus tard."
+    },
     "You already reported this item.": {
         ar: "لقد أبلغت عن هذا العنصر بالفعل.",
         fr: "Vous avez deja signale cet element."
@@ -230,13 +302,57 @@ const apiErrorDictionary = {
     "The server did not return the created conversation.": {
         ar: "لم يُرجع الخادم المحادثة التي تم إنشاؤها.",
         fr: "Le serveur n'a pas renvoye la conversation creee."
+    },
+    "Could not send reset email.": {
+        ar: "تعذر إرسال رابط إعادة التعيين.",
+        fr: "Impossible d'envoyer le lien de reinitialisation."
+    },
+    "Could not reset password.": {
+        ar: "تعذر إعادة تعيين كلمة المرور.",
+        fr: "Impossible de reinitialiser le mot de passe."
+    },
+    "Password reset service is not configured.": {
+        ar: "خدمة إعادة تعيين كلمة المرور غير مفعلة حالياً.",
+        fr: "Le service de reinitialisation du mot de passe n'est pas configure."
+    },
+    "Too many password reset attempts. Please try again later.": {
+        ar: "محاولات إعادة التعيين كثيرة جداً. حاول لاحقاً.",
+        fr: "Trop de tentatives de reinitialisation. Reessayez plus tard."
+    },
+    "Reset token is required.": {
+        ar: "رابط إعادة التعيين غير مكتمل.",
+        fr: "Le jeton de reinitialisation est requis."
+    },
+    "Reset token is invalid or expired.": {
+        ar: "رابط إعادة التعيين غير صالح أو منتهي الصلاحية.",
+        fr: "Le lien de reinitialisation est invalide ou expire."
+    },
+    "Password updated successfully.": {
+        ar: "تم تحديث كلمة المرور بنجاح.",
+        fr: "Le mot de passe a ete mis a jour avec succes."
+    },
+    "If an account exists for this email, a reset link has been sent.": {
+        ar: "إذا كان هذا البريد مرتبطاً بحساب، فسيصلك رابط إعادة التعيين.",
+        fr: "Si un compte existe pour cet email, un lien de reinitialisation a ete envoye."
+    },
+    "Custom product name is too long.": {
+        ar: "اسم المنتج المخصص طويل جداً.",
+        fr: "Le nom du produit personnalise est trop long."
+    },
+    "Lead notes are too long.": {
+        ar: "ملاحظات الطلب طويلة جداً.",
+        fr: "Les notes du lead sont trop longues."
+    },
+    "Lead price is invalid.": {
+        ar: "سعر الطلب غير صالح.",
+        fr: "Le prix du lead est invalide."
+    },
+    "Lead quantity is invalid.": {
+        ar: "كمية الطلب غير صالحة.",
+        fr: "La quantite du lead est invalide."
     }
 };
-function translateApiError(message, locale) {
-    const localized = apiErrorDictionary[message];
-    return localized ? localized[locale] : message;
-}
-exports.siteCopy = {
+const baseSiteCopy = {
     ar: {
         brand: "Moroccan Trip",
         home: "الرئيسية",
@@ -734,3 +850,623 @@ exports.siteCopy = {
         agencyLeadsHeroBody: "Consultez les intentions de contact et les dernieres conversations de la plateforme."
     }
 };
+const englishSiteCopy = {
+    ...baseSiteCopy.fr,
+    home: "Home",
+    agencies: "Agencies",
+    sell: "Sell",
+    rent: "Rent",
+    sale: "Sale",
+    rental: "Rental",
+    messages: "Messages",
+    login: "Log in",
+    register: "Create account",
+    signOut: "Sign out",
+    travelPartners: "Travel partner",
+    agencyDashboard: "Agency dashboard",
+    agencyProfile: "Agency profile",
+    becomeAgency: "Create your agency",
+    admin: "Admin",
+    clear: "Clear",
+    search: "Search",
+    filter: "Filter",
+    loading: "Loading...",
+    send: "Send",
+    sending: "Sending...",
+    delete: "Delete",
+    edit: "Edit",
+    update: "Update",
+    add: "Add",
+    seller: "Seller",
+    marketplaceUser: "Marketplace user",
+    viewDetails: "View details",
+    status: "Status",
+    active: "Active",
+    inactive: "Inactive",
+    rating: "Rating",
+    noRatings: "No ratings yet",
+    noReviews: "No reviews",
+    noReviewsYet: "No reviews yet.",
+    reviews: "Reviews",
+    leaveReview: "Leave a review",
+    selectRating: "Select rating",
+    writeReview: "Write your review",
+    submitReview: "Submit review",
+    report: "Report",
+    reportListing: "Report listing",
+    reportSeller: "Report seller",
+    reportAgency: "Report agency",
+    reportOwner: "Report owner",
+    reportPost: "Report post",
+    reportReview: "Report review",
+    reportUser: "Report user",
+    reportSubmitted: "Report submitted.",
+    cancelReport: "Cancel report",
+    selectReason: "Select reason",
+    optionalDetails: "Optional details",
+    submitReport: "Submit report",
+    verified: "Verified",
+    unverified: "Unverified",
+    pendingReview: "Pending review",
+    travelPageTitle: "Find a travel partner",
+    travelPageBody: "Create a structured travel post, filter by destination and date, and connect with people sharing the same plan.",
+    destination: "Destination",
+    travelDate: "Travel date",
+    phoneNumber: "Phone number",
+    whatsappNumber: "WhatsApp number",
+    phonePlaceholder: "Example: 212612345678",
+    publishTitle: "Publish a travel partner post",
+    publishBody: "Share your next plan, city or destination, and the key details that matter.",
+    description: "Description",
+    publish: "Publish post",
+    cardsTitle: "Traveler posts",
+    cardsBody: "Latest posts published by the community.",
+    noPostsTitle: "No results right now",
+    noPostsBody: "Try different filters or be the first to publish a new travel post.",
+    postedBy: "Posted by",
+    loadingTitle: "Loading travel partners",
+    loadingBody: "We are fetching the latest posts and organizing the results for you.",
+    contactAction: "WhatsApp",
+    callAction: "Call",
+    chatAction: "In-app chat",
+    searchPlaceholder: "Example: Marrakech, Chefchaouen, Agadir",
+    searchByCity: "Search by city",
+    filterByDate: "Filter by date",
+    contactTravelers: "Contact travelers",
+    travelSide: "Traveler side",
+    browseAgenciesTrips: "Browse agencies and trips, then contact or book.",
+    backToAgencies: "Back to agencies",
+    agencyDiscovery: "Agency discovery",
+    agencyDiscoveryBody: "Travel-focused search for agencies and organized trips.",
+    agenciesCount: "agencies",
+    searchAgencyPlaceholder: "Search agency name or description",
+    city: "City",
+    activeTrips: "Active trips",
+    openSeats: "Open seats",
+    viewAgency: "View agency",
+    contact: "Contact",
+    noAgencies: "No agencies match your current search.",
+    trust: "Trust",
+    profileComplete: "Profile complete",
+    trips: "Trips",
+    agencyTrips: "Agency trips",
+    agencyTripsBody: "Search and book available trips published by this agency.",
+    searchTripPlaceholder: "Search trip, city or destination",
+    reserveThisTrip: "Book this trip",
+    seatsLeft: "Seats left",
+    yourFullName: "Your full name",
+    guestFullName: "Guest full name",
+    seats: "Seats",
+    reserveSeats: "Book seats",
+    tripFull: "Trip full",
+    reservationSent: "Reservation request sent successfully.",
+    memberSince: "Member since",
+    loginHeroKicker: "Member access",
+    loginHeroTitle: "Sign in and manage your activity in one place.",
+    loginHeroBody: "Access your listings, replies and conversations from one workspace.",
+    needAccount: "Need an account?",
+    registerHeroKicker: "Create account",
+    registerHeroTitle: "Join the platform and publish your first offer.",
+    registerHeroBody: "Registration data is stored securely and passwords remain encrypted.",
+    alreadyRegistered: "Already have an account?",
+    welcomeBack: "Welcome back",
+    createSellerAccount: "Create your account",
+    loginFormBody: "Sign in to publish listings and reply to buyers.",
+    registerFormBody: "Create an account to publish listings and chat safely.",
+    fullName: "Full name",
+    emailAddress: "Email address",
+    password: "Password",
+    continueWithGoogle: "Continue with Google",
+    connectingGoogle: "Connecting to Google...",
+    or: "or",
+    pleaseWait: "Please wait...",
+    title: "Title",
+    price: "Price",
+    location: "Location",
+    deposit: "Deposit",
+    startDate: "Start date",
+    endDate: "End date",
+    contactSeller: "Contact seller",
+    contactSellerBody: "Start with a short message. Contact actions are tracked as leads.",
+    defaultSellerMessage: "Hello, is this offer still available?",
+    openAction: "Open",
+    writeReply: "Write your reply",
+    sendReply: "Send reply",
+    inbox: "Inbox",
+    inboxBody: "Your active conversations with sellers and buyers.",
+    chattingWith: "Chatting with",
+    noConversations: "No conversations yet. Message a seller from any listing.",
+    conversation: "Conversation",
+    marketplaceChat: "Marketplace chat",
+    noMessages: "No messages yet.",
+    logInToContact: "Log in to contact the seller and start a conversation.",
+    adminRestricted: "Restricted area",
+    accessDenied: "Access denied",
+    adminOnlyMessage: "This area is only available to users with the admin role.",
+    backHome: "Back home",
+    adminPlatformControl: "Platform control",
+    adminPlatformBody: "Review activity, verify profiles and moderate content from one place.",
+    overview: "Overview",
+    users: "Users",
+    listings: "Listings",
+    reservations: "Reservations",
+    leads: "Leads",
+    reports: "Reports",
+    agencyOwner: "Agency owner",
+    privateNavigation: "Private navigation",
+    agencyOwnerBody: "Manage your agency through a small private workspace.",
+    viewPublicProfile: "View public profile",
+    becomeAnAgency: "Become an agency",
+    agencyDashboardTitle: "Agency dashboard",
+    agencyDashboardBody: "Track trips, reservations, seats and leads from one page.",
+    agencyProfileTitle: "Agency profile",
+    agencyProfileHeroTitle: "Manage your public agency information.",
+    agencyProfileHeroBody: "Update the profile travelers see before they contact or book. A strong profile builds trust faster.",
+    becomeAgencyTitle: "Create your agency profile to unlock the private agency workspace.",
+    becomeAgencyBody: "Complete this profile once. After saving, your account becomes an agency account.",
+    agencyTripsTitle: "Agency trips",
+    agencyTripsHeroTitle: "Create, edit and publish organized trips.",
+    agencyTripsHeroBody: "Manage dates, pricing, capacity and visibility from one page.",
+    agencyReservationsTitle: "Agency reservations",
+    agencyReservationsHeroTitle: "Review traveler reservations in one place.",
+    agencyReservationsHeroBody: "Track recent requests, booked seats and contact details.",
+    agencyLeadsTitle: "Agency leads",
+    agencyLeadsHeroTitle: "Track leads and inbound messages.",
+    agencyLeadsHeroBody: "See contact intent and the latest platform conversations."
+};
+exports.siteCopy = {
+    ...baseSiteCopy,
+    en: englishSiteCopy
+};
+exports.marketingCopy = {
+    ar: {
+        announcement: "رفقاء السفر، التخييم، المعدات والأنشطة في تجربة مغربية أوضح لعشاق الهواء الطلق",
+        menu: "القائمة",
+        close: "إغلاق",
+        publicNav: {
+            travelPartners: "رفيق سفر",
+            camping: "التخييم",
+            marketplace: "المتجر",
+            activities: "الأنشطة",
+            about: "من نحن",
+            contact: "اتصل بنا"
+        },
+        hero: {
+            badge: "Moroccan Trip",
+            title: "اعثر على رفقاء السفر واكتشف أماكن التخييم في المغرب بدون تعقيد",
+            subtitle: "أسهل طريقة للتواصل والاستكشاف وتجربة المغرب في الهواء الطلق.",
+            bullets: [
+                "اعثر على رفيق سفر",
+                "اكتشف أماكن التخييم",
+                "اشتر معدات التخييم",
+                "جرّب أنشطة جديدة"
+            ],
+            primaryCta: "ابحث عن رفيق سفر",
+            secondaryCta: "استكشف التخييم",
+            tertiaryCta: "تصفح المتجر"
+        },
+        trust: {
+            label: "ثقة وسرعة",
+            items: [
+                {
+                    title: "تواصل مباشر مع مستخدمين حقيقيين",
+                    description: "تواصل مباشرة مع أصحاب الإعلانات ومزودي الأنشطة."
+                },
+                {
+                    title: "بدون وسيط",
+                    description: "واجهة أخف وتسلسل أوضح يدفع المستخدم إلى الإجراء بسرعة."
+                },
+                {
+                    title: "مجتمع سفر مغربي حقيقي",
+                    description: "مجتمع مغربي حقيقي للسفر والتخييم والأنشطة الخارجية."
+                }
+            ]
+        },
+        stats: {
+            items: [
+                {
+                    title: "منشورات جديدة بشكل منتظم",
+                    description: "الصفحة الرئيسية تعرض آخر الخطط والأماكن والأنشطة المنشورة فعلياً."
+                },
+                {
+                    title: "مستخدمون ومزودون حقيقيون",
+                    description: "الإعلانات والأنشطة تأتي من المجتمع ومن مزودين يمكن الوصول إليهم مباشرة."
+                },
+                {
+                    title: "التخييم والرفقاء والأنشطة في مكان واحد",
+                    description: "مسار أوضح للعثور على المكان المناسب أو الرفيق المناسب أو النشاط المناسب."
+                }
+            ]
+        },
+        services: {
+            kicker: "الخدمات الأساسية",
+            title: "كل ما تحتاجه لتجربتك الخارجية في المغرب",
+            items: [
+                {
+                    key: "travel",
+                    eyebrow: "مجتمع الرحلة",
+                    title: "رفقاء السفر",
+                    description: "اعثر على رفقاء للرحلة أو انشر خطتك القادمة.",
+                    cta: "ابحث عن رفيق"
+                },
+                {
+                    key: "camping",
+                    eyebrow: "أماكن مختارة",
+                    title: "التخييم",
+                    description: "اكتشف أفضل أماكن التخييم في المغرب.",
+                    cta: "استكشف التخييم"
+                },
+                {
+                    key: "marketplace",
+                    eyebrow: "معدات موثوقة",
+                    title: "المتجر",
+                    description: "اشتر معدات التخييم من بائعين موثوقين.",
+                    cta: "تسوق الآن"
+                },
+                {
+                    key: "activities",
+                    eyebrow: "مغامرات محلية",
+                    title: "الأنشطة",
+                    description: "اعثر على أفضل الأنشطة الخارجية واحجزها.",
+                    cta: "اكتشف الأنشطة"
+                }
+            ]
+        },
+        live: {
+            kicker: "من المنصة",
+            title: "أحدث ما يكتشفه المستخدمون الآن",
+            subtitle: "تعتمد هذه الأقسام على بيانات حقيقية من المنصة حتى تبقى الصفحة الرئيسية عملية وواضحة.",
+            emptyTravel: "لا توجد منشورات لرفقاء السفر بعد. كن أول من ينشر خطتك.",
+            emptyCamping: "لا توجد أماكن تخييم منشورة حالياً.",
+            emptyActivities: "لا توجد أنشطة منشورة حالياً.",
+            travelTitle: "رفقاء السفر",
+            travelDescription: "خمسة من أحدث خطط السفر المنشورة من المجتمع.",
+            campingTitle: "أماكن التخييم",
+            campingDescription: "خمسة من أحدث أماكن التخييم المتاحة حالياً.",
+            activitiesTitle: "الأنشطة الخارجية",
+            activitiesDescription: "خمسة من أحدث الأنشطة الخارجية المتاحة للاستكشاف.",
+            viewAllTravel: "عرض جميع رفقاء السفر",
+            viewAllCamping: "عرض كل أماكن التخييم",
+            viewAllActivities: "عرض كل الأنشطة",
+            viewPlace: "عرض المكان",
+            viewPlan: "عرض الخطة",
+            findPartner: "ابحث عن رفيق",
+            discoverActivity: "اكتشف النشاط",
+            locationFallback: "المغرب",
+            placeFallbackDescription: "اكتشف هذا المكان وتحقق من التفاصيل الكاملة قبل رحلتك القادمة.",
+            travelFallbackDescription: "اطلع على الخطة الكاملة وتواصل مباشرة إذا كانت مناسبة لك.",
+            activityFallbackDescription: "استكشف تفاصيل النشاط ومعلومات الحجز والتجهيزات المتاحة.",
+            priceOnRequest: "السعر عند الطلب",
+            interestedLabel: "مهتم"
+        }
+    },
+    fr: {
+        announcement: "Partenaires de voyage, camping, equipement et activites dans une experience outdoor marocaine plus claire",
+        menu: "Menu",
+        close: "Fermer",
+        publicNav: {
+            travelPartners: "Partenaire de voyage",
+            camping: "Camping",
+            marketplace: "Marketplace",
+            activities: "Activites",
+            about: "A propos",
+            contact: "Contact"
+        },
+        hero: {
+            badge: "Moroccan Trip",
+            title: "Trouvez des partenaires de voyage et decouvrez les campings du Maroc sans friction",
+            subtitle: "La facon la plus simple de se connecter, explorer et vivre le Maroc outdoor.",
+            bullets: [
+                "Trouver un partenaire de voyage",
+                "Decouvrir des campings",
+                "Acheter du materiel de camping",
+                "Essayer de nouvelles activites"
+            ],
+            primaryCta: "Trouver un partenaire",
+            secondaryCta: "Explorer le camping",
+            tertiaryCta: "Parcourir le marketplace"
+        },
+        trust: {
+            label: "Confiance et rapidite",
+            items: [
+                {
+                    title: "Contact direct avec de vraies personnes",
+                    description: "Contactez directement les auteurs d'annonces et les prestataires d'activites."
+                },
+                {
+                    title: "Sans intermediaire",
+                    description: "Une interface plus legere et une hierarchie plus claire accelerent l'action."
+                },
+                {
+                    title: "Une vraie communaute outdoor marocaine",
+                    description: "Une vraie communaute marocaine autour du voyage, du camping et des activites."
+                }
+            ]
+        },
+        stats: {
+            items: [
+                {
+                    title: "Nouvelles publications regulieres",
+                    description: "La homepage affiche de vraies annonces recentes au lieu de simples chiffres marketing."
+                },
+                {
+                    title: "Vrais utilisateurs et prestataires",
+                    description: "Les annonces, lieux et activites viennent de vrais comptes accessibles directement."
+                },
+                {
+                    title: "Camping, partenaires et activites au meme endroit",
+                    description: "Une interface plus claire pour comparer, contacter et passer a l'action rapidement."
+                }
+            ]
+        },
+        services: {
+            kicker: "Services principaux",
+            title: "Tout ce qu'il vous faut pour vivre le Maroc outdoor",
+            items: [
+                {
+                    key: "travel",
+                    eyebrow: "Communaute voyage",
+                    title: "Partenaires de voyage",
+                    description: "Trouvez des compagnons de route ou publiez votre plan.",
+                    cta: "Trouver un partenaire"
+                },
+                {
+                    key: "camping",
+                    eyebrow: "Spots choisis",
+                    title: "Camping",
+                    description: "Decouvrez les meilleurs campings du Maroc.",
+                    cta: "Explorer le camping"
+                },
+                {
+                    key: "marketplace",
+                    eyebrow: "Equipement fiable",
+                    title: "Marketplace",
+                    description: "Achetez votre materiel de camping chez des vendeurs de confiance.",
+                    cta: "Acheter maintenant"
+                },
+                {
+                    key: "activities",
+                    eyebrow: "Aventures locales",
+                    title: "Activites",
+                    description: "Trouvez et reservez les meilleures activites outdoor.",
+                    cta: "Decouvrir les activites"
+                }
+            ]
+        },
+        live: {
+            kicker: "Depuis la plateforme",
+            title: "Ce que les utilisateurs decouvrent en ce moment",
+            subtitle: "Ces sections restent branchees sur les vraies donnees de la plateforme pour garder une homepage utile et credible.",
+            emptyTravel: "Aucune annonce de partenaire de voyage pour le moment. Soyez le premier a publier votre plan.",
+            emptyCamping: "Aucun camping publie pour le moment.",
+            emptyActivities: "Aucune activite publiee pour le moment.",
+            travelTitle: "Partenaires de voyage",
+            travelDescription: "Cinq des annonces de voyage les plus recentes publiees par la communaute.",
+            campingTitle: "Campings",
+            campingDescription: "Cinq des campings les plus recents actuellement disponibles.",
+            activitiesTitle: "Activites outdoor",
+            activitiesDescription: "Cinq des activites outdoor les plus recentes a decouvrir.",
+            viewAllTravel: "Voir tous les partenaires",
+            viewAllCamping: "Voir tous les campings",
+            viewAllActivities: "Voir toutes les activites",
+            viewPlace: "Voir le lieu",
+            viewPlan: "Voir le plan",
+            findPartner: "Trouver un partenaire",
+            discoverActivity: "Decouvrir l'activite",
+            locationFallback: "Maroc",
+            placeFallbackDescription: "Consultez ce lieu et verifiez les details utiles avant votre prochain depart.",
+            travelFallbackDescription: "Ouvrez le plan complet et contactez directement si le trajet vous convient.",
+            activityFallbackDescription: "Explorez les details de l'activite, la reservation et les equipements inclus.",
+            priceOnRequest: "Prix sur demande",
+            interestedLabel: "interesses"
+        }
+    },
+    en: {
+        announcement: "Travel partners, camping, gear and activities in a clearer Morocco outdoor experience",
+        menu: "Menu",
+        close: "Close",
+        publicNav: {
+            travelPartners: "Travel Partner",
+            camping: "Camping",
+            marketplace: "Marketplace",
+            activities: "Activities",
+            about: "About",
+            contact: "Contact"
+        },
+        hero: {
+            badge: "Moroccan Trip",
+            title: "Find travel partners and discover camping places in Morocco with less friction",
+            subtitle: "The easiest way to connect, explore, and experience Morocco outdoors.",
+            bullets: [
+                "Find a travel partner",
+                "Discover camping places",
+                "Buy camping gear",
+                "Try new activities"
+            ],
+            primaryCta: "Find Travel Partner",
+            secondaryCta: "Explore Camping",
+            tertiaryCta: "Browse Marketplace"
+        },
+        trust: {
+            label: "Trust and speed",
+            items: [
+                {
+                    title: "Direct contact with real users",
+                    description: "Reach posters and activity providers directly."
+                },
+                {
+                    title: "No middleman",
+                    description: "A lighter interface and clearer hierarchy push users faster to action."
+                },
+                {
+                    title: "A real Morocco travel community",
+                    description: "A real Moroccan outdoor community for travel, camping and activities."
+                }
+            ]
+        },
+        stats: {
+            items: [
+                {
+                    title: "New posts are added regularly",
+                    description: "The homepage highlights recent live content instead of inflated marketing numbers."
+                },
+                {
+                    title: "Real users and providers",
+                    description: "Listings, places and activities come from real accounts you can reach directly."
+                },
+                {
+                    title: "Camping, partners and activities in one place",
+                    description: "A clearer path to compare options, contact people and move faster."
+                }
+            ]
+        },
+        services: {
+            kicker: "Core services",
+            title: "Everything you need for your outdoor experience in Morocco",
+            items: [
+                {
+                    key: "travel",
+                    eyebrow: "Community plans",
+                    title: "Travel Partners",
+                    description: "Find travel companions or post your plan.",
+                    cta: "Find a Partner"
+                },
+                {
+                    key: "camping",
+                    eyebrow: "Curated spots",
+                    title: "Camping",
+                    description: "Discover the best camping spots in Morocco.",
+                    cta: "Explore Camping"
+                },
+                {
+                    key: "marketplace",
+                    eyebrow: "Trusted gear",
+                    title: "Marketplace",
+                    description: "Buy camping gear from trusted sellers.",
+                    cta: "Shop Now"
+                },
+                {
+                    key: "activities",
+                    eyebrow: "Local adventures",
+                    title: "Activities",
+                    description: "Find and book the best outdoor activities.",
+                    cta: "Discover Activities"
+                }
+            ]
+        },
+        live: {
+            kicker: "From the platform",
+            title: "What people are discovering right now",
+            subtitle: "These sections stay connected to real platform data so the homepage remains useful, current and credible.",
+            emptyTravel: "No travel partner posts yet. Be the first to post your plan.",
+            emptyCamping: "No camping places published yet.",
+            emptyActivities: "No activities published yet.",
+            travelTitle: "Travel Partners",
+            travelDescription: "Five of the latest travel partner posts shared by the community.",
+            campingTitle: "Camping Places",
+            campingDescription: "Five of the latest camping places currently available.",
+            activitiesTitle: "Outdoor Activities",
+            activitiesDescription: "Five of the latest outdoor activities ready to explore.",
+            viewAllTravel: "View all travel partners",
+            viewAllCamping: "View all camping places",
+            viewAllActivities: "View all activities",
+            viewPlace: "View place",
+            viewPlan: "View plan",
+            findPartner: "Find partner",
+            discoverActivity: "Discover activity",
+            locationFallback: "Morocco",
+            placeFallbackDescription: "Open this place to check the full details before your next trip.",
+            travelFallbackDescription: "Open the full plan and contact the poster directly if it fits.",
+            activityFallbackDescription: "Explore the activity details, booking info and included equipment.",
+            priceOnRequest: "Price on request",
+            interestedLabel: "interested"
+        }
+    }
+};
+exports.uiDictionary = {
+    ar: {
+        hero: {
+            title: "اعثر على رفيق السفر واكتشف أماكن التخييم في المغرب بسهولة"
+        },
+        nav: {
+            activities: "الأنشطة",
+            marketplace: "المتجر",
+            travelPartners: "رفيق السفر",
+            camping: "التخييم"
+        },
+        buttons: {
+            bookNow: "احجز الآن",
+            explore: "استكشف",
+            search: "بحث",
+            viewAllActivities: "عرض جميع الأنشطة",
+            browseMarketplace: "تصفح المعدات",
+            findTravelPartner: "ابحث عن رفيق السفر"
+        }
+    },
+    fr: {
+        hero: {
+            title: "Trouver un partenaire de voyage et decouvrir le camping au Maroc facilement"
+        },
+        nav: {
+            activities: "Activites",
+            marketplace: "Marketplace",
+            travelPartners: "Partenaires de voyage",
+            camping: "Camping"
+        },
+        buttons: {
+            bookNow: "Reserver",
+            explore: "Explorer",
+            search: "Rechercher",
+            viewAllActivities: "Voir toutes les activites",
+            browseMarketplace: "Parcourir le marketplace",
+            findTravelPartner: "Trouver un partenaire"
+        }
+    },
+    en: {
+        hero: {
+            title: "Find a travel partner and discover camping places in Morocco easily"
+        },
+        nav: {
+            activities: "Activities",
+            marketplace: "Marketplace",
+            travelPartners: "Travel partners",
+            camping: "Camping"
+        },
+        buttons: {
+            bookNow: "Book now",
+            explore: "Explore",
+            search: "Search",
+            viewAllActivities: "View all activities",
+            browseMarketplace: "Browse marketplace",
+            findTravelPartner: "Find travel partner"
+        }
+    }
+};
+function translateApiError(message, locale) {
+    const localized = apiErrorDictionary[message];
+    if (!localized) {
+        return message;
+    }
+    const fallbackLocale = locale === "ar" ? "ar" : "fr";
+    return localized[fallbackLocale];
+}

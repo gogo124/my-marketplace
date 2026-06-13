@@ -1,36 +1,4 @@
 import { InferSchemaType, Model, Schema, model, models } from "mongoose";
-
-const PlaceSchema = new Schema(
-  {
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    name: { type: String, required: true, trim: true },
-    city: { type: String, required: true, trim: true },
-    mapLink: { type: String, required: true, trim: true },
-    description: { type: String, required: true, trim: true },
-    images: [{ type: String }],
-    category: { type: String, required: true, trim: true },
-    safety: { type: String, required: true, trim: true },
-    bestSeason: { type: String, required: true, trim: true },
-    coordinates: {
-      lat: { type: Number, min: -90, max: 90 },
-      lng: { type: Number, min: -180, max: 180 }
-    },
-    status: {
-      type: String,
-      enum: ["pending", "approved"],
-      default: "pending"
-    },
-    savedBy: [{ type: Schema.Types.ObjectId, ref: "User" }]
-  },
-  { timestamps: true }
-);
-
-PlaceSchema.index({ status: 1, createdAt: -1 });
-PlaceSchema.index({ city: 1, category: 1, bestSeason: 1 });
-PlaceSchema.index({ name: "text", city: "text", description: "text", category: "text" });
-
-export type PlaceDocument = InferSchemaType<typeof PlaceSchema> & { _id: string };
-
-const Place = (models.Place as Model<PlaceDocument>) || model("Place", PlaceSchema);
-
-export default Place;
+const PlaceSchema = new Schema({ slug: { type: String, required: true, trim: true, lowercase: true }, name: { type: String, required: true, trim: true }, description: { type: String, required: true, trim: true }, shortDescription: { type: String, default: "", trim: true }, metaTitle: { type: String, default: "", trim: true }, metaDescription: { type: String, default: "", trim: true }, ogImage: { type: String, default: "", trim: true }, image: { type: String, required: true, trim: true }, galleryImages: [{ type: String, trim: true }], affiliateUrl: { type: String, required: true, trim: true }, price: { type: Number, required: true, min: 0 }, currency: { type: String, enum: ["MAD", "EUR", "USD"], default: "MAD" }, discountedPrice: { type: Number, min: 0, default: null }, location: { type: String, required: true, trim: true }, category: { type: String, required: true, trim: true }, types: [{ type: String, trim: true }], features: [{ type: String, trim: true }], featured: { type: Boolean, default: false }, recommended: { type: Boolean, default: false }, status: { type: String, enum: ["draft", "published"], default: "draft" }, viewCount: { type: Number, min: 0, default: 0 }, clickCount: { type: Number, min: 0, default: 0 } }, { timestamps: true });
+PlaceSchema.index({ slug: 1 }, { unique: true, sparse: true }); PlaceSchema.index({ status: 1, featured: -1, createdAt: -1 }); PlaceSchema.index({ location: 1, category: 1, status: 1 }); PlaceSchema.index({ types: 1, status: 1 }); PlaceSchema.index({ features: 1, status: 1 });
+export type PlaceDocument = InferSchemaType<typeof PlaceSchema> & { _id: string }; const Place = (models.Place as Model<PlaceDocument>) || model("Place", PlaceSchema); export default Place;

@@ -69,7 +69,7 @@ export default async function TravelPartnersPage({
             fill
             priority
             sizes="(max-width: 1024px) 100vw, 60vw"
-            className="object-cover object-center"
+            className="object-cover object-[center_48%]"
           />
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(7,31,24,0.88),rgba(15,61,46,0.68),rgba(15,61,46,0.35))]" />
           <div className="relative grid gap-6 px-6 py-10 text-white sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:px-10 lg:py-12">

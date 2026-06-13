@@ -1,63 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAdminApiSession } from "@/lib/admin";
-import { deletePlaceByAdmin } from "@/lib/admin-delete";
+import { validatePlacePayload } from "@/lib/camping";
 import { connectToDatabase } from "@/lib/db";
 import Place from "@/models/Place";
-
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
-
-export async function PATCH(request: Request, context: RouteContext) {
-  const adminSession = await getAdminApiSession();
-
-  if ("error" in adminSession) {
-    return adminSession.error;
-  }
-
-  try {
-    const { id } = await context.params;
-    const body = await request.json().catch(() => ({}));
-    const nextStatus = body?.status === "pending" ? "pending" : "approved";
-    await connectToDatabase();
-
-    const place = await Place.findByIdAndUpdate(id, { status: nextStatus }, { new: true }).lean();
-
-    if (!place) {
-      return NextResponse.json({ error: "Place not found." }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      place,
-      message: nextStatus === "approved" ? "Place is now visible publicly." : "Place moved back to pending review."
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not approve place.";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
-
-export async function DELETE(_request: Request, context: RouteContext) {
-  const adminSession = await getAdminApiSession();
-
-  if ("error" in adminSession) {
-    return adminSession.error;
-  }
-
-  try {
-    const { id } = await context.params;
-    await connectToDatabase();
-
-    const place = await deletePlaceByAdmin(id);
-
-    if (!place) {
-      return NextResponse.json({ error: "Place not found." }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not delete place.";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
+type Context = { params: Promise<{ id: string }> };
+export async function PATCH(request: Request, context: Context) { const admin = await getAdminApiSession(); if ("error" in admin) return admin.error; const validation = validatePlacePayload(await request.json()); if ("error" in validation) return NextResponse.json({ error: validation.error, fields: validation.fields }, { status: 400 }); await connectToDatabase(); const { id } = await context.params; if (await Place.exists({ slug: validation.data.slug, _id: { $ne: id } })) return NextResponse.json({ error: "Slug already used", fields: { slug: "This slug is already used by another camping place." } }, { status: 409 }); const place = await Place.findByIdAndUpdate(id, validation.data, { new: true, runValidators: true }); if (!place) return NextResponse.json({ error: "Camping place not found." }, { status: 404 }); return NextResponse.json({ place }); }
+export async function DELETE(_request: Request, context: Context) { const admin = await getAdminApiSession(); if ("error" in admin) return admin.error; await connectToDatabase(); const { id } = await context.params; await Place.findByIdAndDelete(id); return NextResponse.json({ success: true }); }

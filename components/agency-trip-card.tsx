@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { AgencyReservationForm } from "@/components/agency-reservation-form";
 import { TripMediaCarousel } from "@/components/trip-media-carousel";
 import { formatLocaleDate, formatLocalePrice, resolveLocale, SiteLocale, siteCopy } from "@/lib/i18n";
 
@@ -319,20 +318,6 @@ export function AgencyTripCard({
                   ) : null}
                 </div>
                 <div className="p-4">
-                  <AgencyReservationForm
-                    agencyId={agencyId}
-                    agencyName={agencyName}
-                    tripId={trip._id}
-                    tripTitle={trip.title}
-                    tripPrice={Number(trip.price || 0)}
-                    remainingSeats={remainingSeats}
-                    isSignedIn={isSignedIn}
-                    defaultName={defaultName}
-                    defaultEmail={defaultEmail}
-                    defaultCity={defaultCity || trip.city || agencyCity || ""}
-                    defaultDate={trip.startDate ? new Date(trip.startDate).toISOString().slice(0, 10) : ""}
-                    availableDates={recurringDates}
-                  />
                 </div>
               </div>
             </div>

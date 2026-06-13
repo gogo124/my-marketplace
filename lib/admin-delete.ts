@@ -1,7 +1,5 @@
 import AgencyProfile from "@/models/AgencyProfile";
-import AgencyReservation from "@/models/AgencyReservation";
 import AgencyTrip from "@/models/AgencyTrip";
-import Activity from "@/models/Activity";
 import Conversation from "@/models/Conversation";
 import Lead from "@/models/Lead";
 import Listing from "@/models/Listing";
@@ -11,7 +9,6 @@ import Report from "@/models/Report";
 import RentalItem from "@/models/RentalItem";
 import RenterProfile from "@/models/RenterProfile";
 import Review from "@/models/Review";
-import Story from "@/models/Story";
 import TravelPost from "@/models/TravelPost";
 import User from "@/models/User";
 
@@ -69,52 +66,6 @@ export async function deleteReviewByAdmin(reviewId: string) {
   return review;
 }
 
-export async function deletePlaceByAdmin(placeId: string) {
-  const place = await Place.findById(placeId).select("images").lean();
-
-  if (!place) {
-    return null;
-  }
-
-  const [reviewIds, storyIds] = await Promise.all([
-    Review.find({ place: placeId }).distinct("_id"),
-    Story.find({ place: placeId }).distinct("_id")
-  ]);
-
-  const storyImages = await Story.find({ place: placeId }).distinct("image");
-  const reviewImages = await Review.find({ place: placeId }).distinct("image");
-
-  await Promise.all([
-    Place.deleteOne({ _id: placeId }),
-    Review.deleteMany({ place: placeId }),
-    Story.deleteMany({ place: placeId }),
-    User.updateMany({ savedPlaceIds: placeId }, { $pull: { savedPlaceIds: placeId } }),
-    Report.deleteMany({
-      $or: [
-        { targetType: "place", targetId: placeId },
-        ...(reviewIds.length > 0 ? [{ targetType: "review", targetId: { $in: reviewIds } }] : []),
-        ...(storyIds.length > 0 ? [{ targetType: "story", targetId: { $in: storyIds } }] : [])
-      ]
-    })
-  ]);
-
-  return place;
-}
-
-export async function deleteStoryByAdmin(storyId: string) {
-  const story = await Story.findByIdAndDelete(storyId).select("_id image").lean();
-
-  if (!story) {
-    return null;
-  }
-
-  await Promise.all([
-    Report.deleteMany({ targetType: "story", targetId: storyId })
-  ]);
-
-  return story;
-}
-
 export async function deleteMessageByAdmin(messageId: string) {
   const message = await Message.findByIdAndDelete(messageId).select("_id").lean();
 
@@ -130,17 +81,6 @@ export async function deleteLeadByAdmin(leadId: string) {
   return lead;
 }
 
-export async function deleteReservationByAdmin(reservationId: string) {
-  const reservation = await AgencyReservation.findByIdAndDelete(reservationId).select("trip seats").lean();
-
-  if (reservation?.trip && Number(reservation.seats || 0) > 0) {
-    await AgencyTrip.findByIdAndUpdate(reservation.trip, {
-      $inc: { seatsBooked: -Number(reservation.seats || 0) }
-    });
-  }
-
-  return reservation;
-}
 
 export async function deleteAgencyByAdmin(agencyId: string) {
   const agency = await AgencyProfile.findById(agencyId).select("logo coverImage").lean();
@@ -155,12 +95,7 @@ export async function deleteAgencyByAdmin(agencyId: string) {
   await Promise.all([
     AgencyProfile.deleteOne({ _id: agencyId }),
     AgencyTrip.deleteMany({ agency: agencyId }),
-    AgencyReservation.deleteMany({
-      $or: [
-        { agency: agencyId },
-        ...(tripIds.length > 0 ? [{ trip: { $in: tripIds } }] : [])
-      ]
-    }),
+    Promise.resolve(),
     Report.deleteMany({ targetType: "agency", targetId: agencyId })
   ]);
 
@@ -181,16 +116,11 @@ export async function deleteUserByAdmin(userId: string) {
 
   const agency = await AgencyProfile.findOne({ user: userId }).select("_id logo coverImage").lean();
   const renter = await RenterProfile.findOne({ user: userId }).select("_id logo coverImage").lean();
-  const activities = await Activity.find({ provider: userId }).select("_id").lean();
   const listings = await Listing.find({ seller: userId }).select("_id images").lean();
-  const places = await Place.find({ createdBy: userId }).select("_id images").lean();
   const renterItems = await RentalItem.find({ owner: userId }).select("_id images").lean();
   const listingIds = listings.map((listing) => listing._id);
-  const activityIds = activities.map((activity) => activity._id);
-  const placeIds = places.map((place) => place._id);
   const travelPostIds = await TravelPost.find({ userId }).distinct("_id");
   const reviewIds = await Review.find({ author: userId }).distinct("_id");
-  const storyIds = await Story.find({ author: userId }).distinct("_id");
   const conversations = await Conversation.find({ participants: userId }).select("_id listing").lean();
   const conversationIds = conversations.map((conversation) => conversation._id);
 
@@ -201,28 +131,20 @@ export async function deleteUserByAdmin(userId: string) {
     renter ? RenterProfile.deleteOne({ _id: renter._id }) : Promise.resolve(),
     renter ? RentalItem.deleteMany({ renter: renter._id }) : Promise.resolve(),
     renter ? AgencyTrip.updateMany({ renterPartners: renter._id }, { $pull: { renterPartners: renter._id } }) : Promise.resolve(),
-    agency ? AgencyReservation.deleteMany({ agency: agency._id }) : Promise.resolve(),
-    Activity.deleteMany({ provider: userId }),
+    agency ? Promise.resolve() : Promise.resolve(),
     Listing.deleteMany({ seller: userId }),
-    Place.deleteMany({ createdBy: userId }),
     TravelPost.deleteMany({ userId }),
     Review.deleteMany({ author: userId }),
-    Story.deleteMany({ author: userId }),
-    placeIds.length > 0 ? Review.deleteMany({ place: { $in: placeIds } }) : Promise.resolve(),
-    placeIds.length > 0 ? Story.deleteMany({ place: { $in: placeIds } }) : Promise.resolve(),
-    Place.updateMany({ savedBy: userId }, { $pull: { savedBy: userId } }),
-    Lead.deleteMany({ $or: [{ sellerId: userId }, { buyerId: userId }, ...(activityIds.length > 0 ? [{ activityId: { $in: activityIds } }] : [])] }),
-    AgencyReservation.deleteMany({ user: userId }),
+    Lead.deleteMany({ $or: [{ sellerId: userId }, { buyerId: userId }] }),
+    Promise.resolve(),
     Report.deleteMany({
       $or: [
         { reporterId: userId },
         { targetType: "user", targetId: userId },
         ...(agency ? [{ targetType: "agency", targetId: agency._id }] : []),
         ...(listingIds.length > 0 ? [{ targetType: "listing", targetId: { $in: listingIds } }] : []),
-        ...(placeIds.length > 0 ? [{ targetType: "place", targetId: { $in: placeIds } }] : []),
         ...(travelPostIds.length > 0 ? [{ targetType: "travel-post", targetId: { $in: travelPostIds } }] : []),
         ...(reviewIds.length > 0 ? [{ targetType: "review", targetId: { $in: reviewIds } }] : []),
-        ...(storyIds.length > 0 ? [{ targetType: "story", targetId: { $in: storyIds } }] : [])
       ]
     }),
     conversationIds.length > 0 ? Message.deleteMany({ conversation: { $in: conversationIds } }) : Promise.resolve(),

@@ -6,11 +6,9 @@ exports.isValidObjectId = isValidObjectId;
 exports.normalizeUrl = normalizeUrl;
 exports.normalizeMessageBody = normalizeMessageBody;
 exports.validateAgencyProfilePayload = validateAgencyProfilePayload;
+exports.validateSellerAccessRequestPayload = validateSellerAccessRequestPayload;
 exports.validateAgencyTripPayload = validateAgencyTripPayload;
 exports.validateAgencyRenterLinksPayload = validateAgencyRenterLinksPayload;
-exports.validatePlacePayload = validatePlacePayload;
-exports.validatePlaceReviewPayload = validatePlaceReviewPayload;
-exports.validateStoryPayload = validateStoryPayload;
 exports.validateListingPayload = validateListingPayload;
 exports.validateReservationPayload = validateReservationPayload;
 exports.validateRentalItemPayload = validateRentalItemPayload;
@@ -18,10 +16,10 @@ exports.validateRentalRequestPayload = validateRentalRequestPayload;
 exports.validateRentalRequestStatus = validateRentalRequestStatus;
 exports.validateTravelPostPayload = validateTravelPostPayload;
 exports.validateReviewPayload = validateReviewPayload;
+exports.validateReviewReplyPayload = validateReviewReplyPayload;
 exports.validateConversationPayload = validateConversationPayload;
 exports.validateMessagePayload = validateMessagePayload;
 exports.validateLeadPayload = validateLeadPayload;
-exports.validateLeadStatus = validateLeadStatus;
 exports.validateReservationStatus = validateReservationStatus;
 exports.validateAgencyVerificationStatus = validateAgencyVerificationStatus;
 exports.validateReportPayload = validateReportPayload;
@@ -108,6 +106,58 @@ function validateAgencyProfilePayload(payload) {
             whatsapp,
             logo,
             coverImage
+        }
+    };
+}
+function validateSellerAccessRequestPayload(payload) {
+    const businessName = trimText(payload.businessName);
+    const city = trimText(payload.city);
+    const phone = normalizePhoneNumber(payload.phone);
+    const whatsapp = normalizePhoneNumber(payload.whatsapp);
+    const instagram = trimText(payload.instagram);
+    const facebook = trimText(payload.facebook);
+    const description = trimText(payload.description);
+    const whatTheySell = trimText(payload.whatTheySell);
+    if (businessName.length < 3) {
+        return { error: "Business name must be at least 3 characters." };
+    }
+    if (city.length < 2) {
+        return { error: "City is required." };
+    }
+    if (!isValidPhoneNumber(phone)) {
+        return { error: "Enter a valid phone number." };
+    }
+    if (!isValidPhoneNumber(whatsapp)) {
+        return { error: "Enter a valid WhatsApp number." };
+    }
+    if (description.length < 20) {
+        return { error: "Short description must be at least 20 characters." };
+    }
+    if (description.length > 1200) {
+        return { error: "Short description is too long." };
+    }
+    if (whatTheySell.length < 5) {
+        return { error: "Tell us what you sell." };
+    }
+    if (whatTheySell.length > 400) {
+        return { error: "The products field is too long." };
+    }
+    if (instagram && instagram.length > 280) {
+        return { error: "Instagram field is too long." };
+    }
+    if (facebook && facebook.length > 280) {
+        return { error: "Facebook field is too long." };
+    }
+    return {
+        data: {
+            businessName,
+            city,
+            phone,
+            whatsapp,
+            instagram,
+            facebook,
+            description,
+            whatTheySell
         }
     };
 }
@@ -240,94 +290,6 @@ function validateAgencyRenterLinksPayload(payload) {
         }
     };
 }
-function validatePlacePayload(payload) {
-    const name = trimText(payload.name);
-    const city = trimText(payload.city);
-    const mapLink = trimText(payload.mapLink);
-    const description = trimText(payload.description);
-    const category = trimText(payload.category);
-    const safety = trimText(payload.safety);
-    const bestSeason = trimText(payload.bestSeason);
-    if (name.length < 3) {
-        return { error: "Place name must be at least 3 characters." };
-    }
-    if (city.length < 2) {
-        return { error: "City is required." };
-    }
-    if (mapLink.length < 3) {
-        return { error: "Map link or coordinates are required." };
-    }
-    if (description.length < 30) {
-        return { error: "Description must be at least 30 characters." };
-    }
-    if (category.length < 2) {
-        return { error: "Category is required." };
-    }
-    if (safety.length < 2) {
-        return { error: "Safety information is required." };
-    }
-    if (bestSeason.length < 2) {
-        return { error: "Best season is required." };
-    }
-    if (description.length > 2400) {
-        return { error: "Description is too long." };
-    }
-    return {
-        data: {
-            name,
-            city,
-            mapLink,
-            description,
-            category,
-            safety,
-            bestSeason
-        }
-    };
-}
-function validatePlaceReviewPayload(payload) {
-    const rating = Number(payload.rating);
-    const comment = trimText(payload.comment);
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-        return { error: "Rating must be between 1 and 5." };
-    }
-    if (comment.length < 6) {
-        return { error: "Comment must be at least 6 characters." };
-    }
-    if (comment.length > 1200) {
-        return { error: "Comment is too long." };
-    }
-    return {
-        data: {
-            rating,
-            comment
-        }
-    };
-}
-function validateStoryPayload(payload) {
-    const title = trimText(payload.title);
-    const body = trimText(payload.body);
-    const tripDateText = trimText(payload.tripDate);
-    const tripDate = tripDateText ? new Date(tripDateText) : null;
-    if (title.length < 4) {
-        return { error: "Story title must be at least 4 characters." };
-    }
-    if (body.length < 30) {
-        return { error: "Story body must be at least 30 characters." };
-    }
-    if (body.length > 3000) {
-        return { error: "Story body is too long." };
-    }
-    if (tripDateText && (!tripDate || !isValidDate(tripDate))) {
-        return { error: "Trip date is invalid." };
-    }
-    return {
-        data: {
-            title,
-            body,
-            tripDate
-        }
-    };
-}
 function validateListingPayload(payload) {
     const title = trimText(payload.title);
     const description = trimText(payload.description);
@@ -400,8 +362,12 @@ function validateReservationPayload(payload) {
     const tripId = trimText(payload.tripId);
     const agencyId = trimText(payload.agencyId);
     const customerName = trimText(payload.customerName);
+    const customerEmail = trimText(payload.customerEmail).toLowerCase();
     const phoneNumber = normalizePhoneNumber(payload.phoneNumber);
+    const city = trimText(payload.city);
     const seats = Number(payload.seats);
+    const preferredDateText = trimText(payload.preferredDate);
+    const preferredDate = preferredDateText ? new Date(preferredDateText) : null;
     if (!isValidObjectId(tripId) || !isValidObjectId(agencyId)) {
         return { error: "Invalid reservation target." };
     }
@@ -411,16 +377,28 @@ function validateReservationPayload(payload) {
     if (!isValidPhoneNumber(phoneNumber)) {
         return { error: "Enter a valid phone number." };
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+        return { error: "Enter a valid email address." };
+    }
+    if (city.length < 2) {
+        return { error: "City is required." };
+    }
     if (Number.isNaN(seats) || seats < 1 || seats > 10) {
         return { error: "Seats must be between 1 and 10." };
+    }
+    if (preferredDateText && (!preferredDate || !isValidDate(preferredDate))) {
+        return { error: "Preferred travel date is invalid." };
     }
     return {
         data: {
             tripId,
             agencyId,
             customerName,
+            customerEmail,
             phoneNumber,
-            seats
+            city,
+            seats,
+            preferredDate
         }
     };
 }
@@ -516,6 +494,7 @@ function validateRentalRequestPayload(payload) {
     const city = trimText(payload.city);
     const notes = trimText(payload.notes);
     const quantity = Number(payload.quantity);
+    const durationDays = Number(payload.durationDays);
     const preferredDateText = trimText(payload.preferredDate);
     const preferredDate = preferredDateText ? new Date(preferredDateText) : null;
     if (!tripCode && !tripId) {
@@ -548,6 +527,9 @@ function validateRentalRequestPayload(payload) {
     if (payload.quantity !== undefined && payload.quantity !== "" && (!Number.isInteger(quantity) || quantity < 1 || quantity > 50)) {
         return { error: "Quantity must be between 1 and 50." };
     }
+    if (payload.durationDays !== undefined && payload.durationDays !== "" && (!Number.isInteger(durationDays) || durationDays < 1 || durationDays > 60)) {
+        return { error: "Rental duration must be between 1 and 60 days." };
+    }
     if (preferredDate && Number.isNaN(preferredDate.getTime())) {
         return { error: "Enter a valid preferred date." };
     }
@@ -561,19 +543,21 @@ function validateRentalRequestPayload(payload) {
             phoneNumber,
             city,
             quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
+            durationDays: Number.isInteger(durationDays) && durationDays > 0 ? durationDays : 1,
             preferredDate: preferredDate ? preferredDate.toISOString() : null,
             notes
         }
     };
 }
 function validateRentalRequestStatus(status) {
-    if (status === "pending" || status === "accepted" || status === "rejected") {
+    if (status === "pending" || status === "approved" || status === "delivered" || status === "returned") {
         return true;
     }
     return false;
 }
 function validateTravelPostPayload(payload) {
     const destination = trimText(payload.destination);
+    const city = trimText(payload.city);
     const description = trimText(payload.description);
     const phoneNumber = normalizePhoneNumber(payload.phoneNumber);
     const rawGender = trimText(payload.gender);
@@ -586,6 +570,9 @@ function validateTravelPostPayload(payload) {
     const date = dateText ? new Date(dateText) : null;
     if (destination.length < 2) {
         return { error: "Destination is required." };
+    }
+    if (city.length < 2) {
+        return { error: "City is required." };
     }
     if (description.length < 20) {
         return { error: "Travel post description must be at least 20 characters." };
@@ -610,6 +597,7 @@ function validateTravelPostPayload(payload) {
     return {
         data: {
             destination,
+            city,
             description,
             phoneNumber,
             date,
@@ -641,6 +629,25 @@ function validateReviewPayload(payload) {
         }
     };
 }
+function validateReviewReplyPayload(payload) {
+    const reviewId = trimText(payload.reviewId);
+    const providerReply = trimText(payload.providerReply);
+    if (!isValidObjectId(reviewId)) {
+        return { error: "Review is invalid." };
+    }
+    if (providerReply.length < 3) {
+        return { error: "Reply must be at least 3 characters." };
+    }
+    if (providerReply.length > 800) {
+        return { error: "Reply is too long." };
+    }
+    return {
+        data: {
+            reviewId,
+            providerReply
+        }
+    };
+}
 function validateConversationPayload(payload) {
     const listingId = trimText(payload.listingId);
     const sellerId = trimText(payload.sellerId);
@@ -664,19 +671,105 @@ function validateMessagePayload(payload) {
     return { data: { conversationId, body } };
 }
 function validateLeadPayload(payload) {
-    const listingId = trimText(payload.listingId);
     const sellerId = trimText(payload.sellerId);
+    const listingId = trimText(payload.listingId);
+    const activityId = trimText(payload.activityId);
     const type = trimText(payload.type);
-    if (!isValidObjectId(listingId) || !isValidObjectId(sellerId)) {
+    const source = trimText(payload.source);
+    const status = trimText(payload.status);
+    const name = trimText(payload.name);
+    const phone = normalizePhoneNumber(payload.phone);
+    const city = trimText(payload.city);
+    const preferredDate = trimText(payload.preferredDate);
+    const message = normalizeMessageBody(payload.message);
+    const customProductName = trimText(payload.customProductName);
+    const notes = normalizeMessageBody(payload.notes);
+    const hasUnitPrice = payload.unitPrice !== undefined && trimText(payload.unitPrice) !== "";
+    const unitPrice = hasUnitPrice ? Number(payload.unitPrice) : null;
+    const hasQuantity = payload.quantity !== undefined && trimText(payload.quantity) !== "";
+    const quantity = hasQuantity ? Number(payload.quantity) : null;
+    if (!isValidObjectId(sellerId)) {
         return { error: "Lead target is invalid." };
     }
-    if (!["whatsapp", "call", "chat"].includes(type)) {
+    if (type && !["whatsapp", "call", "chat", "inquiry", "manual"].includes(type)) {
         return { error: "Lead type is invalid." };
     }
-    return { data: { listingId, sellerId, type } };
-}
-function validateLeadStatus(value) {
-    return typeof value === "string" && value in trust_1.leadStatusLabels.fr;
+    if (source && !["listing", "seller_store", "activity", "whatsapp", "call", "instagram", "facebook", "offline", "other", "manual"].includes(source)) {
+        return { error: "Lead source is invalid." };
+    }
+    if (status && !["new", "contacted", "sold", "cancelled", "closed"].includes(status)) {
+        return { error: "Lead status is invalid." };
+    }
+    const isTrackedAction = type === "whatsapp" || type === "call" || type === "chat";
+    const resolvedSource = source ||
+        (type === "whatsapp"
+            ? "whatsapp"
+            : type === "call"
+                ? "call"
+                : type === "manual"
+                    ? "manual"
+                    : "listing");
+    const isExternalOrder = type === "manual" && ["whatsapp", "call", "instagram", "facebook", "offline", "other", "manual"].includes(resolvedSource);
+    const hasListingTarget = isValidObjectId(listingId);
+    const hasActivityTarget = isValidObjectId(activityId);
+    if ((resolvedSource === "listing" || isTrackedAction) && !hasListingTarget && !hasActivityTarget) {
+        return { error: "Lead target is invalid." };
+    }
+    if (resolvedSource === "activity" && !hasActivityTarget) {
+        return { error: "Lead target is invalid." };
+    }
+    if (!isTrackedAction) {
+        if (name.length < 2) {
+            return { error: "Lead name is required." };
+        }
+        if (!isValidPhoneNumber(phone)) {
+            return { error: "Enter a valid phone number." };
+        }
+        if (message.length < 3) {
+            return { error: "Lead message is required." };
+        }
+        if (message.length > 1000) {
+            return { error: "Lead message is too long." };
+        }
+    }
+    if (customProductName.length > 120) {
+        return { error: "Custom product name is too long." };
+    }
+    if (notes.length > 1000) {
+        return { error: "Lead notes are too long." };
+    }
+    if (hasUnitPrice && (unitPrice === null || Number.isNaN(unitPrice) || unitPrice < 0)) {
+        return { error: "Lead price is invalid." };
+    }
+    if (hasQuantity && (quantity === null || Number.isNaN(quantity) || quantity < 1 || quantity > 999)) {
+        return { error: "Lead quantity is invalid." };
+    }
+    if (preferredDate) {
+        const parsedDate = new Date(preferredDate);
+        if (!Number.isFinite(parsedDate.getTime())) {
+            return { error: "Preferred date is invalid." };
+        }
+    }
+    return {
+        data: {
+            listingId: hasListingTarget ? listingId : "",
+            activityId: hasActivityTarget ? activityId : "",
+            sellerId,
+            type: type || "inquiry",
+            source: resolvedSource,
+            status: status || "new",
+            name,
+            phone,
+            city,
+            preferredDate: preferredDate || "",
+            message,
+            customProductName,
+            unitPrice,
+            quantity,
+            notes,
+            isExternalOrder
+        }
+    };
 }
 function validateReservationStatus(value) {
     return typeof value === "string" && value in trust_1.reservationStatusLabels.fr;
@@ -689,7 +782,7 @@ function validateReportPayload(payload) {
     const targetId = trimText(payload.targetId);
     const reason = trimText(payload.reason);
     const description = trimText(payload.description);
-    if (!["listing", "agency", "travel-post", "user", "review"].includes(targetType)) {
+    if (!["listing", "agency", "travel-post", "user", "review", "place", "story"].includes(targetType)) {
         return { error: "Invalid report target." };
     }
     if (!isValidObjectId(targetId)) {

@@ -134,9 +134,6 @@ export const authOptions: NextAuthOptions = {
             sellerExpiresAt: user.sellerExpiresAt ? new Date(user.sellerExpiresAt).toISOString() : null,
             sellerRequestedAt: user.sellerRequestedAt ? new Date(user.sellerRequestedAt).toISOString() : null,
             sellerApprovedAt: user.sellerApprovedAt ? new Date(user.sellerApprovedAt).toISOString() : null,
-            activityProviderStatus: user.activityProviderStatus ?? "none",
-            activityProviderRequestedAt: user.activityProviderRequestedAt ? new Date(user.activityProviderRequestedAt).toISOString() : null,
-            activityProviderApprovedAt: user.activityProviderApprovedAt ? new Date(user.activityProviderApprovedAt).toISOString() : null
           };
         } catch (error) {
           const message = getCredentialsErrorMessage(error);
@@ -184,9 +181,6 @@ export const authOptions: NextAuthOptions = {
               sellerExpiresAt: null,
               sellerRequestedAt: null,
               sellerApprovedAt: null,
-              activityProviderStatus: "none",
-              activityProviderRequestedAt: null,
-              activityProviderApprovedAt: null
             }
           },
           {
@@ -208,9 +202,6 @@ export const authOptions: NextAuthOptions = {
         user.sellerExpiresAt = dbUser.sellerExpiresAt ? new Date(dbUser.sellerExpiresAt).toISOString() : null;
         user.sellerRequestedAt = dbUser.sellerRequestedAt ? new Date(dbUser.sellerRequestedAt).toISOString() : null;
         user.sellerApprovedAt = dbUser.sellerApprovedAt ? new Date(dbUser.sellerApprovedAt).toISOString() : null;
-        user.activityProviderStatus = dbUser.activityProviderStatus ?? "none";
-        user.activityProviderRequestedAt = dbUser.activityProviderRequestedAt ? new Date(dbUser.activityProviderRequestedAt).toISOString() : null;
-        user.activityProviderApprovedAt = dbUser.activityProviderApprovedAt ? new Date(dbUser.activityProviderApprovedAt).toISOString() : null;
 
         if (dbUser.accountStatus === "disabled") {
           throw new Error("This account has been disabled.");
@@ -241,9 +232,6 @@ export const authOptions: NextAuthOptions = {
           token.sellerExpiresAt = user.sellerExpiresAt ?? null;
           token.sellerRequestedAt = user.sellerRequestedAt ?? null;
           token.sellerApprovedAt = user.sellerApprovedAt ?? null;
-          token.activityProviderStatus = user.activityProviderStatus ?? "none";
-          token.activityProviderRequestedAt = user.activityProviderRequestedAt ?? null;
-          token.activityProviderApprovedAt = user.activityProviderApprovedAt ?? null;
           token.dbSyncedAt = Date.now();
         }
 
@@ -255,7 +243,6 @@ export const authOptions: NextAuthOptions = {
         if (token.sub && needsRefresh) {
           await connectToDatabase();
           const dbUser = await User.findById(token.sub)
-            .select("role name email avatar accountStatus canCreateAgency canCreateRenter sellerStatus sellerPlan sellerExpiresAt sellerRequestedAt sellerApprovedAt activityProviderStatus activityProviderRequestedAt activityProviderApprovedAt")
             .lean();
 
           if (dbUser) {
@@ -271,9 +258,6 @@ export const authOptions: NextAuthOptions = {
             token.sellerExpiresAt = dbUser.sellerExpiresAt ? new Date(dbUser.sellerExpiresAt).toISOString() : null;
             token.sellerRequestedAt = dbUser.sellerRequestedAt ? new Date(dbUser.sellerRequestedAt).toISOString() : null;
             token.sellerApprovedAt = dbUser.sellerApprovedAt ? new Date(dbUser.sellerApprovedAt).toISOString() : null;
-            token.activityProviderStatus = dbUser.activityProviderStatus ?? "none";
-            token.activityProviderRequestedAt = dbUser.activityProviderRequestedAt ? new Date(dbUser.activityProviderRequestedAt).toISOString() : null;
-            token.activityProviderApprovedAt = dbUser.activityProviderApprovedAt ? new Date(dbUser.activityProviderApprovedAt).toISOString() : null;
           }
 
           token.dbSyncedAt = Date.now();
@@ -317,15 +301,6 @@ export const authOptions: NextAuthOptions = {
           session.user.sellerExpiresAt = typeof token.sellerExpiresAt === "string" ? token.sellerExpiresAt : null;
           session.user.sellerRequestedAt = typeof token.sellerRequestedAt === "string" ? token.sellerRequestedAt : null;
           session.user.sellerApprovedAt = typeof token.sellerApprovedAt === "string" ? token.sellerApprovedAt : null;
-          session.user.activityProviderStatus =
-            token.activityProviderStatus === "pending" ||
-            token.activityProviderStatus === "active" ||
-            token.activityProviderStatus === "suspended" ||
-            token.activityProviderStatus === "rejected"
-              ? token.activityProviderStatus
-              : "none";
-          session.user.activityProviderRequestedAt = typeof token.activityProviderRequestedAt === "string" ? token.activityProviderRequestedAt : null;
-          session.user.activityProviderApprovedAt = typeof token.activityProviderApprovedAt === "string" ? token.activityProviderApprovedAt : null;
         }
 
         return session;

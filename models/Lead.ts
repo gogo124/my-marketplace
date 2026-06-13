@@ -3,7 +3,6 @@ import { InferSchemaType, Model, Schema, model, models } from "mongoose";
 const LeadSchema = new Schema(
   {
     listingId: { type: Schema.Types.ObjectId, ref: "Listing", default: null },
-    activityId: { type: Schema.Types.ObjectId, ref: "Activity", default: null },
     sellerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     buyerId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     type: {

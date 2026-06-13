@@ -3,9 +3,7 @@ import { getDirection, resolveLocale } from "../lib/i18n";
 import { checkRateLimit } from "../lib/rate-limit";
 import {
   validateAgencyProfilePayload,
-  validateLeadStatus,
   validateMessagePayload,
-  validateReservationStatus,
   validateReviewPayload,
   validateTravelPostPayload
 } from "../lib/validation";
@@ -78,10 +76,6 @@ const invalidTravelPost = validateTravelPostPayload({
 
 assert.ok("error" in invalidTravelPost, "expected past travel date to fail");
 
-assert.equal(validateLeadStatus("contacted"), true, "expected contacted lead status to be valid");
-assert.equal(validateLeadStatus("spam"), false, "expected invalid lead status to fail");
-assert.equal(validateReservationStatus("confirmed"), true, "expected confirmed reservation status to be valid");
-assert.equal(validateReservationStatus("canceled"), false, "expected unsupported reservation status to fail");
 assert.equal(resolveLocale("fr"), "fr", "expected french locale query to resolve to fr");
 assert.equal(getDirection("fr"), "ltr", "expected french locale to use ltr");
 assert.equal(resolveLocale(undefined), "ar", "expected default locale to remain arabic");
