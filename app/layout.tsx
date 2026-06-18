@@ -119,6 +119,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8159536831776873"
           crossOrigin="anonymous"
         />
+        <Script id="tp-em-loader" strategy="afterInteractive">
+          {`(function(){var script=document.createElement("script");script.async=1;script.src="https://tp-em.com/NTQxMjQw.js?t=541240";document.head.appendChild(script);})();`}
+        </Script>
       </head>
       <body className={`${alexandria.variable} bg-app text-slate-900`}>
         <a href="#main-content" className="skip-link">
