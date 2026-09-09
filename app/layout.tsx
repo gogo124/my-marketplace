@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Suspense } from "react";
 import { cookies, headers } from "next/headers";
 import { Alexandria } from "next/font/google";
@@ -110,18 +109,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={locale} dir={getDirection(locale)}>
       <head>
-        <meta
-          name="kadam-verification"
-          content="kadame93154983ced1455a68d39b8a15c3a94"
-        />
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8159536831776873"
           crossOrigin="anonymous"
         />
-        <Script id="tp-em-loader" strategy="afterInteractive">
-          {`(function(){var script=document.createElement("script");script.async=1;script.src="https://tp-em.com/NTQxMjQw.js?t=541240";document.head.appendChild(script);})();`}
-        </Script>
       </head>
       <body className={`${alexandria.variable} bg-app text-slate-900`}>
         <a href="#main-content" className="skip-link">
@@ -139,12 +131,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           </Suspense>
           <div id="main-content">{children}</div>
         </AuthProvider>
-        <div className="xedsxw425193" />
-        <Script
-          id="kadam-popunder"
-          src="https://hdbkell.com/code/xedsxw425193"
-          strategy="afterInteractive"
-        />
       </body>
     </html>
   );
