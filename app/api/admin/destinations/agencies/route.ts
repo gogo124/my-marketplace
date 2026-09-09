@@ -9,7 +9,7 @@ export async function GET() {
 
   await connectToDatabase();
   const agencies = await AgencyProfile.find({ verificationStatus: { $in: ["pending", "verified"] } })
-    .select("name logo coverImage city description phone whatsapp verificationStatus")
+    .select("name logo coverImage city description phone whatsapp instagram facebook tiktok youtube website bookingUrl verificationStatus")
     .sort({ name: 1 })
     .lean();
 
