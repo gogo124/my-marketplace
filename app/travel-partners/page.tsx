@@ -3,6 +3,7 @@ import dynamicImport from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { TravelPostCard } from "@/components/travel-post-card";
+import { ProfitAd } from "@/components/ProfitAd";
 import { getAuthSession } from "@/lib/auth";
 import { buildLoginPath } from "@/lib/auth-flow";
 import { resolveLocale, siteCopy, withLocale } from "@/lib/i18n";
@@ -208,6 +209,7 @@ export default async function TravelPartnersPage({
         ))}
       </section>
 
+      <ProfitAd />
       <section id="travel-posts" className="space-y-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
