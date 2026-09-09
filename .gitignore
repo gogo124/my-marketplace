@@ -15,6 +15,9 @@ public/uploads
 
 # temp / tests
 .tmp-tests
+*.swp
+*.swo
+*~
 
 # typescript
 tsconfig.tsbuildinfo
