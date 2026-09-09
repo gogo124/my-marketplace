@@ -12,7 +12,16 @@ function safeUrl(value: any) {
   try {
     const parsed = new URL(url);
     return ["http:", "https:"].includes(parsed.protocol) ? parsed.toString() : "";
-  } catch { return ""; }
+  } catch {
+    return "";
+  }
+}
+
+function safeCtaUrl(value: any) {
+  const url = String(value || "").trim();
+  if (!url || /[\u0000-\u001F\u007F]/.test(url)) return "";
+  if (url.startsWith("/") && !url.startsWith("//")) return url;
+  return safeUrl(url);
 }
 
 export function validateHeroSlidePayload(input: any) {
@@ -20,7 +29,7 @@ export function validateHeroSlidePayload(input: any) {
   const title = localized(input?.title);
   if (!image) return { error: "A valid Cloudinary image is required." };
   if (!title.ar || !title.fr || !title.en) return { error: "Hero title is required in Arabic, French and English." };
-  const ctaUrl = safeUrl(input?.ctaUrl);
+  const ctaUrl = safeCtaUrl(input?.ctaUrl);
   return { data: {
     image,
     imagePublicId: String(input?.imagePublicId || "").trim(),
