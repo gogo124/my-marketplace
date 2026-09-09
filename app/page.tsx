@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { HomeHero } from "@/components/home-hero";
+import { HomeServicesCarousel } from "@/components/home-services-carousel";
 import { getPublishedActivities } from "@/lib/activity";
 import { getPublishedAffiliateProducts } from "@/lib/affiliate-products";
 import { ProductCard } from "@/components/product-card";
@@ -11,6 +13,7 @@ import { FEATURES } from "@/lib/features";
 import { formatLocaleDate, getDirection, marketingCopy, resolveLocale, type SiteLocale, withLocale } from "@/lib/i18n";
 import { logServerError } from "@/lib/server-log";
 import { buildPageMetadata } from "@/lib/seo";
+import { getPublishedHeroSlides } from "@/lib/hero-slides";
 import { getTravelPosts } from "@/lib/travel-posts";
 import { formatPrice } from "@/lib/utils";
 
@@ -402,7 +405,7 @@ export default async function HomePage({
   const copy = marketingCopy[locale];
   const session = await getAuthSession().catch(() => null);
 
-  const [travelPosts, places, activitiesResult] = await Promise.all([
+  const [travelPosts, places, activitiesResult, heroSlides] = await Promise.all([
     FEATURES.travelPartners
       ? getTravelPosts({ limit: 5, userId: session?.user?.id }).catch((error) => {
           logServerError("page.home.travel-posts", error);
@@ -420,7 +423,11 @@ export default async function HomePage({
           logServerError("page.home.activities", error);
           return [];
         })
-      : Promise.resolve([])
+      : Promise.resolve([]),
+    getPublishedHeroSlides().catch((error) => {
+      logServerError("page.home.hero-slides", error);
+      return [];
+    })
   ]);
 
   const [featuredProducts, popularProducts, newProducts, recommendedProducts] = await Promise.all([
@@ -443,77 +450,30 @@ export default async function HomePage({
     withLocale("/activities", locale)
   ];
 
+  const serviceItems = copy.services.items.map((item, index) => ({
+    key: item.key,
+    title: item.title,
+    description: item.description,
+    eyebrow: item.eyebrow,
+    cta: item.cta,
+    image: HOMEPAGE_IMAGES.services[item.key],
+    href: serviceRoutes[index]
+  }));
+
   return (
     <main dir={getDirection(locale)} className="page-shell max-w-[1440px] space-y-14 pb-20 sm:space-y-20 lg:space-y-24 lg:pb-28">
-      <section className="overflow-hidden rounded-[2.25rem] bg-[#0f3d2e] shadow-[0_35px_100px_rgba(15,61,46,0.28)] sm:rounded-[3rem]">
-        <div className="relative min-h-[680px] sm:min-h-[720px] xl:min-h-[760px]">
-          <Image
-            src={HOMEPAGE_IMAGES.hero}
-            alt={copy.hero.title}
-            fill
-            priority
-            sizes="100vw"
-            className="absolute inset-0 object-cover object-[center_58%]"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(122deg,rgba(2,14,10,0.96),rgba(5,35,25,0.9)_42%,rgba(9,55,40,0.78)_68%,rgba(12,60,43,0.45)_100%)]" />
-          <div className="absolute inset-y-0 right-0 hidden w-[42%] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_58%)] xl:block" />
-          <div className="relative flex min-h-[680px] items-end px-5 py-8 sm:min-h-[720px] sm:px-10 sm:py-12 lg:px-14 lg:py-16 xl:min-h-[760px]">
-            <div className="grid w-full gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,430px)] xl:items-end">
-              <div className="max-w-4xl space-y-7 text-white">
-                <span className="inline-flex w-fit rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-white/90">
-                  {copy.hero.badge}
-                </span>
-                <div className="space-y-4">
-                  <h1 className="max-w-4xl text-4xl font-black leading-[1.02] tracking-[-0.035em] sm:text-6xl lg:text-7xl xl:text-[5.25rem]">
-                    {copy.hero.title}
-                  </h1>
-                  <p className="max-w-3xl text-base leading-8 text-white/84 sm:text-lg">{copy.hero.subtitle}</p>
-                </div>
-                <div className="grid gap-2 text-sm text-white/92 sm:grid-cols-2 sm:text-base">
-                  {copy.hero.bullets.map((item) => (
-                    <p key={item} className="flex items-center gap-3 rounded-full bg-white/10 px-4 py-3 backdrop-blur-sm">
-                      <span className="h-2.5 w-2.5 rounded-full bg-[#f97316]" />
-                      <span className="min-w-0">{item}</span>
-                    </p>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:flex-wrap">
-                  <Link
-                    href={withLocale("/travel-partners", locale)}
-                    className="inline-flex items-center justify-center rounded-full bg-[#f97316] px-7 py-4 text-sm font-bold text-white shadow-[0_18px_35px_rgba(249,115,22,0.32)] hover:-translate-y-0.5 hover:bg-[#ea580c]"
-                  >
-                    {copy.hero.primaryCta}
-                  </Link>
-                  <Link
-                    href={withLocale("/camping", locale)}
-                    className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/12 px-7 py-4 text-sm font-bold text-white hover:bg-white/18"
-                  >
-                    {copy.hero.secondaryCta}
-                  </Link>
-                  <Link
-                    href={withLocale("/marketplace", locale)}
-                    className="inline-flex items-center justify-center rounded-full border border-white/25 bg-[#103d2f]/60 px-7 py-4 text-sm font-bold text-white hover:bg-[#123f31]"
-                  >
-                    {copy.hero.tertiaryCta}
-                  </Link>
-                </div>
-              </div>
-
-              <aside className="rounded-[2rem] border border-white/15 bg-[rgba(5,35,25,0.72)] p-5 text-white shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.26em] text-white/70">{copy.trust.label}</p>
-                <div className="mt-4 grid gap-3">
-                  {copy.trust.items.map((item) => (
-                    <article key={item.title} className="rounded-[1.5rem] border border-white/10 bg-black/10 p-4">
-                      <h2 className="text-base font-bold">{item.title}</h2>
-                      <p className="mt-2 text-sm leading-6 text-white/78">{item.description}</p>
-                    </article>
-                  ))}
-                </div>
-              </aside>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HomeHero
+        slides={heroSlides as any[]}
+        locale={locale}
+        fallback={{
+          image: HOMEPAGE_IMAGES.hero,
+          eyebrow: copy.hero.badge,
+          title: copy.hero.title,
+          description: copy.hero.subtitle,
+          ctaLabel: copy.hero.primaryCta,
+          ctaUrl: "/travel-partners"
+        }}
+      />
 
       <section className="relative z-10 -mt-10 grid gap-4 px-3 sm:-mt-16 md:grid-cols-3 lg:-mt-20 lg:px-10">
         {copy.stats.items.map((item) => (
@@ -523,45 +483,7 @@ export default async function HomePage({
 
       <section className="space-y-8 rounded-[2.75rem] border border-white/80 bg-white/80 p-5 shadow-[0_30px_90px_rgba(15,61,46,0.1)] backdrop-blur sm:p-9 lg:p-12">
         <SectionHeading kicker={copy.services.kicker} title={copy.services.title} subtitle="Plan the whole outdoor journey from one trusted place." align="center" />
-        <div className="grid gap-6 md:grid-cols-2">
-          {copy.services.items.map((item, index) => (
-            <article
-              key={item.key}
-              className="group overflow-hidden rounded-[2.25rem] border border-white/70 bg-white shadow-[0_28px_75px_rgba(15,61,46,0.14)] transition duration-300 hover:-translate-y-1.5"
-            >
-              <div className="relative h-80 sm:h-[26rem]">
-                <Image
-                  src={HOMEPAGE_IMAGES.services[item.key]}
-                  alt={item.title}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
-                  className="object-cover transition duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,26,20,0.08),rgba(12,26,20,0.74))]" />
-                <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
-                  <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#0f3d2e]">
-                    {item.eyebrow}
-                  </span>
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#f97316] text-white shadow-[0_12px_25px_rgba(249,115,22,0.28)]">
-                    <FeatureIcon kind={item.key} />
-                  </span>
-                </div>
-                <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <h3 className="text-2xl font-black">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-white/82">{item.description}</p>
-                </div>
-              </div>
-              <div className="p-5 sm:p-6">
-                <Link
-                  href={serviceRoutes[index]}
-                  className="inline-flex w-full items-center justify-center rounded-full bg-[#0f3d2e] px-5 py-4 text-sm font-bold text-white hover:bg-[#0c3327]"
-                >
-                  {item.cta}
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
+        <HomeServicesCarousel items={serviceItems} />
       </section>
 
       <section className="relative overflow-hidden rounded-[2.75rem] bg-[#0f3d2e] px-6 py-10 text-white shadow-[0_35px_100px_rgba(15,61,46,.24)] sm:px-10 sm:py-14 lg:px-14">
