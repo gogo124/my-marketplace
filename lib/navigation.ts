@@ -12,6 +12,7 @@ export function getNavigationForUser(session: SessionLike) {
     { href: "/camping", label: { ar: "أماكن التخييم", fr: "Camping" } },
     { href: "/marketplace", label: { ar: "متجر الأفلييت", fr: "Affiliate Marketplace" } },
     { href: "/activities", label: { ar: "الأنشطة", fr: "Activities" } },
+    { href: "/destinations", label: { ar: "الوجهات", fr: "Destinations" } },
     { href: "/about", label: { ar: "من نحن", fr: "About" } },
     { href: "/contact", label: { ar: "اتصل بنا", fr: "Contact" } }
   ]);
