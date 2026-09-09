@@ -1,6 +1,9 @@
 import { connectToDatabase } from "@/lib/db";
 import { serializeDocument } from "@/lib/utils";
 import Destination from "@/models/Destination";
+// Register the referenced Mongoose model before populate() runs on serverless requests.
+// Without this import, a fresh Vercel function can throw MissingSchemaError for AgencyProfile.
+import "@/models/AgencyProfile";
 
 export const DESTINATION_CATEGORIES = ["city", "nature", "desert", "mountains", "coast", "culture"] as const;
 export type DestinationPayload = Record<string, any>;
