@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, MapPin, ArrowUpRight } from "lucide-react";
+import { Search, ArrowUpRight } from "lucide-react";
 import { AdSlot } from "@/components/ad-slot";
 import { ContentCarousel } from "@/components/content-carousel";
 import { getDirection, resolveLocale, localizeField, withLocale } from "@/lib/i18n";
@@ -11,12 +11,36 @@ import { getPublishedDestinations } from "@/lib/destinations";
 export const revalidate = 60;
 export const metadata: Metadata = buildPageMetadata({ title: "Morocco Destinations | Moroccan Trip", description: "Discover Morocco through curated destination guides, travel stories and practical inspiration.", path: "/destinations" });
 
+function isValidImageUrl(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export default async function DestinationsPage({ searchParams }: { searchParams: Promise<{ lang?: string; q?: string }> }) {
   const params = await searchParams;
   const locale = resolveLocale(params.lang);
   const q = String(params.q || "").trim().toLowerCase();
-  const all = await getPublishedDestinations();
-  const destinations = (all as any[]).filter((item) => !q || [item.name, item.location, item.shortDescription].some((field) => localizeField(field, locale).toLowerCase().includes(q)));
+
+  let all: any[] = [];
+  try {
+    const result = await getPublishedDestinations();
+    all = Array.isArray(result) ? result : [];
+  } catch (error) {
+    console.error("[destinations] Failed to load published destinations.", error);
+  }
+
+  const destinations = all.filter((item) => {
+    if (!item || !item.slug || !isValidImageUrl(item.coverImage)) return false;
+    if (!q) return true;
+    return [item.name, item.location, item.shortDescription].some((field) =>
+      localizeField(field, locale).toLowerCase().includes(q)
+    );
+  });
   const featured = destinations.filter((item) => item.featured);
   const rest = destinations.filter((item) => !item.featured);
   const labels = {
