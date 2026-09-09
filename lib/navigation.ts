@@ -23,7 +23,8 @@ export function getNavigationForUser(session: SessionLike) {
     { href: "/admin/users", label: { ar: "المستخدمون", fr: "Users" } },
     { href: "/admin/agencies", label: { ar: "الوكالات", fr: "Agencies" } },
     { href: "/admin/activities", label: { ar: "الأنشطة", fr: "Activities" } },
-    { href: "/admin/reports", label: { ar: "التقارير", fr: "Reports" } }
+    { href: "/admin/reports", label: { ar: "التقارير", fr: "Reports" } },
+    { href: "/destinations", label: { ar: "الوجهات", fr: "Destinations" } }
   ], secondary: [{ href: "/dashboard", label: { ar: "لوحتي", fr: "My Dashboard" } }], utilities: [{ href: "/", label: { ar: "الرئيسية", fr: "Home" } }] };
   if (role === "agency") return { primary: [
     { href: "/agency/dashboard", label: { ar: "لوحة الوكالة", fr: "Agency Dashboard" }, emphasize: true },
