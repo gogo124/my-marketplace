@@ -5,6 +5,7 @@ import { Alexandria } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { Header } from "@/components/header";
+import { SiteFooter } from "@/components/site-footer";
 import { LocaleDocumentSync } from "@/components/locale-document-sync";
 import { getDirection, resolveLocale, SITE_LOCALE_COOKIE } from "@/lib/i18n";
 import { getSiteUrl } from "@/lib/seo";
@@ -18,118 +19,34 @@ const alexandria = Alexandria({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
-  title: {
-    default: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب",
-    template: "%s | Moroccan Trip"
-  },
-  description:
-    "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.",
-  keywords: [
-    "Moroccan Trip",
-    "trip Morocco",
-    "camping Morocco",
-    "تخييم المغرب",
-    "رحلات منظمة المغرب",
-    "كراء معدات التخييم",
-    "أماكن التخييم في المغرب",
-    "رفيق سفر المغرب",
-    "voyage Maroc",
-    "camping Maroc",
-    "location equipement camping",
-    "trip space"
-  ],
-  alternates: {
-    canonical: "/"
-  },
-  icons: {
-    icon: [
-      { url: "/favicon.ico" },
-      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icon-48.png", sizes: "48x48", type: "image/png" }
-    ],
-    apple: "/apple-touch-icon.png"
-  },
+  title: { default: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب", template: "%s | Moroccan Trip" },
+  description: "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.",
+  keywords: ["Moroccan Trip", "trip Morocco", "camping Morocco", "تخييم المغرب", "رحلات منظمة المغرب", "كراء معدات التخييم", "أماكن التخييم في المغرب", "رفيق سفر المغرب", "voyage Maroc", "camping Maroc", "location equipement camping", "trip space"],
+  alternates: { canonical: "/" },
+  icons: { icon: [{ url: "/favicon.ico" }, { url: "/icon-32.png", sizes: "32x32", type: "image/png" }, { url: "/icon-48.png", sizes: "48x48", type: "image/png" }], apple: "/apple-touch-icon.png" },
   category: "travel",
-  openGraph: {
-    type: "website",
-    locale: "fr_FR",
-    title: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب",
-    description:
-      "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.",
-    siteName: "Moroccan Trip",
-    images: [
-      {
-        url: "/images/hero-main.jpg",
-        width: 1600,
-        height: 900,
-        alt: "Moroccan Trip"
-      }
-    ]
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب",
-    description:
-      "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.",
-    images: ["/images/hero-main.jpg"]
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1
-    }
-  }
+  openGraph: { type: "website", locale: "fr_FR", title: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب", description: "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.", siteName: "Moroccan Trip", images: [{ url: "/images/hero-main.jpg", width: 1600, height: 900, alt: "Moroccan Trip" }] },
+  twitter: { card: "summary_large_image", title: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب", description: "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.", images: ["/images/hero-main.jpg"] },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } }
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const requestHeaders = await headers();
   const cookieStore = await cookies();
-  const locale = resolveLocale(
-    requestHeaders.get("x-site-locale") || cookieStore.get(SITE_LOCALE_COOKIE)?.value
-  );
+  const locale = resolveLocale(requestHeaders.get("x-site-locale") || cookieStore.get(SITE_LOCALE_COOKIE)?.value);
   const siteUrl = getSiteUrl();
-  const organizationSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Moroccan Trip",
-    url: siteUrl,
-    logo: `${siteUrl}/logo.jpeg`,
-    sameAs: [],
-    description:
-      locale === "ar"
-        ? "منصة مغربية للرحلات المنظمة، التخييم، كراء وشراء المعدات، ورفيق السفر."
-        : "Plateforme marocaine pour voyages organises, camping, location et achat de materiel, et compagnon de voyage."
-  };
+  const organizationSchema = { "@context": "https://schema.org", "@type": "Organization", name: "Moroccan Trip", url: siteUrl, logo: `${siteUrl}/logo.jpeg`, sameAs: [], description: locale === "ar" ? "منصة مغربية للرحلات المنظمة، التخييم، كراء وشراء المعدات، ورفيق السفر." : "Plateforme marocaine pour voyages organises, camping, location et achat de materiel, et compagnon de voyage." };
 
   return (
     <html lang={locale} dir={getDirection(locale)}>
-      <head>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8159536831776873"
-          crossOrigin="anonymous"
-        />
-      </head>
+      <head><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8159536831776873" crossOrigin="anonymous" /></head>
       <body className={`${alexandria.variable} bg-app text-slate-900`}>
-        <a href="#main-content" className="skip-link">
-          {locale === "ar" ? "تجاوز إلى المحتوى" : "Aller au contenu"}
-        </a>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-        />
+        <a href="#main-content" className="skip-link">{locale === "ar" ? "تجاوز إلى المحتوى" : "Aller au contenu"}</a>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <AuthProvider>
-          <Suspense fallback={null}>
-            <AnalyticsTracker />
-            <LocaleDocumentSync />
-            <Header />
-          </Suspense>
+          <Suspense fallback={null}><AnalyticsTracker /><LocaleDocumentSync /><Header /></Suspense>
           <div id="main-content">{children}</div>
+          <SiteFooter lang={locale} />
         </AuthProvider>
       </body>
     </html>
