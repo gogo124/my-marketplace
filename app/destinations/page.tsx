@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Search, ArrowUpRight } from "lucide-react";
 import { EzoicAd } from "@/components/ads/EzoicAd";
+import { SmartLinkAd } from "@/components/ads/SmartLinkAd";
 import { ContentCarousel } from "@/components/content-carousel";
 import { getDirection, resolveLocale, localizeField, withLocale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/seo";
@@ -71,6 +72,7 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
 
     {featured.length ? <section className="space-y-7"><div><p className="text-xs font-black uppercase tracking-[.25em] text-clay">Moroccan Trip</p><h2 className="mt-3 text-3xl font-black tracking-[-.03em] text-ink sm:text-5xl">{labels.featured}</h2></div><ContentCarousel label={labels.featured}>{featured.map((item: any) => card(item, true))}</ContentCarousel></section> : null}
 
+    <SmartLinkAd id="destinations-smartlink" />
     <EzoicAd id="destinations-top-ad" />
 
     <section className="space-y-7"><div><p className="text-xs font-black uppercase tracking-[.25em] text-clay">{labels.all}</p><h2 className="mt-3 text-3xl font-black tracking-[-.03em] text-ink sm:text-5xl">{locale === "ar" ? "فين غادي تمشي من بعد؟" : locale === "fr" ? "Où partir ensuite ?" : "Where will you go next?"}</h2></div>{rest.length ? <ContentCarousel label={labels.all}>{rest.map((item: any) => card(item))}</ContentCarousel> : featured.length ? <ContentCarousel label={labels.all}>{featured.map((item: any) => card(item))}</ContentCarousel> : <div className="rounded-[2rem] border border-dashed border-ink/15 p-12 text-center text-ink/55">{labels.empty}</div>}</section>
