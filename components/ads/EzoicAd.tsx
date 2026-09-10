@@ -19,9 +19,9 @@ export function EzoicAd({ id = "ezoic-ad", className = "", label = "Advertisemen
 
     handledPath.current = pathname;
     runEzoic(() => {
-      window.ezstandalone?.showAds({});
+      window.ezstandalone?.showAds({ anchor: id });
     });
-  }, [pathname]);
+  }, [id, pathname]);
 
   return (
     <div
