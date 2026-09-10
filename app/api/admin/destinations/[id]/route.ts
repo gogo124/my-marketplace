@@ -1,7 +1,37 @@
 import { NextResponse } from "next/server";
 import { getAdminApiSession } from "@/lib/admin";
 import { connectToDatabase } from "@/lib/db";
-import { validateDestinationAgencyReferences, validateDestinationPayload } from "@/lib/destinations";
+import { validateDestinationPayload } from "@/lib/destinations";
 import Destination from "@/models/Destination";
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) { const admin = await getAdminApiSession(); if ("error" in admin) return admin.error; try { const { id } = await params; const validation = validateDestinationPayload(await request.json()); if ("error" in validation) return NextResponse.json({ error: validation.error }, { status: 400 }); const agencies = await validateDestinationAgencyReferences(validation.data.recommendedAgencies); if ("error" in agencies) return NextResponse.json({ error: agencies.error }, { status: 400 }); await connectToDatabase(); const existing = await Destination.findOne({ slug: validation.data.slug, _id: { $ne: id } }); if (existing) return NextResponse.json({ error: "That destination slug is already in use." }, { status: 409 }); const destination = await Destination.findByIdAndUpdate(id, validation.data, { new: true, runValidators: true }); if (!destination) return NextResponse.json({ error: "Destination not found." }, { status: 404 }); return NextResponse.json({ destination }); } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update destination." }, { status: 500 }); } }
-export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) { const admin = await getAdminApiSession(); if ("error" in admin) return admin.error; try { await connectToDatabase(); const { id } = await params; const deleted = await Destination.findByIdAndDelete(id); if (!deleted) return NextResponse.json({ error: "Destination not found." }, { status: 404 }); return NextResponse.json({ ok: true }); } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Could not delete destination." }, { status: 500 }); } }
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await getAdminApiSession();
+  if ("error" in admin) return admin.error;
+  try {
+    const { id } = await params;
+    const validation = validateDestinationPayload(await request.json());
+    if ("error" in validation) return NextResponse.json({ error: validation.error }, { status: 400 });
+    await connectToDatabase();
+    const existing = await Destination.findOne({ slug: validation.data.slug, _id: { $ne: id } });
+    if (existing) return NextResponse.json({ error: "That destination slug is already in use." }, { status: 409 });
+    const destination = await Destination.findByIdAndUpdate(id, validation.data, { new: true, runValidators: true });
+    if (!destination) return NextResponse.json({ error: "Destination not found." }, { status: 404 });
+    return NextResponse.json({ destination });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update destination." }, { status: 500 });
+  }
+}
+
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await getAdminApiSession();
+  if ("error" in admin) return admin.error;
+  try {
+    await connectToDatabase();
+    const { id } = await params;
+    const deleted = await Destination.findByIdAndDelete(id);
+    if (!deleted) return NextResponse.json({ error: "Destination not found." }, { status: 404 });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not delete destination." }, { status: 500 });
+  }
+}

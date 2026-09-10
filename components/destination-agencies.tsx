@@ -1,4 +1,50 @@
 import Image from "next/image";
-function safeUrl(value: unknown) { const raw = String(value || "").trim(); if (!raw || /[\u0000-\u001F\u007F]/.test(raw) || raw.startsWith("//")) return ""; try { const url = new URL(raw); return ["http:", "https:"].includes(url.protocol) ? url.toString() : ""; } catch { return ""; } }
-function hasText(value: unknown): value is string { return typeof value === "string" && value.trim().length > 0; }
-export default function DestinationAgencies({ agencies, locale }: { agencies: any[]; locale: "ar" | "fr" | "en" }) { const copy = { ar: { book: "احجز الآن", website: "الموقع الإلكتروني", disclosure: "الحجز والدفع يتمان على موقع الوكالة.", more: "عرض المزيد", less: "عرض أقل", instagram: "إنستغرام", facebook: "فيسبوك", tiktok: "TikTok", youtube: "YouTube", call: "اتصال" }, fr: { book: "Réserver", website: "Site web", disclosure: "Les réservations et paiements sont effectués sur le site de l’agence.", more: "Voir plus", less: "Voir moins", instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", youtube: "YouTube", call: "Appeler" }, en: { book: "Book now", website: "Website", disclosure: "Bookings and payments are completed on the agency website.", more: "Show more", less: "Show less", instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", youtube: "YouTube", call: "Call" } }[locale]; const render = (entry: any, index: number) => { const agency = entry.agency || {}; const name = hasText(agency.name) ? agency.name : "Agency"; const logo = hasText(agency.logo) ? agency.logo : hasText(agency.coverImage) ? agency.coverImage : ""; const booking = safeUrl(entry.bookingUrl) || safeUrl(agency.bookingUrl) || safeUrl(agency.website); const website = safeUrl(agency.website); const socials = [[agency.instagram, copy.instagram, "IG"], [agency.facebook, copy.facebook, "FB"], [agency.tiktok, copy.tiktok, "TT"], [agency.youtube, copy.youtube, "YT"]].map(([url, label, short]) => [safeUrl(url), label, short] as const).filter(([url]) => url); const description = hasText(entry.description?.[locale]) ? entry.description[locale] : hasText(agency.description) ? agency.description : ""; return <div key={entry._id || index} className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:px-4">{logo ? <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border border-ink/10 bg-sand"><Image src={logo} alt={name} fill sizes="44px" className="object-cover" /></div> : <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sand text-sm font-black text-forest" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</div>}<div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{name}</p>{hasText(agency.city) ? <p className="truncate text-[11px] text-ink/45">{agency.city}</p> : null}{description ? <p className="mt-0.5 line-clamp-1 text-[11px] text-ink/50">{description}</p> : null}</div><div className="flex flex-wrap items-center gap-1.5 sm:justify-end">{socials.map(([url, label, short]) => <a key={label} href={url} target="_blank" rel="noopener noreferrer" aria-label={`${name} ${label}`} className="rounded-lg border border-ink/10 px-2 py-1.5 text-[10px] font-bold text-ink/60 hover:border-forest hover:text-forest">{short}</a>)}{website ? <a href={website} target="_blank" rel="noopener noreferrer" aria-label={`${name} ${copy.website}`} className="rounded-lg border border-ink/10 px-2 py-1.5 text-[10px] font-bold text-ink/60 hover:border-forest hover:text-forest">{copy.website}</a> : null}{hasText(agency.phone) ? <a href={`tel:${agency.phone}`} aria-label={`${name} ${copy.call}`} className="rounded-lg border border-ink/10 px-2 py-1.5 text-[10px] font-bold text-ink/60 hover:border-forest hover:text-forest">{copy.call}</a> : null}{booking ? <a href={booking} target="_blank" rel="noopener noreferrer" aria-label={`${copy.book} - ${name}`} className="rounded-lg bg-forest px-3 py-1.5 text-[11px] font-black text-white hover:opacity-90">{copy.book}</a> : null}</div></div>; }; const visible = agencies.slice(0, 8); const extra = agencies.slice(8); return <><div className="divide-y divide-ink/10 overflow-hidden rounded-2xl border border-ink/10 bg-white">{visible.map(render)}</div>{extra.length ? <details className="mt-2"><summary className="cursor-pointer list-none text-center text-xs font-black text-forest"><span>{copy.more}</span><span className="ms-1">({extra.length})</span></summary><div className="mt-2 divide-y divide-ink/10 overflow-hidden rounded-2xl border border-ink/10 bg-white">{extra.map(render)}</div><p className="mt-2 text-center text-xs font-bold text-ink/40">{copy.less} · {extra.length}</p></details> : null}<p className="mt-2 text-[11px] leading-5 text-ink/40">{copy.disclosure}</p></>; }
+import { safeExternalUrl } from "@/lib/destinations";
+
+export default function DestinationAgencies({ agencies, locale }: { agencies: any[]; locale: "ar" | "fr" | "en" }) {
+  const copy = {
+    ar: { book: "احجز الآن", website: "الموقع", instagram: "إنستغرام", facebook: "فيسبوك", count: "وكالة" },
+    fr: { book: "Réserver", website: "Site web", instagram: "Instagram", facebook: "Facebook", count: "agences" },
+    en: { book: "Book Now", website: "Website", instagram: "Instagram", facebook: "Facebook", count: "agencies" },
+  }[locale];
+
+  const items = Array.isArray(agencies) ? agencies : [];
+  return (
+    <div className="overflow-hidden rounded-2xl border border-ink/10 bg-white">
+      {items.map((agency: any, index: number) => {
+        const name = String(agency?.name || "Agency").trim();
+        const logo = safeExternalUrl(agency?.logo);
+        const bookingUrl = safeExternalUrl(agency?.bookingUrl);
+        const instagram = safeExternalUrl(agency?.instagram);
+        const facebook = safeExternalUrl(agency?.facebook);
+        const website = safeExternalUrl(agency?.website);
+        const city = String(agency?.city || "").trim();
+        const description = String(agency?.description || "").trim();
+        return (
+          <div key={agency?._id || `${name}-${index}`} className="flex flex-col gap-3 border-b border-ink/10 px-3 py-3 last:border-b-0 sm:flex-row sm:items-center sm:px-4">
+            {logo ? (
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-ink/10 bg-sand">
+                <Image src={logo} alt={`${name} logo`} fill sizes="40px" className="object-cover" />
+              </div>
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand text-sm font-black text-forest" aria-hidden="true">
+                {name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-black">{name}</p>
+              {city ? <p className="truncate text-[11px] text-ink/45">{city}</p> : null}
+              {description ? <p className="mt-0.5 line-clamp-1 text-[11px] text-ink/50">{description}</p> : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
+              {instagram ? <a href={instagram} target="_blank" rel="noopener noreferrer" aria-label={`${name} ${copy.instagram}`} className="rounded-lg border border-ink/10 px-2 py-1.5 text-[10px] font-bold text-ink/60 hover:border-forest hover:text-forest">IG</a> : null}
+              {facebook ? <a href={facebook} target="_blank" rel="noopener noreferrer" aria-label={`${name} ${copy.facebook}`} className="rounded-lg border border-ink/10 px-2 py-1.5 text-[10px] font-bold text-ink/60 hover:border-forest hover:text-forest">FB</a> : null}
+              {website ? <a href={website} target="_blank" rel="noopener noreferrer" aria-label={`${name} ${copy.website}`} className="rounded-lg border border-ink/10 px-2 py-1.5 text-[10px] font-bold text-ink/60 hover:border-forest hover:text-forest">{copy.website}</a> : null}
+              {bookingUrl ? <a href={bookingUrl} target="_blank" rel="noopener noreferrer" aria-label={`${copy.book} - ${name}`} className="rounded-lg bg-forest px-3 py-1.5 text-[11px] font-black text-white hover:opacity-90">{copy.book}</a> : null}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

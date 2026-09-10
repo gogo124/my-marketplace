@@ -31,11 +31,24 @@ const SocialSchema = new Schema({
   other: String,
 }, { _id: false });
 
+// Legacy field kept for backwards compatibility with existing documents.
+// New destination agency data MUST use destinationAgencies below.
 const RecommendedAgencySchema = new Schema({
   agency: { type: Schema.Types.ObjectId, ref: "AgencyProfile", required: true },
   description: { type: LocalizedStringSchema, default: () => ({}) },
   bookingUrl: { type: String, default: "" },
   socials: { type: SocialSchema, default: () => ({}) },
+}, { _id: true });
+
+const DestinationAgencyEntrySchema = new Schema({
+  name: { type: String, required: true, trim: true },
+  logo: { type: String, default: "", trim: true },
+  bookingUrl: { type: String, required: true, trim: true },
+  city: { type: String, default: "", trim: true },
+  instagram: { type: String, default: "", trim: true },
+  facebook: { type: String, default: "", trim: true },
+  website: { type: String, default: "", trim: true },
+  description: { type: String, default: "", trim: true },
 }, { _id: true });
 
 const DestinationSchema = new Schema({
@@ -49,6 +62,9 @@ const DestinationSchema = new Schema({
   coverImagePublicId: { type: String, default: "" },
   gallery: { type: [GalleryImageSchema], default: [] },
   article: { type: [ArticleSectionSchema], default: [] },
+  // New source of truth for manually curated Destination agencies.
+  destinationAgencies: { type: [DestinationAgencyEntrySchema], default: [] },
+  // Kept so old documents are not destructively migrated.
   recommendedAgencies: { type: [RecommendedAgencySchema], default: [] },
   seoTitle: { type: LocalizedStringSchema, default: () => ({}) },
   seoDescription: { type: LocalizedStringSchema, default: () => ({}) },
