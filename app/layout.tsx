@@ -45,6 +45,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <head>
         <meta name="google-adsense-account" content="ca-pub-5658493317121341" />
         <Script
+          id="google-adsense"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5658493317121341"
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+        />
+        <Script
           id="ezoic-cmp"
           src="https://cmp.gatekeeperconsent.com/min.js"
           strategy="beforeInteractive"
