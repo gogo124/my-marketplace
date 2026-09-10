@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   icons: { icon: [{ url: "/favicon.ico" }, { url: "/icon-32.png", sizes: "32x32", type: "image/png" }, { url: "/icon-48.png", sizes: "48x48", type: "image/png" }], apple: "/apple-touch-icon.png" },
   category: "travel",
   openGraph: { type: "website", locale: "fr_FR", title: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب", description: "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.", siteName: "Moroccan Trip", images: [{ url: "/images/hero-main.jpg", width: 1600, height: 900, alt: "Moroccan Trip" }] },
-  twitter: { card: "summary_large_image", title: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب", description: "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.", images: ["/images/hero-main.jpg"] },
+  twitter: { card: "summary_large_image", title: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب", description: "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب.", images: ["/images/hero-main.jpg"] },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } }
 };
 
@@ -39,7 +39,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang={locale} dir={getDirection(locale)}>
-      <head><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8159536831776873" crossOrigin="anonymous" /></head>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `window.ezstandalone=window.ezstandalone||{};window.ezstandalone.cmd=window.ezstandalone.cmd||[];` }} />
+        <script src="https://cmp.gatekeeperconsent.com/min.js" data-cfasync="false" />
+        <script src="https://the.gatekeeperconsent.com/cmp.min.js" data-cfasync="false" />
+        <script src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" data-cfasync="false" />
+        <script src="https://ezoic.ai/ezoic/sa.min.js" data-cfasync="false" />
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8159536831776873" crossOrigin="anonymous" />
+      </head>
       <body className={`${alexandria.variable} bg-app text-slate-900`}>
         <a href="#main-content" className="skip-link">{locale === "ar" ? "تجاوز إلى المحتوى" : "Aller au contenu"}</a>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
