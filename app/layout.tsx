@@ -9,6 +9,7 @@ import { Header } from "@/components/header";
 import { SiteFooter } from "@/components/site-footer";
 import { LocaleDocumentSync } from "@/components/locale-document-sync";
 import { PublicEzoicPlacement } from "@/components/ads/PublicEzoicPlacement";
+import { EzoicRouteHandler } from "@/components/ads/EzoicRouteHandler";
 import { getDirection, resolveLocale, SITE_LOCALE_COOKIE } from "@/lib/i18n";
 import { getSiteUrl } from "@/lib/seo";
 import "./globals.css";
@@ -70,6 +71,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <a href="#main-content" className="skip-link">{locale === "ar" ? "تجاوز إلى المحتوى" : "Aller au contenu"}</a>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <AuthProvider>
+          <EzoicRouteHandler />
           <Suspense fallback={null}><AnalyticsTracker /><LocaleDocumentSync /><Header /></Suspense>
           <div id="main-content">{children}</div>
           <PublicEzoicPlacement />
