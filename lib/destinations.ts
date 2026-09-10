@@ -64,6 +64,19 @@ export function cleanDestinationAgencies(value: any) {
   return { data: result };
 }
 
+function normalizeDestination(value: any) {
+  if (!value) return value;
+  return {
+    ...value,
+    destinationAgencies: Array.isArray(value.destinationAgencies)
+      ? value.destinationAgencies.map((agency: any) => ({
+          ...agency,
+          bookNowUrl: agency?.bookNowUrl || agency?.bookingUrl || "",
+        }))
+      : [],
+  };
+}
+
 export function validateDestinationPayload(input: DestinationPayload) {
   const name = cleanLocalized(input.name);
   const shortDescription = cleanLocalized(input.shortDescription);
@@ -98,20 +111,23 @@ export function validateDestinationPayload(input: DestinationPayload) {
 
 export async function getPublishedDestinations() {
   await connectToDatabase();
-  return serializeDocument(await Destination.find({ published: true }).sort({ displayOrder: 1, featured: -1, createdAt: -1 }).lean());
+  const destinations = await Destination.find({ published: true }).sort({ displayOrder: 1, featured: -1, createdAt: -1 }).lean();
+  return serializeDocument(destinations.map(normalizeDestination));
 }
 
 export async function getFeaturedDestinations(limit = 6) {
   await connectToDatabase();
-  return serializeDocument(await Destination.find({ published: true, featured: true }).sort({ displayOrder: 1, createdAt: -1 }).limit(limit).lean());
+  const destinations = await Destination.find({ published: true, featured: true }).sort({ displayOrder: 1, createdAt: -1 }).limit(limit).lean();
+  return serializeDocument(destinations.map(normalizeDestination));
 }
 
 export async function getDestinationBySlug(slug: string) {
   await connectToDatabase();
-  return serializeDocument(await Destination.findOne({ slug, published: true }).lean());
+  return serializeDocument(normalizeDestination(await Destination.findOne({ slug, published: true }).lean()));
 }
 
 export async function getDestinationsForAdmin() {
   await connectToDatabase();
-  return serializeDocument(await Destination.find({}).sort({ displayOrder: 1, createdAt: -1 }).lean());
+  const destinations = await Destination.find({}).sort({ displayOrder: 1, createdAt: -1 }).lean();
+  return serializeDocument(destinations.map(normalizeDestination));
 }
