@@ -20,6 +20,15 @@ export function safeExternalUrl(value: any) {
   }
 }
 
+function cleanInstagram(value: any) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const url = safeExternalUrl(raw);
+  if (url) return url;
+  const username = raw.replace(/^@/, "");
+  return /^[A-Za-z0-9._]{1,30}$/.test(username) ? `https://instagram.com/${username}` : "";
+}
+
 function cleanWhatsApp(value: any) {
   const raw = String(value || "").trim();
   if (!raw) return "";
@@ -57,7 +66,8 @@ export function cleanDestinationAgencies(value: any) {
     if (!name) return { error: "Every destination agency must have a name." };
     if (!bookNowUrl) return { error: `Agency "${name}" must have a valid HTTP/HTTPS Book Now URL.` };
     const logo = raw?.logo ? safeExternalUrl(raw.logo) : "";
-    const instagram = raw?.instagram ? safeExternalUrl(raw.instagram) : "";
+    const instagram = cleanInstagram(raw?.instagram);
+    if (raw?.instagram && !instagram) return { error: `Agency "${name}" must have a valid Instagram username or URL.` };
     const whatsapp = cleanWhatsApp(raw?.whatsapp);
     result.push({ name, logo, instagram, whatsapp, bookNowUrl });
   }
