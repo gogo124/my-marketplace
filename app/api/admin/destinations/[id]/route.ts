@@ -11,10 +11,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id } = await params;
     const validation = validateDestinationPayload(await request.json());
     if ("error" in validation) return NextResponse.json({ error: validation.error }, { status: 400 });
+
+    // validateDestinationPayload has a broad legacy-compatible payload type.
+    // Narrow the successful branch before reading fields used by the API.
+    const data = validation.data as Record<string, any>;
     await connectToDatabase();
-    const existing = await Destination.findOne({ slug: validation.data.slug, _id: { $ne: id } });
+    const existing = await Destination.findOne({ slug: data.slug, _id: { $ne: id } });
     if (existing) return NextResponse.json({ error: "That destination slug is already in use." }, { status: 409 });
-    const destination = await Destination.findByIdAndUpdate(id, validation.data, { new: true, runValidators: true });
+    const destination = await Destination.findByIdAndUpdate(id, data, { new: true, runValidators: true });
     if (!destination) return NextResponse.json({ error: "Destination not found." }, { status: 404 });
     return NextResponse.json({ destination });
   } catch (error) {
