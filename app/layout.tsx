@@ -66,6 +66,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             window.ezstandalone.cmd = window.ezstandalone.cmd || [];
           `}
         </Script>
+        <Script
+          id="ezoic-analytics"
+          src="https://ezoicanalytics.com/analytics.js"
+          strategy="afterInteractive"
+        />
       </head>
       <body className={`${alexandria.variable} bg-app text-slate-900`}>
         <a href="#main-content" className="skip-link">{locale === "ar" ? "تجاوز إلى المحتوى" : "Aller au contenu"}</a>
