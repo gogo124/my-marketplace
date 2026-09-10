@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, MapPin, ArrowUpRight } from "lucide-react";
-import { AdSlot } from "@/components/ad-slot";
+import { Search, ArrowUpRight } from "lucide-react";
+import { EzoicAd } from "@/components/ads/EzoicAd";
+import { SmartLinkAd } from "@/components/ads/SmartLinkAd";
 import { ContentCarousel } from "@/components/content-carousel";
 import { getDirection, resolveLocale, localizeField, withLocale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/seo";
@@ -11,12 +12,36 @@ import { getPublishedDestinations } from "@/lib/destinations";
 export const revalidate = 60;
 export const metadata: Metadata = buildPageMetadata({ title: "Morocco Destinations | Moroccan Trip", description: "Discover Morocco through curated destination guides, travel stories and practical inspiration.", path: "/destinations" });
 
+function isValidImageUrl(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export default async function DestinationsPage({ searchParams }: { searchParams: Promise<{ lang?: string; q?: string }> }) {
   const params = await searchParams;
   const locale = resolveLocale(params.lang);
   const q = String(params.q || "").trim().toLowerCase();
-  const all = await getPublishedDestinations();
-  const destinations = (all as any[]).filter((item) => !q || [item.name, item.location, item.shortDescription].some((field) => localizeField(field, locale).toLowerCase().includes(q)));
+
+  let all: any[] = [];
+  try {
+    const result = await getPublishedDestinations();
+    all = Array.isArray(result) ? result : [];
+  } catch (error) {
+    console.error("[destinations] Failed to load published destinations.", error);
+  }
+
+  const destinations = all.filter((item) => {
+    if (!item || !item.slug || !isValidImageUrl(item.coverImage)) return false;
+    if (!q) return true;
+    return [item.name, item.location, item.shortDescription].some((field) =>
+      localizeField(field, locale).toLowerCase().includes(q)
+    );
+  });
   const featured = destinations.filter((item) => item.featured);
   const rest = destinations.filter((item) => !item.featured);
   const labels = {
@@ -47,9 +72,10 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
 
     {featured.length ? <section className="space-y-7"><div><p className="text-xs font-black uppercase tracking-[.25em] text-clay">Moroccan Trip</p><h2 className="mt-3 text-3xl font-black tracking-[-.03em] text-ink sm:text-5xl">{labels.featured}</h2></div><ContentCarousel label={labels.featured}>{featured.map((item: any) => card(item, true))}</ContentCarousel></section> : null}
 
-    <AdSlot id="destinations-top-ad" minHeight={100} />
+    <SmartLinkAd id="destinations-smartlink" />
+    <EzoicAd id="destinations-top-ad" />
 
     <section className="space-y-7"><div><p className="text-xs font-black uppercase tracking-[.25em] text-clay">{labels.all}</p><h2 className="mt-3 text-3xl font-black tracking-[-.03em] text-ink sm:text-5xl">{locale === "ar" ? "فين غادي تمشي من بعد؟" : locale === "fr" ? "Où partir ensuite ?" : "Where will you go next?"}</h2></div>{rest.length ? <ContentCarousel label={labels.all}>{rest.map((item: any) => card(item))}</ContentCarousel> : featured.length ? <ContentCarousel label={labels.all}>{featured.map((item: any) => card(item))}</ContentCarousel> : <div className="rounded-[2rem] border border-dashed border-ink/15 p-12 text-center text-ink/55">{labels.empty}</div>}</section>
-    <AdSlot id="destinations-bottom-ad" minHeight={100} />
+    <EzoicAd id="destinations-bottom-ad" />
   </main>;
 }
