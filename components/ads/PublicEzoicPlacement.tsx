@@ -4,7 +4,13 @@ import { usePathname } from "next/navigation";
 import { EzoicAd } from "@/components/ads/EzoicAd";
 
 function isPrivateRoute(pathname: string) {
-  return /^\/admin(?:\/|$)/.test(pathname) || /^\/dashboard(?:\/|$)/.test(pathname) || /^\/account(?:\/|$)/.test(pathname) || pathname === "/login" || pathname === "/register";
+  return (
+    /^\/admin(?:\/|$)/.test(pathname) ||
+    /^\/dashboard(?:\/|$)/.test(pathname) ||
+    /^\/account(?:\/|$)/.test(pathname) ||
+    pathname === "/login" ||
+    pathname === "/register"
+  );
 }
 
 export function PublicEzoicPlacement() {
@@ -21,9 +27,5 @@ export function PublicEzoicPlacement() {
     );
   }
 
-  if (pathname === "/" || pathname === "" || pathname.startsWith("/travel-partners")) {
-    return <EzoicAd id="public-lower-ad" />;
-  }
-
-  return null;
+  return <EzoicAd id="public-lower-ad" />;
 }
