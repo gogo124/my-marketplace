@@ -20,6 +20,14 @@ export function safeExternalUrl(value: any) {
   }
 }
 
+function cleanWhatsApp(value: any) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\/wa\.me\//i.test(raw)) return safeExternalUrl(raw);
+  const digits = raw.replace(/\D/g, "");
+  return digits.length >= 7 ? digits : "";
+}
+
 function cleanArticle(article: any) {
   if (!Array.isArray(article)) return [];
   return article.slice(0, 80).map((section) => ({
@@ -45,23 +53,13 @@ export function cleanDestinationAgencies(value: any) {
   const result: any[] = [];
   for (const raw of value.slice(0, 100)) {
     const name = String(raw?.name || "").trim();
-    const bookingUrl = safeExternalUrl(raw?.bookingUrl);
+    const bookNowUrl = safeExternalUrl(raw?.bookNowUrl || raw?.bookingUrl);
     if (!name) return { error: "Every destination agency must have a name." };
-    if (!bookingUrl) return { error: `Agency "${name}" must have a valid HTTP/HTTPS booking URL.` };
+    if (!bookNowUrl) return { error: `Agency "${name}" must have a valid HTTP/HTTPS Book Now URL.` };
     const logo = raw?.logo ? safeExternalUrl(raw.logo) : "";
     const instagram = raw?.instagram ? safeExternalUrl(raw.instagram) : "";
-    const facebook = raw?.facebook ? safeExternalUrl(raw.facebook) : "";
-    const website = raw?.website ? safeExternalUrl(raw.website) : "";
-    result.push({
-      name,
-      logo,
-      bookingUrl,
-      city: String(raw?.city || raw?.location || "").trim(),
-      instagram,
-      facebook,
-      website,
-      description: String(raw?.description || "").trim(),
-    });
+    const whatsapp = cleanWhatsApp(raw?.whatsapp);
+    result.push({ name, logo, instagram, whatsapp, bookNowUrl });
   }
   return { data: result };
 }
