@@ -10,22 +10,30 @@ type EzoicAdProps = {
   label?: string;
 };
 
-let lastRequestedPath = "";
+const requestedPlacements = new Set<string>();
+const initializedPaths = new Set<string>();
 
-export function EzoicAd({ id, className = "", label = "Advertisement" }: EzoicAdProps) {
+export function EzoicAd({ id = "ezoic-ad", className = "", label = "Advertisement" }: EzoicAdProps) {
   const pathname = usePathname();
   const requestedRef = useRef(false);
 
   useEffect(() => {
-    if (requestedRef.current || !pathname || lastRequestedPath === pathname) return;
+    if (requestedRef.current || !pathname) return;
+
+    const placementKey = `${pathname}:${id}`;
+    if (requestedPlacements.has(placementKey)) return;
 
     requestedRef.current = true;
-    lastRequestedPath = pathname;
+    requestedPlacements.add(placementKey);
 
     runEzoic(() => {
+      if (!initializedPaths.has(pathname)) {
+        window.ezstandalone?.destroyAll?.();
+        initializedPaths.add(pathname);
+      }
       window.ezstandalone?.showAds({});
     });
-  }, [pathname]);
+  }, [id, pathname]);
 
   return (
     <div
