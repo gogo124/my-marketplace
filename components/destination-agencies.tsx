@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { Instagram } from "lucide-react";
 import { safeExternalUrl } from "@/lib/destinations";
 
 function whatsappHref(value: unknown) {
@@ -33,6 +32,10 @@ function instagramLabel(value: unknown) {
   }
 }
 
+function InstagramIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 shrink-0 fill-none stroke-current" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r=".75" fill="currentColor" stroke="none" /></svg>;
+}
+
 function WhatsAppIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 fill-current"><path d="M20.5 3.5A11.9 11.9 0 0 0 12.03 0C5.46 0 .11 5.35.11 11.92c0 2.1.55 4.15 1.6 5.96L.01 24l6.27-1.65a11.87 11.87 0 0 0 5.75 1.47h.01c6.56 0 11.91-5.35 11.91-11.92 0-3.18-1.24-6.17-3.45-8.4Zm-8.47 18.3h-.01a9.86 9.86 0 0 1-5.02-1.38l-.36-.21-3.72.98.99-3.63-.24-.37a9.86 9.86 0 1 1 8.36 4.61Zm5.41-7.39c-.3-.15-1.78-.88-2.05-.98-.28-.1-.48-.15-.68.15-.2.3-.78.98-.96 1.18-.18.2-.35.23-.65.08-.3-.15-1.25-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.53.15-.18.2-.3.3-.5.1-.2.05-.38-.03-.53-.08-.15-.68-1.64-.93-2.25-.24-.58-.49-.5-.68-.51h-.58c-.2 0-.53.08-.8.38-.28.3-1.05 1.03-1.05 2.51s1.08 2.91 1.23 3.11c.15.2 2.12 3.24 5.14 4.54.72.31 1.28.49 1.72.63.72.23 1.38.2 1.9.12.58-.09 1.78-.73 2.03-1.43.25-.7.25-1.3.18-1.43-.08-.13-.28-.2-.58-.35Z" /></svg>;
 }
@@ -60,7 +63,7 @@ export default function DestinationAgencies({ agencies, locale }: { agencies: an
           <div className="min-w-0"><p className="text-xs font-black uppercase tracking-[.18em] text-clay">{copy.title}</p><h3 className="mt-1 truncate text-xl font-black">{name}</h3></div>
         </div>
         <div className="mt-auto space-y-2 pt-6">
-          {instagram && instagramText ? <a href={instagram} target="_blank" rel="noopener noreferrer" className="flex w-fit max-w-full items-center gap-2 text-sm font-bold text-ink/70 transition hover:text-forest" aria-label={`Instagram ${instagramText}`}><Instagram className="h-4 w-4 shrink-0" aria-hidden="true" /><span className="truncate">{instagramText}</span></a> : null}
+          {instagram && instagramText ? <a href={instagram} target="_blank" rel="noopener noreferrer" className="flex w-fit max-w-full items-center gap-2 text-sm font-bold text-ink/70 transition hover:text-forest" aria-label={`Instagram ${instagramText}`}><InstagramIcon /><span className="truncate">{instagramText}</span></a> : null}
           {whatsapp && whatsappText ? <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="flex w-fit max-w-full items-center gap-2 text-sm font-bold text-ink/70 transition hover:text-forest" aria-label={`WhatsApp ${whatsappText}`}><WhatsAppIcon /><span className="truncate">{whatsappText}</span></a> : null}
           {bookingUrl ? <div className="flex justify-end pt-1"><a href={bookingUrl} target="_blank" rel="noopener noreferrer" aria-label={`${copy.book} - ${name}`} className="rounded-xl bg-forest px-5 py-2.5 text-sm font-black text-white transition hover:opacity-90">{copy.book}</a></div> : null}
         </div>
