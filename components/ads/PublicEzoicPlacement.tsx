@@ -3,19 +3,27 @@
 import { usePathname } from "next/navigation";
 import { EzoicAd } from "@/components/ads/EzoicAd";
 
-function isPublicAdRoute(pathname: string) {
-  if (pathname === "/" || pathname === "") return true;
-  if (/^\/admin(?:\/|$)/.test(pathname)) return false;
-  if (/^\/dashboard(?:\/|$)/.test(pathname)) return false;
-  if (/^\/account(?:\/|$)/.test(pathname)) return false;
-  if (pathname === "/login" || pathname === "/register") return false;
-  return pathname.startsWith("/travel-partners");
+function isPrivateRoute(pathname: string) {
+  return /^\/admin(?:\/|$)/.test(pathname) || /^\/dashboard(?:\/|$)/.test(pathname) || /^\/account(?:\/|$)/.test(pathname) || pathname === "/login" || pathname === "/register";
 }
 
 export function PublicEzoicPlacement() {
   const pathname = usePathname();
 
-  if (!pathname || !isPublicAdRoute(pathname)) return null;
+  if (!pathname || isPrivateRoute(pathname)) return null;
 
-  return <EzoicAd id="public-lower-ad" />;
+  if (/^\/destinations\/[^/]+$/.test(pathname)) {
+    return (
+      <>
+        <EzoicAd id="destination-detail-ad-1" />
+        <EzoicAd id="destination-detail-ad-2" />
+      </>
+    );
+  }
+
+  if (pathname === "/" || pathname === "" || pathname.startsWith("/travel-partners")) {
+    return <EzoicAd id="public-lower-ad" />;
+  }
+
+  return null;
 }
