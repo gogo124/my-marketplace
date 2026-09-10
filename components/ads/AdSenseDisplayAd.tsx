@@ -2,19 +2,20 @@
 
 import { useEffect } from "react";
 
-declare global {
-  interface Window {
-    adsbygoogle: unknown[];
-  }
-}
-
 const ADSENSE_CLIENT = "ca-pub-5658493317121341";
 const ADSENSE_SLOT = "1854084209";
+
+type AdsByGoogleWindow = Window & {
+  adsbygoogle?: unknown[];
+};
 
 export function AdSenseDisplayAd({ id }: { id: string }) {
   useEffect(() => {
     try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
+      const win = window as AdsByGoogleWindow;
+      const ads = win.adsbygoogle || [];
+      ads.push({});
+      win.adsbygoogle = ads;
     } catch {
       // AdSense may not be available yet.
     }
