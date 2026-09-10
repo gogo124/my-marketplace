@@ -43,7 +43,9 @@ export default async function DestinationPage({ params, searchParams }: PageProp
   const intro = localizeField(item.intro, locale) || localizeField(item.shortDescription, locale);
   const article = Array.isArray(item.article) ? item.article : [];
   const gallery = Array.isArray(item.gallery) ? item.gallery.filter((image: any) => typeof image?.url === "string" && image.url.trim()) : [];
-  const agencies = Array.isArray(item.destinationAgencies) ? item.destinationAgencies.filter((entry: any) => entry?.name && entry?.bookingUrl) : [];
+  const agencies = Array.isArray(item.destinationAgencies)
+    ? item.destinationAgencies.filter((entry: any) => entry?.name && entry?.bookNowUrl)
+    : [];
 
   return (
     <main dir={getDirection(locale)} className="page-shell max-w-[1320px] pb-24">
