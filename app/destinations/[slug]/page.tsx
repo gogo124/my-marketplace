@@ -44,7 +44,7 @@ export default async function DestinationPage({ params, searchParams }: PageProp
   const article = Array.isArray(item.article) ? item.article : [];
   const gallery = Array.isArray(item.gallery) ? item.gallery.filter((image: any) => typeof image?.url === "string" && image.url.trim()) : [];
   const agencies = Array.isArray(item.destinationAgencies)
-    ? item.destinationAgencies.filter((entry: any) => entry?.name && entry?.bookNowUrl)
+    ? item.destinationAgencies.filter((entry: any) => entry?.name)
     : [];
 
   return (
