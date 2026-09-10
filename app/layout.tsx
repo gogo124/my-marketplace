@@ -71,8 +71,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           src="https://ezoicanalytics.com/analytics.js"
           strategy="afterInteractive"
         />
-        <Script id="monetag-tag-11763456" strategy="afterInteractive">
-          {`(function(s){s.dataset.zone='11763456',s.src='https://nap5k.com/tag.min.js'})([document.documentElement,document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`}
+        <Script id="monetag-tag-11763471" strategy="afterInteractive">
+          {`(function(s){s.dataset.zone='11763471',s.src='https://nap5k.com/tag.min.js'})([document.documentElement,document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`}
         </Script>
       </head>
       <body className={`${alexandria.variable} bg-app text-slate-900`}>
