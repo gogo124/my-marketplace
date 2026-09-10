@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Script from "next/script";
 import { cookies, headers } from "next/headers";
 import { Alexandria } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
@@ -40,12 +41,29 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={locale} dir={getDirection(locale)}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `window.ezstandalone=window.ezstandalone||{};window.ezstandalone.cmd=window.ezstandalone.cmd||[];` }} />
-        <script src="https://cmp.gatekeeperconsent.com/min.js" data-cfasync="false" />
-        <script src="https://the.gatekeeperconsent.com/cmp.min.js" data-cfasync="false" />
-        <script src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" data-cfasync="false" />
-        <script src="https://ezoic.ai/ezoic/sa.min.js" data-cfasync="false" />
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8159536831776873" crossOrigin="anonymous" />
+        <Script
+          id="ezoic-cmp"
+          src="https://cmp.gatekeeperconsent.com/min.js"
+          strategy="beforeInteractive"
+          data-cfasync="false"
+        />
+        <Script
+          id="ezoic-cmp-2"
+          src="https://the.gatekeeperconsent.com/cmp.min.js"
+          strategy="beforeInteractive"
+          data-cfasync="false"
+        />
+        <Script
+          id="ezoic-sa"
+          src="https://www.ezojs.com/ezoic/sa.min.js"
+          strategy="afterInteractive"
+        />
+        <Script id="ezoic-init" strategy="afterInteractive">
+          {`
+            window.ezstandalone = window.ezstandalone || {};
+            window.ezstandalone.cmd = window.ezstandalone.cmd || [];
+          `}
+        </Script>
       </head>
       <body className={`${alexandria.variable} bg-app text-slate-900`}>
         <a href="#main-content" className="skip-link">{locale === "ar" ? "تجاوز إلى المحتوى" : "Aller au contenu"}</a>
