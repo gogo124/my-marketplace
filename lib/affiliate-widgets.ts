@@ -27,7 +27,7 @@ export function validateAffiliateWidgetPayload(payload: unknown): { data: Affili
   if (type !== "affiliate_link" && !embedCode) return { error: "Embed code is required for this widget type." };
   if (type !== "affiliate_link" && !validateAffiliateWidgetEmbed(provider, embedCode)) return { error: "Unsupported or unsafe embed. Use an HTTPS iframe or the selected provider's official widget code." };
   if (type === "affiliate_link" && embedCode) return { error: "Affiliate links do not need embed code." };
-  return { data: { name, provider, type, placement, destinationId, destinationSlug, embedCode, affiliateUrl, active } };
+  return { data: { name, provider, type, placement, destinationId: placement === "destinations" ? destinationId : null, destinationSlug: placement === "destinations" ? destinationSlug : "", embedCode, affiliateUrl, active } };
 }
 export async function getAffiliateWidgetsForAdmin() { await connectToDatabase(); return serializeDocument(await AffiliateWidget.find({}).sort({ createdAt: -1 }).lean()) as any[]; }
 export async function getPublishedAffiliateWidgets(placement: AffiliateWidgetInput["placement"], destinationSlug = "") {
@@ -43,4 +43,10 @@ export async function getPublishedAffiliateWidgets(placement: AffiliateWidgetInp
   ] };
   return serializeDocument(await AffiliateWidget.find(query).sort({ createdAt: -1 }).lean()) as any[];
 }
-export async function normalizeAffiliateWidgetDestination(data: AffiliateWidgetInput) { if (!data.destinationId) return { ...data, destinationSlug: "" }; await connectToDatabase(); const destination = await Destination.findById(data.destinationId).select("_id slug").lean(); if (!destination) throw new Error("Destination not found."); return { ...data, destinationSlug: String(destination.slug).toLowerCase() }; }
+export async function normalizeAffiliateWidgetDestination(data: AffiliateWidgetInput) {
+  if (data.placement !== "destinations" || !data.destinationId) return { ...data, destinationId: null, destinationSlug: "" };
+  await connectToDatabase();
+  const destination = await Destination.findById(data.destinationId).select("_id slug").lean();
+  if (!destination) throw new Error("Destination not found.");
+  return { ...data, destinationSlug: String(destination.slug).toLowerCase() };
+}
