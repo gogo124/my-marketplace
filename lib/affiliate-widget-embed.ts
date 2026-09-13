@@ -39,7 +39,7 @@ function findOpeningTag(value: string, tag: string, predicate?: (attrs: Record<s
 
 function extractScripts(value: string): string[] | null {
   const sources: string[] = [];
-  const pattern = /<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi;
+  const pattern = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(value))) {
     const attrs = parseAttributes(match[1]);
@@ -47,7 +47,7 @@ function extractScripts(value: string): string[] | null {
     if (!src || match[2].trim()) return null;
     sources.push(src);
   }
-  if (/<script\\b/i.test(value) && !sources.length) return null;
+  if (/<script\b/i.test(value) && !sources.length) return null;
   return sources;
 }
 
@@ -62,7 +62,7 @@ function isTrustedScript(provider: AffiliateWidgetProvider, source: string): boo
 }
 
 function iframeSource(value: string): string | null {
-  const match = value.match(/<iframe\\b[^>]*\\bsrc=["']([^"']+)["'][^>]*>/i);
+  const match = value.match(/<iframe\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/i);
   if (!match) return null;
   try {
     const url = new URL(match[1]);
@@ -106,7 +106,7 @@ function getProviderWidget(provider: AffiliateWidgetProvider, value: string): Sa
   }
 
   if (provider === "Booking") {
-    const tag = findOpeningTag(value, "ins", (attrs) => /(^|\\s)bookingaff(?:\\s|$)/i.test(attrs.class || "") && Boolean(attrs["data-aid"] && attrs["data-target_aid"] && attrs["data-prod"]));
+    const tag = findOpeningTag(value, "ins", (attrs) => /(^|\s)bookingaff(?:\s|$)/i.test(attrs.class || "") && Boolean(attrs["data-aid"] && attrs["data-target_aid"] && attrs["data-prod"]));
     if (!tag) return null;
     const allowed = new Set([
       "data-aid", "data-target_aid", "data-prod", "data-width", "data-height", "data-lang", "data-currency",
