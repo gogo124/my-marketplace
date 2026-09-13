@@ -1,38 +1,139 @@
-import { isValidObjectId } from "mongoose";
-import { connectToDatabase } from "@/lib/db";
-import { serializeDocument } from "@/lib/utils";
-import AffiliateWidget from "@/models/AffiliateWidget";
-import Destination from "@/models/Destination";
+export type AffiliateWidgetProvider = "Viator" | "GetYourGuide" | "Tripadvisor" | "Booking" | "Other";
 
-export const AFFILIATE_WIDGET_PROVIDERS = ["Viator", "GetYourGuide", "Tripadvisor", "Booking", "Other"] as const;
-export const AFFILIATE_WIDGET_TYPES = ["widget", "embed", "affiliate_link"] as const;
-export const AFFILIATE_WIDGET_PLACEMENTS = ["activities", "destinations", "camping"] as const;
-const clean = (value: unknown) => typeof value === "string" ? value.trim() : "";
-const isHttpUrl = (value: string) => { try { const protocol = new URL(value).protocol; return protocol === "http:" || protocol === "https:"; } catch { return false; } };
-const hasSupportedIframe = (value: string) => {
-  const match = value.match(/<iframe\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/i);
-  if (!match) return false;
-  try { return new URL(match[1]).protocol === "https:"; } catch { return false; }
+type ParsedTag = { tag: string; attrs: Record<string, string> };
+export type SafeAffiliateEmbed =
+  | { kind: "iframe"; src: string }
+  | { kind: "viator"; attrs: Record<string, string> }
+  | { kind: "getyourguide"; attrs: Record<string, string> }
+  | { kind: "booking"; attrs: Record<string, string> };
+
+const TRUSTED_SCRIPT_HOSTS: Record<AffiliateWidgetProvider, string[]> = {
+  Viator: ["www.viator.com"],
+  GetYourGuide: ["widget.getyourguide.com"],
+  Tripadvisor: ["www.tripadvisor.com"],
+  Booking: ["aff.bstatic.com"],
+  Other: [],
 };
-export type AffiliateWidgetInput = { name: string; provider: typeof AFFILIATE_WIDGET_PROVIDERS[number]; type: typeof AFFILIATE_WIDGET_TYPES[number]; placement: typeof AFFILIATE_WIDGET_PLACEMENTS[number]; destinationId: string | null; destinationSlug: string; embedCode: string; affiliateUrl: string; active: boolean };
-export function validateAffiliateWidgetPayload(payload: unknown): { data: AffiliateWidgetInput } | { error: string } {
-  const input = (payload || {}) as Record<string, unknown>;
-  const name = clean(input.name); const provider = clean(input.provider) as AffiliateWidgetInput["provider"]; const type = clean(input.type) as AffiliateWidgetInput["type"]; const placement = clean(input.placement) as AffiliateWidgetInput["placement"];
-  const destinationId = clean(input.destinationId) || null; const destinationSlug = clean(input.destinationSlug).toLowerCase(); const embedCode = clean(input.embedCode); const affiliateUrl = clean(input.affiliateUrl); const active = input.active !== false;
-  if (name.length < 2 || name.length > 160) return { error: "Widget name must be between 2 and 160 characters." };
-  if (!AFFILIATE_WIDGET_PROVIDERS.includes(provider)) return { error: "Select a valid provider." };
-  if (!AFFILIATE_WIDGET_TYPES.includes(type)) return { error: "Select a valid widget type." };
-  if (!AFFILIATE_WIDGET_PLACEMENTS.includes(placement)) return { error: "Select a valid placement." };
-  if (destinationId && !isValidObjectId(destinationId)) return { error: "Invalid destination." };
-  if (destinationSlug.length > 180) return { error: "Invalid destination slug." };
-  if (embedCode.length > 50000) return { error: "Embed code is too large." };
-  if (affiliateUrl.length > 2048) return { error: "Affiliate URL is too long." };
-  if (type === "affiliate_link" && !isHttpUrl(affiliateUrl)) return { error: "Affiliate URL must be a valid HTTP or HTTPS URL." };
-  if (type !== "affiliate_link" && !embedCode) return { error: "Embed code is required for this widget type." };
-  if (type !== "affiliate_link" && !hasSupportedIframe(embedCode)) return { error: "Embed code must contain an HTTPS iframe." };
-  if (type === "affiliate_link" && embedCode) return { error: "Affiliate links do not need embed code." };
-  return { data: { name, provider, type, placement, destinationId, destinationSlug, embedCode, affiliateUrl, active } };
+
+const VIATOR_SCRIPT = "https://www.viator.com/orion/partner/widget.js";
+const GETYOURGUIDE_SCRIPT = "https://widget.getyourguide.com/dist/pa.umd.production.min.js";
+const BOOKING_SCRIPT = "https://aff.bstatic.com/static/affiliate_base/js/flexiproduct.js";
+
+function parseAttributes(source: string): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  const attributePattern = /([:\w-]+)\s*=\s*(["'])(.*?)\2/g;
+  let match: RegExpExecArray | null;
+  while ((match = attributePattern.exec(source))) attrs[match[1].toLowerCase()] = match[3];
+  return attrs;
 }
-export async function getAffiliateWidgetsForAdmin() { await connectToDatabase(); return serializeDocument(await AffiliateWidget.find({}).sort({ createdAt: -1 }).lean()) as any[]; }
-export async function getPublishedAffiliateWidgets(placement: AffiliateWidgetInput["placement"], destinationSlug = "") { await connectToDatabase(); const slug = destinationSlug.trim().toLowerCase(); const query = slug ? { active: true, placement, $or: [{ destinationSlug: "" }, { destinationSlug: slug }] } : { active: true, placement, destinationSlug: "" }; return serializeDocument(await AffiliateWidget.find(query).sort({ createdAt: -1 }).lean()) as any[]; }
-export async function normalizeAffiliateWidgetDestination(data: AffiliateWidgetInput) { if (!data.destinationId) return { ...data, destinationSlug: "" }; await connectToDatabase(); const destination = await Destination.findById(data.destinationId).select("_id slug").lean(); if (!destination) throw new Error("Destination not found."); return { ...data, destinationSlug: String(destination.slug).toLowerCase() }; }
+
+function findOpeningTag(value: string, tag: string, predicate?: (attrs: Record<string, string>) => boolean): ParsedTag | null {
+  const pattern = new RegExp(`<${tag}\\b([^>]*)>`, "gi");
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(value))) {
+    const attrs = parseAttributes(match[1]);
+    if (!predicate || predicate(attrs)) return { tag: tag.toLowerCase(), attrs };
+  }
+  return null;
+}
+
+function extractScripts(value: string): string[] | null {
+  const sources: string[] = [];
+  const pattern = /<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(value))) {
+    const attrs = parseAttributes(match[1]);
+    const src = attrs.src?.trim();
+    if (!src || match[2].trim()) return null;
+    sources.push(src);
+  }
+  if (/<script\\b/i.test(value) && !sources.length) return null;
+  return sources;
+}
+
+function isTrustedScript(provider: AffiliateWidgetProvider, source: string): boolean {
+  try {
+    const url = new URL(source);
+    if (url.protocol !== "https:") return false;
+    return TRUSTED_SCRIPT_HOSTS[provider].includes(url.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+function iframeSource(value: string): string | null {
+  const match = value.match(/<iframe\\b[^>]*\\bsrc=["']([^"']+)["'][^>]*>/i);
+  if (!match) return null;
+  try {
+    const url = new URL(match[1]);
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function onlyDataAttributes(attrs: Record<string, string>, prefix: string, allowed?: Set<string>): Record<string, string> {
+  const output: Record<string, string> = {};
+  for (const [key, value] of Object.entries(attrs)) {
+    if (!key.startsWith(prefix)) continue;
+    if (allowed && !allowed.has(key)) continue;
+    output[key] = value;
+  }
+  return output;
+}
+
+function getProviderWidget(provider: AffiliateWidgetProvider, value: string): SafeAffiliateEmbed | null {
+  if (provider === "Viator") {
+    const tag = findOpeningTag(value, "div", (attrs) => Boolean(attrs["data-vi-partner-id"] && attrs["data-vi-widget-ref"]));
+    if (!tag) return null;
+    const attrs = onlyDataAttributes(tag.attrs, "data-vi-");
+    return attrs["data-vi-partner-id"] && attrs["data-vi-widget-ref"] ? { kind: "viator", attrs } : null;
+  }
+
+  if (provider === "GetYourGuide") {
+    const tag = findOpeningTag(value, "div", (attrs) => Boolean(attrs["data-gyg-widget"]));
+    if (!tag) return null;
+    if (tag.attrs["data-gyg-href"]) {
+      try {
+        const href = new URL(tag.attrs["data-gyg-href"]);
+        if (href.protocol !== "https:" || href.hostname.toLowerCase() !== "widget.getyourguide.com") return null;
+      } catch {
+        return null;
+      }
+    }
+    const attrs = onlyDataAttributes(tag.attrs, "data-gyg-");
+    return attrs["data-gyg-widget"] ? { kind: "getyourguide", attrs } : null;
+  }
+
+  if (provider === "Booking") {
+    const tag = findOpeningTag(value, "ins", (attrs) => /(^|\\s)bookingaff(?:\\s|$)/i.test(attrs.class || "") && Boolean(attrs["data-aid"] && attrs["data-target_aid"] && attrs["data-prod"]));
+    if (!tag) return null;
+    const allowed = new Set([
+      "data-aid", "data-target_aid", "data-prod", "data-width", "data-height", "data-lang", "data-currency",
+      "data-dest_id", "data-dest_type", "data-latitude", "data-longitude", "data-mwhsb", "data-checkin", "data-checkout",
+      "data-hid", "data-landmark_name", "data-show_rw_logo", "data-show_rw_badge", "data-show_rw_text", "data-show_rw_border",
+    ]);
+    const attrs = onlyDataAttributes(tag.attrs, "data-", allowed);
+    return attrs["data-aid"] && attrs["data-target_aid"] && attrs["data-prod"] ? { kind: "booking", attrs } : null;
+  }
+
+  return null;
+}
+
+export function getSafeAffiliateEmbed(provider: AffiliateWidgetProvider, value: string): SafeAffiliateEmbed | null {
+  const iframe = iframeSource(value);
+  const scripts = extractScripts(value);
+  if (scripts === null || scripts.some((source) => !isTrustedScript(provider, source))) return null;
+  if (iframe) return { kind: "iframe", src: iframe };
+  return getProviderWidget(provider, value);
+}
+
+export function validateAffiliateWidgetEmbed(provider: AffiliateWidgetProvider, value: string): boolean {
+  return getSafeAffiliateEmbed(provider, value) !== null;
+}
+
+export const APPROVED_WIDGET_SCRIPTS = {
+  Viator: VIATOR_SCRIPT,
+  GetYourGuide: GETYOURGUIDE_SCRIPT,
+  Booking: BOOKING_SCRIPT,
+} as const;
