@@ -4,7 +4,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import DestinationGallery from "@/components/destination-gallery";
 import DestinationAgencies from "@/components/destination-agencies";
+import { AffiliateWidgetSection } from "@/components/affiliate-widget-renderer";
 import { getDestinationBySlug } from "@/lib/destinations";
+import { getPublishedAffiliateWidgets } from "@/lib/affiliate-widgets";
 import { getDirection, localizeField, resolveLocale, withLocale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/seo";
 
@@ -37,6 +39,10 @@ export default async function DestinationPage({ params, searchParams }: PageProp
   const t = copy[locale];
   const item: any = await getDestinationBySlug(slug);
   if (!item) notFound();
+
+  const [affiliateWidgets] = await Promise.all([
+    getPublishedAffiliateWidgets("destinations", slug),
+  ]);
 
   const name = localizeField(item.name, locale, "Morocco destination");
   const location = localizeField(item.location, locale);
@@ -76,6 +82,17 @@ export default async function DestinationPage({ params, searchParams }: PageProp
           if (section?.type === "tip") return title || body ? <section key={section._id || index} className="rounded-2xl bg-sand/60 p-6"><p className="text-xs font-black uppercase tracking-widest text-clay">{t.tip}</p>{title ? <h2 className="mt-2 text-2xl font-black">{title}</h2> : null}{body ? <p className="mt-2 whitespace-pre-line leading-8 text-ink/70">{body}</p> : null}</section> : null;
           return !title && !body ? null : <section key={section._id || index}>{title ? <h2 className="text-3xl font-black">{title}</h2> : null}{body ? <p className="mt-2 whitespace-pre-line text-base leading-8 text-ink/70">{body}</p> : null}</section>;
         })}</div></div>
+
+        <AffiliateWidgetSection
+          widgets={affiliateWidgets}
+          title={
+            locale === "ar"
+              ? "عروض الشركاء"
+              : locale === "fr"
+                ? "Offres des partenaires"
+                : "Partner offers"
+          }
+        />
       </article>
     </main>
   );
