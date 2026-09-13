@@ -22,20 +22,12 @@ const GalleryImageSchema = new Schema({
   caption: { type: LocalizedStringSchema, default: () => ({}) },
 }, { _id: true });
 
-const SocialSchema = new Schema({
-  instagram: String,
-  facebook: String,
-  tiktok: String,
-  youtube: String,
-  website: String,
-  other: String,
-}, { _id: false });
-
-const RecommendedAgencySchema = new Schema({
-  agency: { type: Schema.Types.ObjectId, ref: "AgencyProfile", required: true },
-  description: { type: LocalizedStringSchema, default: () => ({}) },
-  bookingUrl: { type: String, default: "" },
-  socials: { type: SocialSchema, default: () => ({}) },
+const DestinationAgencyEntrySchema = new Schema({
+  name: { type: String, required: true, trim: true },
+  logo: { type: String, default: "", trim: true },
+  instagram: { type: String, default: "", trim: true },
+  whatsapp: { type: String, default: "", trim: true },
+  bookNowUrl: { type: String, required: true, trim: true },
 }, { _id: true });
 
 const DestinationSchema = new Schema({
@@ -49,7 +41,7 @@ const DestinationSchema = new Schema({
   coverImagePublicId: { type: String, default: "" },
   gallery: { type: [GalleryImageSchema], default: [] },
   article: { type: [ArticleSectionSchema], default: [] },
-  recommendedAgencies: { type: [RecommendedAgencySchema], default: [] },
+  destinationAgencies: { type: [DestinationAgencyEntrySchema], default: [] },
   seoTitle: { type: LocalizedStringSchema, default: () => ({}) },
   seoDescription: { type: LocalizedStringSchema, default: () => ({}) },
   featured: { type: Boolean, default: false, index: true },
