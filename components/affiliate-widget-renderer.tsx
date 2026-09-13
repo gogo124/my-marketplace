@@ -1,32 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef } from "react";
-import { getSafeAffiliateEmbed } from "@/lib/affiliate-widget-embed";
+import { useEffect, useMemo } from "react";
+import { getSafeAffiliateEmbed, APPROVED_WIDGET_SCRIPTS } from "@/lib/affiliate-widget-embed";
 
 type Widget = { _id?: string; name?: string; provider?: "Viator" | "GetYourGuide" | "Tripadvisor" | "Booking" | "Other"; type?: string; embedCode?: string; affiliateUrl?: string; active?: boolean };
 
+type ProviderEmbed = Exclude<ReturnType<typeof getSafeAffiliateEmbed>, { kind: "iframe" } | null>;
 const loadedScripts = new Set<string>();
 
-function ProviderWidget({ widget, parsed }: { widget: Widget; parsed: Exclude<ReturnType<typeof getSafeAffiliateEmbed>, { kind: "iframe" } | null> }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    for (const source of parsed.scripts) {
-      if (loadedScripts.has(source)) continue;
-      const script = document.createElement("script");
-      script.src = source;
-      script.async = true;
-      script.dataset.moroccanTripAffiliate = "true";
-      document.body.appendChild(script);
-      loadedScripts.add(source);
-    }
-  }, [parsed.scripts]);
+function ProviderWidget({ widget, parsed }: { widget: Widget; parsed: ProviderEmbed }) {
+  const script = parsed.kind === "viator" ? APPROVED_WIDGET_SCRIPTS.Viator : parsed.kind === "getyourguide" ? APPROVED_WIDGET_SCRIPTS.GetYourGuide : parsed.kind === "booking" ? APPROVED_WIDGET_SCRIPTS.Booking : null;
 
-  return <div ref={ref} className="overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white shadow-card">
-    {parsed.kind === "viator" ? <div {...Object.fromEntries(Object.entries(parsed.attrs).map(([key, value]) => [key, value]))} /> : null}
-    {parsed.kind === "getyourguide" ? <div {...Object.fromEntries(Object.entries(parsed.attrs).map(([key, value]) => [key, value]))} /> : null}
-    {parsed.kind === "booking" ? <ins className="bookingaff" {...Object.fromEntries(Object.entries(parsed.attrs).map(([key, value]) => [key, value]))} /> : null}
-    {parsed.kind === "tripadvisor" ? <div {...Object.fromEntries(Object.entries(parsed.attrs).map(([key, value]) => [key, value]))} /> : null}
+  useEffect(() => {
+    if (!script || loadedScripts.has(script)) return;
+    const element = document.createElement("script");
+    element.src = script;
+    element.async = true;
+    element.dataset.moroccanTripAffiliate = "true";
+    document.body.appendChild(element);
+    loadedScripts.add(script);
+  }, [script]);
+
+  return <div className="overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white shadow-card">
+    {parsed.kind === "viator" ? <div {...parsed.attrs} /> : null}
+    {parsed.kind === "getyourguide" ? <div {...parsed.attrs} /> : null}
+    {parsed.kind === "booking" ? <ins className="bookingaff" {...parsed.attrs} /> : null}
     <span className="sr-only">{widget.name || "Affiliate widget"}</span>
   </div>;
 }
