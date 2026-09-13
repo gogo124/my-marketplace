@@ -30,18 +30,18 @@ export function validateAffiliateWidgetPayload(payload: unknown): { data: Affili
   return { data: { name, provider, type, placement, destinationId: placement === "destinations" ? destinationId : null, destinationSlug: placement === "destinations" ? destinationSlug : "", embedCode, affiliateUrl, active } };
 }
 export async function getAffiliateWidgetsForAdmin() { await connectToDatabase(); return serializeDocument(await AffiliateWidget.find({}).sort({ createdAt: -1 }).lean()) as any[]; }
-export async function getPublishedAffiliateWidgets(placement: AffiliateWidgetInput["placement"], destinationSlug = "") {
+export async function getPublishedAffiliateWidgets(placement: AffiliateWidgetInput["placement"], destinationSlug = "", includeGlobal = true) {
   await connectToDatabase();
   const slug = destinationSlug.trim().toLowerCase();
   if (!slug) return serializeDocument(await AffiliateWidget.find({ active: true, placement, destinationSlug: "" }).sort({ createdAt: -1 }).lean()) as any[];
   const destination = await Destination.findOne({ slug }).select("_id slug").lean();
   const destinationIds = destination?._id ? [destination._id] : [];
-  const query = { active: true, placement, $or: [
-    { destinationSlug: "" },
+  const scoped = [
+    ...(includeGlobal ? [{ destinationSlug: "" }] : []),
     { destinationSlug: slug },
     ...(destinationIds.length ? [{ destinationId: { $in: destinationIds } }] : []),
-  ] };
-  return serializeDocument(await AffiliateWidget.find(query).sort({ createdAt: -1 }).lean()) as any[];
+  ];
+  return serializeDocument(await AffiliateWidget.find({ active: true, placement, $or: scoped }).sort({ createdAt: -1 }).lean()) as any[];
 }
 export async function normalizeAffiliateWidgetDestination(data: AffiliateWidgetInput) {
   if (data.placement !== "destinations" || !data.destinationId) return { ...data, destinationId: null, destinationSlug: "" };
