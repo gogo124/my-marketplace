@@ -181,14 +181,14 @@ textarea {
   .partner-carousel-track { animation: none; }
 }
 
-/* Home only: remove listing/card sections while keeping the underlying features and routes intact. */
+/* Home only: hide the listing cards, not the underlying routes/features. */
 @supports selector(:has(*)) {
-  main.page-shell > section:has(> section:has(a[href*="/camping/"])),
-  main.page-shell > section:has(> section:has(a[href*="/marketplace/"])) {
-    display: none;
+  main.page-shell article:has(a[href*="/marketplace/"]),
+  main.page-shell article:has(a[href*="/activities/"]) {
+    display: none !important;
   }
 
-  main.page-shell > section > div > section:has(a[href*="/camping/"], a[href*="/activities/"]) {
-    display: none;
+  main.page-shell > section a[href*="/camping/"] {
+    display: none !important;
   }
 }
