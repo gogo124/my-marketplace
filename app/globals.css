@@ -180,3 +180,15 @@ textarea {
   .partner-carousel { overflow-x: auto; }
   .partner-carousel-track { animation: none; }
 }
+
+/* Home only: remove listing/card sections while keeping the underlying features and routes intact. */
+@supports selector(:has(*)) {
+  main.page-shell > section:has(> section:has(a[href*="/camping/"])),
+  main.page-shell > section:has(> section:has(a[href*="/marketplace/"])) {
+    display: none;
+  }
+
+  main.page-shell > section > div > section:has(a[href*="/camping/"], a[href*="/activities/"]) {
+    display: none;
+  }
+}
