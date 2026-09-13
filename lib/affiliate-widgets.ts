@@ -9,6 +9,11 @@ export const AFFILIATE_WIDGET_TYPES = ["widget", "embed", "affiliate_link"] as c
 export const AFFILIATE_WIDGET_PLACEMENTS = ["activities", "destinations", "camping"] as const;
 const clean = (value: unknown) => typeof value === "string" ? value.trim() : "";
 const isHttpUrl = (value: string) => { try { const protocol = new URL(value).protocol; return protocol === "http:" || protocol === "https:"; } catch { return false; } };
+const hasSupportedIframe = (value: string) => {
+  const match = value.match(/<iframe\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/i);
+  if (!match) return false;
+  try { return new URL(match[1]).protocol === "https:"; } catch { return false; }
+};
 export type AffiliateWidgetInput = { name: string; provider: typeof AFFILIATE_WIDGET_PROVIDERS[number]; type: typeof AFFILIATE_WIDGET_TYPES[number]; placement: typeof AFFILIATE_WIDGET_PLACEMENTS[number]; destinationId: string | null; destinationSlug: string; embedCode: string; affiliateUrl: string; active: boolean };
 export function validateAffiliateWidgetPayload(payload: unknown): { data: AffiliateWidgetInput } | { error: string } {
   const input = (payload || {}) as Record<string, unknown>;
@@ -19,8 +24,12 @@ export function validateAffiliateWidgetPayload(payload: unknown): { data: Affili
   if (!AFFILIATE_WIDGET_TYPES.includes(type)) return { error: "Select a valid widget type." };
   if (!AFFILIATE_WIDGET_PLACEMENTS.includes(placement)) return { error: "Select a valid placement." };
   if (destinationId && !isValidObjectId(destinationId)) return { error: "Invalid destination." };
+  if (destinationSlug.length > 180) return { error: "Invalid destination slug." };
+  if (embedCode.length > 50000) return { error: "Embed code is too large." };
+  if (affiliateUrl.length > 2048) return { error: "Affiliate URL is too long." };
   if (type === "affiliate_link" && !isHttpUrl(affiliateUrl)) return { error: "Affiliate URL must be a valid HTTP or HTTPS URL." };
   if (type !== "affiliate_link" && !embedCode) return { error: "Embed code is required for this widget type." };
+  if (type !== "affiliate_link" && !hasSupportedIframe(embedCode)) return { error: "Embed code must contain an HTTPS iframe." };
   if (type === "affiliate_link" && embedCode) return { error: "Affiliate links do not need embed code." };
   return { data: { name, provider, type, placement, destinationId, destinationSlug, embedCode, affiliateUrl, active } };
 }
