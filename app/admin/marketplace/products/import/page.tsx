@@ -1,4 +1,7 @@
-import { MarketplaceProductManager } from "@/components/marketplace-product-manager";
+import Link from "next/link";
+import { getAdminPageSession } from "@/lib/admin";
+import { MarketplaceProductImporter } from "@/components/marketplace-product-importer";
+import { MarketplaceImportedProducts } from "@/components/marketplace-imported-products";
 import { getResellingProductsForAdmin } from "@/lib/reselling-marketplace";
 export const dynamic="force-dynamic";
-export default async function ImportPage(){return <main className="space-y-6"><div><h1 className="text-3xl font-black">Import Product</h1><p className="mt-2 text-sm text-slate-500">Verify a supported supplier URL, then review and enter product data. No unauthorized scraping is performed.</p></div><MarketplaceProductManager/></main>}
+export default async function MarketplaceProductImportPage(){await getAdminPageSession();const products=(await getResellingProductsForAdmin()).filter((product:any)=>product.sourceSync?.enabled);return <main className="page-shell space-y-6 pb-20"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[.25em] text-clay">Marketplace</p><h1 className="mt-2 text-4xl font-black">Product importer</h1></div><Link href="/admin/marketplace/products" className="rounded-full border border-ink/10 px-4 py-2 text-sm font-black">Product manager</Link></div><MarketplaceProductImporter/><MarketplaceImportedProducts products={products}/></main>}
