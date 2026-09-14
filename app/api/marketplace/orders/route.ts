@@ -5,9 +5,9 @@ export async function POST(request: Request) {
   try {
     const result = await createResellingOrder(await request.json());
 
-    if (!("data" in result)) {
+    if (!result.data) {
       return NextResponse.json(
-        { error: result.error },
+        { error: result.error || "Could not create order." },
         { status: 400 }
       );
     }
