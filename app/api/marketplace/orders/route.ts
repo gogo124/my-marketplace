@@ -4,16 +4,17 @@ import { createResellingOrder } from "@/lib/reselling-marketplace";
 export async function POST(request: Request) {
   try {
     const result = await createResellingOrder(await request.json());
+    const orderNumber = "data" in result ? result.data?.orderNumber : undefined;
 
-    if (!result.data) {
+    if (!orderNumber) {
       return NextResponse.json(
-        { error: result.error || "Could not create order." },
+        { error: "error" in result ? result.error : "Could not create order." },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { orderNumber: result.data.orderNumber },
+      { orderNumber },
       { status: 201 }
     );
   } catch (error) {
