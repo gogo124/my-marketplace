@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminApiSession } from "@/lib/admin";
-import { extractJumiaProduct, importProductFromUrl, validateSupplierUrl } from "@/lib/marketplace-importer";
+import { extractJumiaProduct, importProductFromUrl, syncImportedProduct, validateSupplierUrl } from "@/lib/marketplace-importer";
 import ResellingProduct from "@/models/ResellingProduct";
 import { connectToDatabase } from "@/lib/db";
 
@@ -12,6 +12,10 @@ export async function POST(request:Request){
     const url=validateSupplierUrl(String(body?.url||""));
     if(body?.action==="create"){
       const result=await importProductFromUrl(url);
+      if(result.duplicate&&result.existing?._id){
+        const syncResult=await syncImportedProduct(String(result.existing._id));
+        return NextResponse.json({...result,refreshed:true,sync:syncResult},{status:409});
+      }
       return NextResponse.json(result,{status:result.duplicate?409:201});
     }
     const product=await extractJumiaProduct(url);
