@@ -6,6 +6,35 @@ import { importBrowserProduct, previewBrowserProduct, validateSupplierUrl } from
 
 const MAX_BODY_BYTES=160_000;
 
+function isNonSelectableOptionName(name:string){
+  const value=name.replace(/\s+/g," ").trim().toLowerCase();
+  return /^(sku|product\s*sku|seller\s*sku|supplier\s*sku|reference|référence|product\s*id|productid|item\s*id|itemid|ean|ean13|ean-13|gtin|gtin13|gtin-13|upc|mpn|model\s*number|numéro\s*de\s*modèle|brand|marque|weight|poids|poids\s*\(.*\)|dimensions?|dimension|length|longueur|width|largeur|height|hauteur|depth|profondeur|shipping\s*weight|package\s*weight|packaging|condition|warranty|garantie)$/i.test(value);
+}
+
+function sanitizeBrowserProduct(input:any){
+  const product={...input};
+  if(Array.isArray(product.variants)){
+    const seen=new Set<string>();
+    product.variants=product.variants.map((variant:any)=>{
+      const options=variant?.options&&typeof variant.options==="object"?Object.fromEntries(
+        Object.entries(variant.options).filter(([name])=>!isNonSelectableOptionName(String(name)))
+      ):{};
+      if(!Object.keys(options).length)return null;
+      const normalized={...variant,options};
+      const key=JSON.stringify(options)+"|"+String(variant?.sku||variant?.sourceVariantId||"");
+      if(seen.has(key))return null;
+      seen.add(key);
+      return normalized;
+    }).filter(Boolean);
+  }
+  if(product.optionGroups&&typeof product.optionGroups==="object"){
+    product.optionGroups=Object.fromEntries(
+      Object.entries(product.optionGroups).filter(([name])=>!isNonSelectableOptionName(String(name)))
+    );
+  }
+  return product;
+}
+
 export async function POST(request:Request){
   const admin=await getAdminApiSession();
   if("error" in admin)return admin.error;
@@ -15,9 +44,11 @@ export async function POST(request:Request){
     const body=await request.json();
     if(String(body?.supplier||"").toLowerCase()!=="jumia")return NextResponse.json({error:"This browser importer only supports Jumia."},{status:400});
     const sourceUrl=validateSupplierUrl(String(body?.sourceUrl||""));
-    const product=body?.product;
-    if(!product||typeof product!=="object")return NextResponse.json({error:"Browser product data is required."},{status:400});
-    if(JSON.stringify(product).length>MAX_BODY_BYTES)return NextResponse.json({error:"Browser import payload is too large."},{status:413});
+    const rawProduct=body?.product;
+    if(!rawProduct||typeof rawProduct!=="object")return NextResponse.json({error:"Browser product data is required."},{status:400});
+    if(JSON.stringify(rawProduct).length>MAX_BODY_BYTES)return NextResponse.json({error:"Browser import payload is too large."},{status:413});
+    const product=sanitizeBrowserProduct(rawProduct);
+    if(!Array.isArray(product.variants)||!product.variants.length)return NextResponse.json({error:"No customer-selectable product options were detected from the browser extraction."},{status:422});
 
     if(body?.action==="preview"){
       const result=await previewBrowserProduct(product,sourceUrl);
