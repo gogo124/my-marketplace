@@ -23,11 +23,10 @@ export function OrderForm({product,locale}:{product:any;locale:SiteLocale}){
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
   const selectedVariant=useMemo(()=>variants.find(v=>variantMatchesSelection(v,selected))||null,[variants,selected]);
-  const unitPrice=selectedVariant?.price!=null
-    ? Number(selectedVariant.price)
-    : selectedVariant?.sourcePrice!=null
-      ? (product.marginType==="percentage"?Math.round(Number(selectedVariant.sourcePrice)*(1+Number(product.marginValue||0)/100)*100)/100:Number(selectedVariant.sourcePrice))
-      : Number(product.sellingPrice);
+
+  // Customer-facing price must always come from the MoroccanTrip selling price.
+  // Variant `price`/`sourcePrice` are supplier prices and must never override it.
+  const unitPrice=Number(product.sellingPrice??0);
   const complete=groups.length===0||Boolean(selectedVariant);
   const setOption=(group:string,value:string)=>setSelected(current=>({...current,[group]:value}));
 
