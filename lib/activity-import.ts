@@ -9,7 +9,8 @@ function stripHtml(value: string) {
 }
 
 function meta(html: string, key: string) {
-  const re = new RegExp(`<meta[^>]+(?:name|property)=["']${key.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}["'][^>]+content=["']([^"']*)["'][^>]*>|<meta[^>]+content=["']([^"']*)["'][^>]+(?:name|property)=["']${key.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}["'][^>]*>`, "i");
+  const escaped = key.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&");
+  const re = new RegExp(`<meta[^>]+(?:name|property)=["']${escaped}["'][^>]+content=["']([^"']*)["'][^>]*>|<meta[^>]+content=["']([^"']*)["'][^>]+(?:name|property)=["']${escaped}["'][^>]*>`, "i");
   const m = html.match(re);
   return clean(m?.[1] || m?.[2]);
 }
@@ -56,12 +57,13 @@ export async function importActivityFromUrl(sourceUrl: string) {
   if (!contentType.includes("text/html")) throw new Error("The source URL is not an HTML page.");
   const html = (await response.text()).slice(0, 5_000_000);
   const blocks = jsonLdBlocks(html);
-  const product = blocks.find((item) => /Product|TouristTrip|Trip|Offer|Event/i.test(String(item["@type"] || ""))) || {};
+  const product = blocks.find((item) => /Product|TouristTrip|Trip|Offer|Event/i.test(String(item["@type"] || ""))) || blocks[0] || {};
   const offer = (product.offers && typeof product.offers === "object" ? product.offers : {}) as JsonLd;
   const address = product.location && typeof product.location === "object" ? product.location as JsonLd : {};
   const title = firstString(jsonValue(product, "name"), meta(html, "og:title"), meta(html, "twitter:title"), (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ""));
   const description = firstString(jsonValue(product, "description"), meta(html, "og:description"), meta(html, "description"));
   const location = firstString(jsonValue(address, "name"), jsonValue(address, "address"), jsonValue(product, "location"));
+  const category = firstString(jsonValue(product, "category"), meta(html, "category"), meta(html, "keywords").split(",")[0]);
   const price = Number.parseFloat(firstString(jsonValue(offer, "price"), jsonValue(product, "price")));
   const currency = firstString(jsonValue(offer, "priceCurrency"), meta(html, "currency"), "MAD").toUpperCase();
   const duration = firstString(jsonValue(product, "duration"), meta(html, "duration"));
@@ -74,5 +76,5 @@ export async function importActivityFromUrl(sourceUrl: string) {
   const fullDescription = description || bodyText.slice(0, 5000);
   const shortDescription = fullDescription.slice(0, 237) + (fullDescription.length > 237 ? "..." : "");
   const article = [title && `# ${title}`, fullDescription, location && `\n## Location\n${location}`, duration && `\n## Duration\n${duration}`].filter(Boolean).join("\n\n");
-  return { sourceUrl, sourceFinalUrl: response.url || sourceUrl, title, description: fullDescription, shortDescription, article, location, duration, price: Number.isFinite(price) ? price : 0, currency: ["MAD", "EUR", "USD"].includes(currency) ? currency : "MAD", images, metaTitle: title, metaDescription: shortDescription };
+  return { sourceUrl, sourceFinalUrl: response.url || sourceUrl, title, description: fullDescription, shortDescription, article, category, location, duration, price: Number.isFinite(price) ? price : 0, currency: ["MAD", "EUR", "USD"].includes(currency) ? currency : "MAD", images, metaTitle: title, metaDescription: shortDescription };
 }
