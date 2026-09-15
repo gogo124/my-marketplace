@@ -35,7 +35,7 @@ function canonicalOptionName(name:string,values:unknown[]=[]){
 function sanitizeBrowserProduct(input:any){
   const product={...input};
   const rawGroups=product.optionGroups&&typeof product.optionGroups==="object"?product.optionGroups:{};
-  const optionGroups:Record<string,string[]>= {};
+  const optionGroups:Record<string,string[]>={};
   for(const [rawName,rawValues] of Object.entries(rawGroups)){
     if(isNonSelectableOptionName(String(rawName))||!Array.isArray(rawValues))continue;
     const values=[...new Set(rawValues.map(v=>String(v||"").replace(/\s+/g," ").trim()).filter(Boolean))];
@@ -74,10 +74,6 @@ function sanitizeBrowserProduct(input:any){
     }).filter(Boolean);
   }
 
-  // Jumia often exposes the real customer choices as visible option controls while
-  // the embedded product object only exposes technical metadata such as "Modèle".
-  // If the browser found those controls in optionGroups, rebuild the missing variant
-  // records from those real choices without inventing a Cartesian product.
   if(!Array.isArray(product.variants)||!product.variants.length){
     const groups=Object.entries(optionGroups);
     const meaningful=groups.filter(([,values])=>values.length>0);
@@ -94,12 +90,10 @@ function sanitizeBrowserProduct(input:any){
     }
   }
 
-  // If one real option group exists and every extracted variant is only a technical
-  // placeholder, expand that single group to the actual selectable values.
   if(Array.isArray(product.variants)&&product.variants.length&&Object.keys(optionGroups).length===1){
     const [groupName,groupValues]=Object.entries(optionGroups)[0];
     const variantOptions=product.variants.flatMap((v:any)=>Object.keys(v.options||{}));
-    const hasGroup=variantOptions.some(name=>normalizedName(name)===normalizedName(groupName));
+    const hasGroup=variantOptions.some((name:string)=>normalizedName(name)===normalizedName(groupName));
     if(!hasGroup&&groupValues.length>0){
       const template=product.variants[0];
       product.variants=groupValues.slice(0,300).map(value=>({
