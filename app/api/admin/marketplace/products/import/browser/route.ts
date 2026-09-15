@@ -6,31 +6,109 @@ import { importBrowserProduct, previewBrowserProduct, validateSupplierUrl } from
 
 const MAX_BODY_BYTES=160_000;
 
+function normalizedName(name:string){
+  return name.replace(/\s+/g," ").trim().toLowerCase();
+}
+
 function isNonSelectableOptionName(name:string){
-  const value=name.replace(/\s+/g," ").trim().toLowerCase();
-  return /^(sku|product\s*sku|seller\s*sku|supplier\s*sku|reference|référence|product\s*id|productid|item\s*id|itemid|ean|ean13|ean-13|gtin|gtin13|gtin-13|upc|mpn|model\s*number|numéro\s*de\s*modèle|brand|marque|weight|poids|poids\s*\(.*\)|dimensions?|dimension|length|longueur|width|largeur|height|hauteur|depth|profondeur|shipping\s*weight|package\s*weight|packaging|condition|warranty|garantie)$/i.test(value);
+  const value=normalizedName(name);
+  return /^(sku|product\s*sku|seller\s*sku|supplier\s*sku|reference|référence|product\s*id|productid|item\s*id|itemid|ean|ean13|ean-13|gtin|gtin13|gtin-13|upc|mpn|model|modèle|model\s*number|numéro\s*de\s*modèle|brand|marque|weight|poids|poids\s*\(.*\)|dimensions?|dimension|length|longueur|width|largeur|height|hauteur|depth|profondeur|shipping\s*weight|package\s*weight|packaging|condition|warranty|garantie|product\s*code|code\s*produit)$/i.test(value);
+}
+
+function isSizeValue(value:string){
+  const v=value.replace(/\s+/g," ").trim().toUpperCase();
+  return /^(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|XXXXL|2XL|3XL|4XL|5XL|6XL|7XL|8XL|9XL|10XL|US\s*(?:XS|S|M|L|XL|XXL|XXXL)|EU\s*\d{2}|\d{1,2}(?:\/\d{1,2})?)$/.test(v);
+}
+
+function canonicalOptionName(name:string,values:unknown[]=[]){
+  const value=normalizedName(name);
+  if(/^(options?\s+disponibles|available\s+options|options?|variantes?|variant\s+options?)$/i.test(value)){
+    const cleaned=values.map(v=>String(v||"").trim()).filter(Boolean);
+    if(cleaned.length>=2&&cleaned.every(isSizeValue))return "Size";
+    return "Option";
+  }
+  if(/^(color|colour|couleur|couleurs|لون)$/i.test(value))return "Color";
+  if(/^(size|taille|tailles|pointure|المقاس|الحجم)$/i.test(value))return "Size";
+  return name.replace(/\s+/g," ").trim();
 }
 
 function sanitizeBrowserProduct(input:any){
   const product={...input};
+  const rawGroups=product.optionGroups&&typeof product.optionGroups==="object"?product.optionGroups:{};
+  const optionGroups:Record<string,string[]>= {};
+  for(const [rawName,rawValues] of Object.entries(rawGroups)){
+    if(isNonSelectableOptionName(String(rawName))||!Array.isArray(rawValues))continue;
+    const values=[...new Set(rawValues.map(v=>String(v||"").replace(/\s+/g," ").trim()).filter(Boolean))];
+    if(!values.length)continue;
+    const name=canonicalOptionName(String(rawName),values);
+    if(isNonSelectableOptionName(name))continue;
+    const existing=optionGroups[name]??(optionGroups[name]=[]);
+    values.forEach(value=>{if(!existing.some(v=>v.toLowerCase()===value.toLowerCase()))existing.push(value)});
+  }
+  product.optionGroups=optionGroups;
+
+  const selectableGroupNames=new Set(Object.keys(optionGroups).map(normalizedName));
   if(Array.isArray(product.variants)){
     const seen=new Set<string>();
     product.variants=product.variants.map((variant:any)=>{
       const options=variant?.options&&typeof variant.options==="object"?Object.fromEntries(
         Object.entries(variant.options).filter(([name])=>!isNonSelectableOptionName(String(name)))
       ):{};
-      if(!Object.keys(options).length)return null;
-      const normalized={...variant,options};
-      const key=JSON.stringify(options)+"|"+String(variant?.sku||variant?.sourceVariantId||"");
+      const normalizedOptions:Record<string,string>={};
+      for(const [rawName,rawValue] of Object.entries(options)){
+        const name=canonicalOptionName(String(rawName));
+        const value=String(rawValue||"").replace(/\s+/g," ").trim();
+        if(!name||!value||isNonSelectableOptionName(name))continue;
+        if(selectableGroupNames.size>0&&!selectableGroupNames.has(normalizedName(name))){
+          const matchingGroup=Object.keys(optionGroups).find(group=>normalizedName(group)===normalizedName(name));
+          if(!matchingGroup)continue;
+        }
+        normalizedOptions[name]=value;
+      }
+      if(!Object.keys(normalizedOptions).length)return null;
+      const normalized={...variant,options:normalizedOptions};
+      const key=JSON.stringify(normalizedOptions)+"|"+String(variant?.sku||variant?.sourceVariantId||"");
       if(seen.has(key))return null;
       seen.add(key);
       return normalized;
     }).filter(Boolean);
   }
-  if(product.optionGroups&&typeof product.optionGroups==="object"){
-    product.optionGroups=Object.fromEntries(
-      Object.entries(product.optionGroups).filter(([name])=>!isNonSelectableOptionName(String(name)))
-    );
+
+  // Jumia often exposes the real customer choices as visible option controls while
+  // the embedded product object only exposes technical metadata such as "Modèle".
+  // If the browser found those controls in optionGroups, rebuild the missing variant
+  // records from those real choices without inventing a Cartesian product.
+  if(!Array.isArray(product.variants)||!product.variants.length){
+    const groups=Object.entries(optionGroups);
+    const meaningful=groups.filter(([,values])=>values.length>0);
+    if(meaningful.length){
+      const [firstName,firstValues]=meaningful[0];
+      product.variants=firstValues.slice(0,300).map(value=>({
+        options:{[firstName]:value},
+        price:product.sourcePrice??null,
+        stockStatus:product.stockStatus||"unknown",
+        stockQuantity:product.stockQuantity??null,
+        sku:product.sku||null,
+        sourceVariantId:`browser:${firstName}:${value}`
+      }));
+    }
+  }
+
+  // If one real option group exists and every extracted variant is only a technical
+  // placeholder, expand that single group to the actual selectable values.
+  if(Array.isArray(product.variants)&&product.variants.length&&Object.keys(optionGroups).length===1){
+    const [groupName,groupValues]=Object.entries(optionGroups)[0];
+    const variantOptions=product.variants.flatMap((v:any)=>Object.keys(v.options||{}));
+    const hasGroup=variantOptions.some(name=>normalizedName(name)===normalizedName(groupName));
+    if(!hasGroup&&groupValues.length>0){
+      const template=product.variants[0];
+      product.variants=groupValues.slice(0,300).map(value=>({
+        ...template,
+        options:{[groupName]:value},
+        price:template.price??product.sourcePrice??null,
+        sourceVariantId:`browser:${groupName}:${value}`
+      }));
+    }
   }
   return product;
 }
@@ -55,9 +133,6 @@ export async function POST(request:Request){
       return NextResponse.json(result,{status:result.duplicate?409:200});
     }
 
-    // Browser extraction is the authoritative fallback when Jumia blocks server fetching.
-    // If the product already exists, update its variants/source snapshot instead of
-    // returning a duplicate that leaves the old, broken variant data in the database.
     await connectToDatabase();
     const preview=await previewBrowserProduct(product,sourceUrl);
     if(preview.duplicate&&preview.existing?._id){
