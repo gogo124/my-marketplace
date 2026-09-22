@@ -2,11 +2,14 @@
 import Image from "next/image"; import { FormEvent, useEffect, useRef, useState } from "react"; import { useRouter } from "next/navigation"; import { ACTIVITY_TYPES, type ActivityType } from "@/lib/activity-types"; import { getApiError, parseApiResponse } from "@/lib/api"; import { AffiliateImageManager } from "@/components/affiliate-image-manager"; import { AFFILIATE_CURRENCIES } from "@/lib/affiliate-price"; import { ActivityTypeBadge } from "@/components/activity-type-badge";
 
 const activityBrowserExtractor = function (expectedSourceUrl: string) {
-  const clean = (value: unknown) => typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
-  const absolute = (value: unknown) => {
-    try { return new URL(String(value), location.href).toString(); } catch { return ""; }
+  // @ts-ignore - this function is serialized and executed as plain browser JavaScript.
+  const clean = (value) => typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+  // @ts-ignore - this function is serialized and executed as plain browser JavaScript.
+  const absolute = (value) => {
+    try { return new URL(value, location.href).toString(); } catch { return ""; }
   };
-  const meta = (key: string) => (document.querySelector('meta[property="' + key + '"],meta[name="' + key + '"]')?.getAttribute("content") || "");
+  // @ts-ignore - this function is serialized and executed as plain browser JavaScript.
+  const meta = (key) => (document.querySelector('meta[property="' + key + '"],meta[name="' + key + '"]')?.getAttribute("content") || "");
   const text = clean(document.body?.innerText || "");
   const titleFromDom = clean(document.querySelector("h1")?.textContent || "");
   const ldValues = [];
@@ -74,7 +77,7 @@ const activityBrowserExtractor = function (expectedSourceUrl: string) {
     window.prompt("Copy the extracted activity JSON, then return to MoroccanTrip Admin.", serialized);
   }
 };
-const getActivityBrowserExtractor = (sourceUrl) => "(" + activityBrowserExtractor.toString() + ")(" + JSON.stringify(sourceUrl) + ")";
+const getActivityBrowserExtractor = (sourceUrl: string) => "(" + activityBrowserExtractor.toString() + ")(" + JSON.stringify(sourceUrl) + ")";
 
 type Activity = { _id: string; slug?: string; image: string; galleryImages?: string[]; ogImage?: string; title: string; metaTitle?: string; metaDescription?: string; shortDescription: string; description: string; category: string; location: string; affiliateUrl: string; price: number; currency: string; discountedPrice?: number | null; types: ActivityType[]; featured: boolean; status: "draft" | "published"; viewCount?: number; bookClickCount?: number }; type Form = Omit<Activity, "_id" | "viewCount" | "bookClickCount">; type ImportedActivity = { title?: string; metaTitle?: string; metaDescription?: string; shortDescription?: string; description?: string; article?: string; category?: string; location?: string; price?: number; currency?: string; images?: string[] };
 const empty: Form = { slug: "", image: "", galleryImages: [], ogImage: "", title: "", metaTitle: "", metaDescription: "", shortDescription: "", description: "", category: "", location: "", affiliateUrl: "", price: 0, currency: "MAD", discountedPrice: null, types: [], featured: false, status: "draft" };
