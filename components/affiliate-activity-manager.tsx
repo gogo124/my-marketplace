@@ -3,7 +3,7 @@ import Image from "next/image"; import { FormEvent, useEffect, useRef, useState 
 
 const activityBrowserExtractor = function () {
   const clean = (value: unknown): string => typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
-  const meta = (key: string): string => document.querySelector(`meta[property="${key}"],meta[name="${key}"]`)?.content || "";
+  const meta = (key: string): string => (document.querySelector(`meta[property="${key}"],meta[name="${key}"]`) as HTMLMetaElement | null)?.content || "";
   const ld = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap((script) => {
     try {
       const value = JSON.parse(script.textContent || "");
