@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image"; import { FormEvent, useEffect, useRef, useState } from "react"; import { useRouter } from "next/navigation"; import { ACTIVITY_TYPES, type ActivityType } from "@/lib/activity-types"; import { getApiError, parseApiResponse } from "@/lib/api"; import { AffiliateImageManager } from "@/components/affiliate-image-manager"; import { AFFILIATE_CURRENCIES } from "@/lib/affiliate-price"; import { ActivityTypeBadge } from "@/components/activity-type-badge";
 
-const activityBrowserExtractor = async function () {
+const activityBrowserExtractor = function () {
   const clean = (value: unknown): string => typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
   const meta = (key: string): string => (document.querySelector(`meta[property="${key}"],meta[name="${key}"]`) as HTMLMetaElement | null)?.content || "";
   const ld = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap((script) => {
@@ -37,10 +37,12 @@ const activityBrowserExtractor = async function () {
     return;
   }
   const serialized = JSON.stringify(payload);
-  try {
-    await navigator.clipboard.writeText(serialized);
-    alert("Activity data extracted. Return to MoroccanTrip Admin and click \\"Paste extracted data\\".");
-  } catch {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    navigator.clipboard.writeText(serialized).then(
+      () => alert("Activity data extracted. Return to MoroccanTrip Admin and click \\"Paste extracted data\\"."),
+      () => window.prompt("Copy the extracted activity JSON, then return to MoroccanTrip Admin.", serialized)
+    );
+  } else {
     window.prompt("Copy the extracted activity JSON, then return to MoroccanTrip Admin.", serialized);
   }
 };
