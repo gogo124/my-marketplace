@@ -78,3 +78,64 @@ export async function importActivityFromUrl(sourceUrl: string) {
   const article = [title && `# ${title}`, fullDescription, location && `\n## Location\n${location}`, duration && `\n## Duration\n${duration}`].filter(Boolean).join("\n\n");
   return { sourceUrl, sourceFinalUrl: response.url || sourceUrl, title, description: fullDescription, shortDescription, article, category, location, duration, price: Number.isFinite(price) ? price : 0, currency: ["MAD", "EUR", "USD"].includes(currency) ? currency : "MAD", images, metaTitle: title, metaDescription: shortDescription };
 }
+
+function isSafeRemoteImageUrl(value: unknown) {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch { return false; }
+}
+
+async function uploadRemoteImage(url: string) {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+  if (!cloudName || !uploadPreset) throw new Error("Cloudinary is not configured.");
+  const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; MoroccanTrip Activity Importer/1.0)" }, cache: "no-store" });
+  if (!response.ok) throw new Error("Could not download an activity image.");
+  const contentType = response.headers.get("content-type") || "image/jpeg";
+  if (!contentType.toLowerCase().startsWith("image/")) throw new Error("Source image is not an image.");
+  const blob = await response.blob();
+  if (blob.size > 12 * 1024 * 1024) throw new Error("Source image is too large.");
+  const formData = new FormData();
+  formData.append("file", blob, "activity-import.jpg");
+  formData.append("upload_preset", uploadPreset);
+  const cloud = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: "POST", body: formData });
+  const data = await cloud.json();
+  if (!cloud.ok || typeof data?.secure_url !== "string") throw new Error("Cloudinary image upload failed.");
+  return data.secure_url as string;
+}
+
+export async function importActivityFromBrowserPayload(payload: Record<string, unknown>) {
+  const sourceUrl = clean(payload.sourceUrl);
+  const title = clean(payload.title);
+  const description = clean(payload.description);
+  const shortDescription = clean(payload.shortDescription) || description.slice(0, 237);
+  const images = Array.isArray(payload.images) ? Array.from(new Set(payload.images.filter(isSafeRemoteImageUrl))) : [];
+  if (!sourceUrl || !/^https?:$/i.test(new URL(sourceUrl).protocol)) throw new Error("Invalid source activity URL.");
+  if (!title) throw new Error("The browser extractor could not find an activity title.");
+  if (!images.length) throw new Error("The browser extractor could not find public activity images.");
+  const uploaded: string[] = [];
+  for (const image of images.slice(0, 12)) {
+    try { uploaded.push(await uploadRemoteImage(image as string)); } catch { /* keep importing if one image is blocked */ }
+  }
+  if (!uploaded.length) throw new Error("Could not upload the public activity images to Cloudinary.");
+  const priceValue = Number(payload.price);
+  const currency = ["MAD", "EUR", "USD"].includes(clean(payload.currency).toUpperCase()) ? clean(payload.currency).toUpperCase() : "MAD";
+  return {
+    sourceUrl,
+    sourceFinalUrl: clean(payload.sourceFinalUrl) || sourceUrl,
+    title,
+    description: description.slice(0, 5000),
+    shortDescription: shortDescription.slice(0, 240),
+    article: clean(payload.article).slice(0, 5000) || description.slice(0, 5000),
+    category: clean(payload.category) || "Activities",
+    location: clean(payload.location),
+    duration: clean(payload.duration),
+    price: Number.isFinite(priceValue) && priceValue >= 0 ? priceValue : 0,
+    currency,
+    images: uploaded,
+    metaTitle: title.slice(0, 160),
+    metaDescription: (clean(payload.metaDescription) || shortDescription).slice(0, 320)
+  };
+}
