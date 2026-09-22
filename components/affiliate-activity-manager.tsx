@@ -39,7 +39,7 @@ const activityBrowserExtractor = function () {
   const serialized = JSON.stringify(payload);
   if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
     navigator.clipboard.writeText(serialized).then(
-      () => alert("Activity data extracted. Return to MoroccanTrip Admin and click \\"Paste extracted data\\"."),
+      () => alert("Activity data extracted. Return to MoroccanTrip Admin and click Paste extracted data."),
       () => window.prompt("Copy the extracted activity JSON, then return to MoroccanTrip Admin.", serialized)
     );
   } else {
