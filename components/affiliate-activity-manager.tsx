@@ -2,8 +2,8 @@
 import Image from "next/image"; import { FormEvent, useEffect, useRef, useState } from "react"; import { useRouter } from "next/navigation"; import { ACTIVITY_TYPES, type ActivityType } from "@/lib/activity-types"; import { getApiError, parseApiResponse } from "@/lib/api"; import { AffiliateImageManager } from "@/components/affiliate-image-manager"; import { AFFILIATE_CURRENCIES } from "@/lib/affiliate-price"; import { ActivityTypeBadge } from "@/components/activity-type-badge";
 
 const activityBrowserExtractor = function () {
-  const clean = (value) => typeof value === "string" ? value.replace(/s+/g, " ").trim() : "";
-  const meta = (key) => document.querySelector(`meta[property="${key}"],meta[name="${key}"]`)?.content || "";
+  const clean = (value: unknown): string => typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+  const meta = (key: string): string => document.querySelector(`meta[property="${key}"],meta[name="${key}"]`)?.content || "";
   const ld = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap((script) => {
     try {
       const value = JSON.parse(script.textContent || "");
