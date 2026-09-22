@@ -6,7 +6,7 @@ const activityBrowserExtractor = function (expectedSourceUrl: string) {
   const clean = (value) => typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
   // @ts-ignore - this function is serialized and executed as plain browser JavaScript.
   const absolute = (value) => {
-    try { return new URL(value, location.href).toString(); } catch { return ""; }
+    try { return new URL(value, window.location.href).toString(); } catch { return ""; }
   };
   // @ts-ignore - this function is serialized and executed as plain browser JavaScript.
   const meta = (key) => (document.querySelector('meta[property="' + key + '"],meta[name="' + key + '"]')?.getAttribute("content") || "");
@@ -44,7 +44,7 @@ const activityBrowserExtractor = function (expectedSourceUrl: string) {
     if (srcset) imageValues.push(...srcset.split(",").map((part) => part.trim().split(/\s+/)[0]));
   }
   const images = [...new Set(imageValues.flatMap((value) => Array.isArray(value) ? value : [value]).map(clean).map(absolute).filter(Boolean))].slice(0, 20);
-  const currentUrl = location.href;
+  const currentUrl = window.location.href;
   const looksLikeBeacon = /(^|\/\/)prod\.accdab\.net\/beacon\//i.test(currentUrl);
   if (looksLikeBeacon || !title || !images.length) {
     alert("MoroccanTrip could not find an activity page here. Make sure the opened tab is the real activity page, not a tracking/beacon page, then run the extractor again.");
