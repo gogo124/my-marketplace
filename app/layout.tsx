@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Script from "next/script";
 import { cookies, headers } from "next/headers";
 import { Alexandria } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
@@ -8,8 +7,6 @@ import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { Header } from "@/components/header";
 import { SiteFooter } from "@/components/site-footer";
 import { LocaleDocumentSync } from "@/components/locale-document-sync";
-import { PublicEzoicPlacement } from "@/components/ads/PublicEzoicPlacement";
-import { EzoicRouteHandler } from "@/components/ads/EzoicRouteHandler";
 import { getDirection, resolveLocale, SITE_LOCALE_COOKIE } from "@/lib/i18n";
 import { getSiteUrl } from "@/lib/seo";
 import "./globals.css";
@@ -42,54 +39,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang={locale} dir={getDirection(locale)}>
-      <head>
-        <meta name="google-adsense-account" content="ca-pub-5658493317121341" />
-        <Script
-          id="google-adsense"
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5658493317121341"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
-        <Script
-          id="ezoic-cmp"
-          src="https://cmp.gatekeeperconsent.com/min.js"
-          strategy="beforeInteractive"
-          data-cfasync="false"
-        />
-        <Script
-          id="ezoic-cmp-2"
-          src="https://the.gatekeeperconsent.com/cmp.min.js"
-          strategy="beforeInteractive"
-          data-cfasync="false"
-        />
-        <Script
-          id="ezoic-sa"
-          src="https://www.ezojs.com/ezoic/sa.min.js"
-          strategy="afterInteractive"
-        />
-        <Script id="ezoic-init" strategy="afterInteractive">
-          {`
-            window.ezstandalone = window.ezstandalone || {};
-            window.ezstandalone.cmd = window.ezstandalone.cmd || [];
-          `}
-        </Script>
-        <Script
-          id="ezoic-analytics"
-          src="https://ezoicanalytics.com/analytics.js"
-          strategy="afterInteractive"
-        />
-        <Script id="monetag-tag-11763471" strategy="afterInteractive">
-          {`(function(s){s.dataset.zone='11763471',s.src='https://nap5k.com/tag.min.js'})([document.documentElement,document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`}
-        </Script>
-      </head>
       <body className={`${alexandria.variable} bg-app text-slate-900`}>
         <a href="#main-content" className="skip-link">{locale === "ar" ? "تجاوز إلى المحتوى" : "Aller au contenu"}</a>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <AuthProvider>
-          <EzoicRouteHandler />
           <Suspense fallback={null}><AnalyticsTracker /><LocaleDocumentSync /><Header /></Suspense>
           <div id="main-content">{children}</div>
-          <PublicEzoicPlacement />
           <SiteFooter lang={locale} />
         </AuthProvider>
       </body>
