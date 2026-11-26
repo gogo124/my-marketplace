@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import { cookies, headers } from "next/headers";
 import { Alexandria } from "next/font/google";
@@ -40,6 +41,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={locale} dir={getDirection(locale)}>
       <body className={`${alexandria.variable} bg-app text-slate-900`}>
+        <Analytics />
         <a href="#main-content" className="skip-link">{locale === "ar" ? "تجاوز إلى المحتوى" : "Aller au contenu"}</a>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <AuthProvider>
