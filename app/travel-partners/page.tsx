@@ -28,13 +28,18 @@ export async function generateMetadata({
     title:
       locale === "ar"
         ? `رفيق سفر${suffix ? ` - ${suffix}` : ""}`
-        : `Partenaire de voyage${suffix ? ` - ${suffix}` : ""}`,
+        : locale === "fr"
+          ? `Partenaire de voyage${suffix ? ` - ${suffix}` : ""}`
+          : `Travel partners in Morocco${suffix ? ` - ${suffix}` : ""}`,
     description:
       locale === "ar"
-        ? "اعثر على رفقاء سفر، أعلن عن وجهتك، وتواصل مع مؤشرات أوضح للثقة والسلامة."
-        : "Trouvez des compagnons de voyage, publiez votre destination et contactez avec de meilleurs signaux de confiance et de securite.",
+        ? "اعثر على رفقاء سفر في المغرب، شارك وجهتك وتواصل مع أشخاص يخططون لرحلات مشابهة."
+        : locale === "fr"
+          ? "Trouvez des compagnons de voyage au Maroc, partagez votre destination et échangez avec d'autres voyageurs."
+          : "Find travel companions in Morocco, share your destination and connect with people planning similar trips.",
     path: "/travel-partners",
-    image: "/images/travel-partner.jpg"
+    image: "/images/travel-partner.jpg",
+    locale
   });
 }
 
