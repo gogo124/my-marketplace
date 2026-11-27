@@ -380,10 +380,10 @@ export async function generateMetadata({
   return buildPageMetadata({
     title:
       locale === "ar"
-        ? "Moroccan Trip | أماكن التخييم ورفقاء السفر والأنشطة الخارجية والمعدات في المغرب"
+        ? "Moroccan Trip | تخييم ورحلات ومعدات في المغرب"
         : locale === "fr"
-          ? "Moroccan Trip | Camping, partenaires de voyage, activites outdoor et marketplace au Maroc"
-          : "Moroccan Trip | Camping places, travel partners, activities and gear marketplace in Morocco",
+          ? "Moroccan Trip | Camping et voyages outdoor au Maroc"
+          : "Moroccan Trip | Camping and outdoor travel in Morocco",
     description:
       locale === "ar"
         ? "اكتشف أماكن التخييم في المغرب، اعثر على رفقاء السفر، استكشف الأنشطة الخارجية وتصفح سوق معدات التخييم."
@@ -391,6 +391,7 @@ export async function generateMetadata({
           ? "Decouvrez des campings au Maroc, trouvez des partenaires de voyage, explorez les activites outdoor et parcourez le marketplace d'equipement."
           : "Discover camping places in Morocco, find travel partners, explore outdoor activities and browse the camping gear marketplace.",
     path: "/",
+    locale,
     image: HOMEPAGE_IMAGES.hero
   });
 }
