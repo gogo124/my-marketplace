@@ -12,7 +12,7 @@ const INSTAGRAM_URL = "https://www.instagram.com/moroccan__trip.net13?igsh=bjF3O
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string }> }): Promise<Metadata> {
   const { lang } = await searchParams;
   const locale = resolveLocale(lang);
-  return buildPageMetadata({ title: locale === "ar" ? "اتصل بنا" : "Contact Moroccan Trip", description: locale === "ar" ? "تواصل مع Moroccan Trip للدعم والشراكات والتعاون التجاري والأفلييت." : "Contact Moroccan Trip for support, partnerships, affiliate collaborations and business inquiries.", path: "/contact" });
+  return buildPageMetadata({ title: locale === "ar" ? "اتصل بنا" : "Contact Moroccan Trip", description: locale === "ar" ? "تواصل مع Moroccan Trip للحصول على الدعم، والاستفسار عن الشراكات، والتعاون التجاري وبرامج الأفلييت." : "Contact Moroccan Trip for platform support, travel partnerships, affiliate opportunities and business inquiries.", path: "/contact", locale });
 }
 
 export default async function ContactPage({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {
