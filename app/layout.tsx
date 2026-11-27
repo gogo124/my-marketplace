@@ -20,10 +20,9 @@ const alexandria = Alexandria({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
-  title: { default: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب", template: "%s | Moroccan Trip" },
+  title: { default: "Moroccan Trip | تخييم ورحلات ومعدات في المغرب", template: "%s" },
   description: "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.",
   keywords: ["Moroccan Trip", "trip Morocco", "camping Morocco", "تخييم المغرب", "رحلات منظمة المغرب", "كراء معدات التخييم", "أماكن التخييم في المغرب", "رفيق سفر المغرب", "voyage Maroc", "camping Maroc", "location equipement camping", "trip space"],
-  alternates: { canonical: "/" },
   icons: { icon: [{ url: "/favicon.ico" }, { url: "/icon-32.png", sizes: "32x32", type: "image/png" }, { url: "/icon-48.png", sizes: "48x48", type: "image/png" }], apple: "/apple-touch-icon.png" },
   category: "travel",
   openGraph: { type: "website", locale: "fr_FR", title: "Moroccan Trip | رحلات وتخييم وكراء معدات في المغرب", description: "اكتشف رحلات منظمة، أماكن تخييم، كراء وشراء معدات camping، ورفيق سفر في المغرب عبر منصة Moroccan Trip.", siteName: "Moroccan Trip", images: [{ url: "/images/hero-main.jpg", width: 1600, height: 900, alt: "Moroccan Trip" }] },
