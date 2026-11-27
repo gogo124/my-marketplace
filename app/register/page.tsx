@@ -18,7 +18,9 @@ export async function generateMetadata({
       locale === "ar"
         ? "أنشئ حسابك لبدء استكشاف الرحلات، التواصل مع الوكالات، ونشر الإعلانات أو الرحلات."
         : "Creez votre compte pour explorer les voyages, contacter les agences et publier vos annonces ou trajets.",
-    path: "/register"
+    path: "/register",
+    locale,
+    indexable: false
   });
 }
 
