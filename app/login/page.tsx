@@ -18,7 +18,9 @@ export async function generateMetadata({
       locale === "ar"
         ? "سجل الدخول للوصول إلى الحجوزات، الرسائل، الرحلات، والمعدات داخل Moroccan Trip."
         : "Connectez-vous pour acceder aux reservations, messages, voyages et equipements sur Moroccan Trip.",
-    path: "/login"
+    path: "/login",
+    locale,
+    indexable: false
   });
 }
 
