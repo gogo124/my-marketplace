@@ -19,11 +19,23 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const locale = resolveLocale(lang);
   const item: any = await getDestinationBySlug(slug);
   if (!item) return { title: "Destination not found | Moroccan Trip", robots: { index: false, follow: true } };
+  const articleText = Array.isArray(item.article)
+    ? item.article
+        .map((section: any) => localizeField(section?.body, locale) || localizeField(section?.title, locale))
+        .filter(Boolean)
+        .join(" ")
+    : "";
+  const description =
+    localizeField(item.seoDescription, locale) ||
+    localizeField(item.shortDescription, locale) ||
+    localizeField(item.intro, locale) ||
+    articleText;
   return buildPageMetadata({
-    title: localizeField(item.seoTitle, locale) || `${localizeField(item.name, locale)} | Moroccan Trip`,
-    description: localizeField(item.seoDescription, locale) || localizeField(item.shortDescription, locale),
+    title: localizeField(item.seoTitle, locale) || localizeField(item.name, locale),
+    description,
     path: `/destinations/${item.slug}`,
     image: item.coverImage,
+    locale,
   });
 }
 
