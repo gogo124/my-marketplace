@@ -9,7 +9,20 @@ import { getPublishedAffiliateWidgets } from "@/lib/affiliate-widgets";
 import { getDirection, resolveLocale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/seo";
 export const revalidate = 60;
-export const metadata: Metadata = buildPageMetadata({ title: "Activities and experiences in Morocco", description: "Find and book outdoor adventures, tours, water sports, and cultural experiences across Morocco.", path: "/activities", image: "/images/activities.jpg" });
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string }> }): Promise<Metadata> {
+ const { lang } = await searchParams;
+ const locale = resolveLocale(lang);
+ const [activities, widgets] = await Promise.all([
+  getPublishedActivities().catch(() => []),
+  getPublishedAffiliateWidgets("activities").catch(() => [])
+ ]);
+ const copy = {
+  ar: { title: "أنشطة وتجارب خارجية في المغرب", description: "اكتشف أنشطة وتجارب خارجية في المغرب، من المغامرات والرياضات المائية إلى الجولات الثقافية." },
+  fr: { title: "Activités et expériences au Maroc", description: "Découvrez des activités outdoor au Maroc, des aventures en plein air aux sports nautiques et visites culturelles." },
+  en: { title: "Outdoor activities and experiences in Morocco", description: "Find outdoor adventures, water sports, guided tours and cultural experiences across Morocco." }
+ }[locale];
+ return buildPageMetadata({ ...copy, path: "/activities", image: "/images/activities.jpg", locale, indexable: activities.length > 0 || widgets.length > 0 });
+}
 export default async function ActivitiesPage({ searchParams }: { searchParams: Promise<{ lang?: string; q?: string; category?: string; location?: string; type?: string }> }) {
  const { lang, q = "", category = "", location = "", type = "" } = await searchParams; const locale = resolveLocale(lang); const isArabic = locale === "ar"; const [activities, options, affiliateWidgets] = await Promise.all([getPublishedActivities({ q, category, location, type }), getActivityFilterOptions(), getPublishedAffiliateWidgets("activities")]);
  return <main dir={getDirection(locale)} className="page-shell max-w-[1440px] space-y-14 pb-24 sm:space-y-20"><section className="relative min-h-[620px] overflow-hidden rounded-[2.5rem] bg-emerald-950 shadow-[0_35px_100px_rgba(15,61,46,.28)] sm:rounded-[3rem]"><Image src="/images/activities.jpg" alt="Outdoor adventure activities in Morocco" fill priority sizes="100vw" className="object-cover object-[center_42%]" /><div className="absolute inset-0 bg-[linear-gradient(112deg,rgba(2,18,13,.97),rgba(15,61,46,.75)_58%,rgba(249,115,22,.32))]" /><div className="relative flex min-h-[620px] items-end px-6 py-10 sm:px-10 sm:py-14 lg:px-16 lg:py-16"><div className="max-w-4xl text-white"><p className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[.28em] backdrop-blur">Affiliate Activities</p><h1 className="mt-6 text-4xl font-black leading-[1.03] tracking-[-.04em] sm:text-6xl lg:text-7xl">{isArabic ? "اكتشف أفضل الأنشطة والتجارب" : "Discover unforgettable activities"}</h1><p className="mt-6 max-w-3xl text-base leading-8 text-white/78 sm:text-lg">{isArabic ? "اختر تجربتك وانتقل مباشرة إلى موقع الشريك للحجز." : "Choose your next adventure and continue directly to the trusted affiliate partner to book."}</p><div className="mt-8 flex flex-wrap gap-3 text-xs font-bold text-white/85"><span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Adventure experiences</span><span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Direct booking access</span><span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Across Morocco</span></div></div></div></section>
