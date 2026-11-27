@@ -15,13 +15,22 @@ export async function generateMetadata({
   const cityLabel = city ? ` - ${city}` : "";
 
   return buildPageMetadata({
-    title: locale === "ar" ? `التريبات المنظمة${cityLabel}` : `Trips organises${cityLabel}`,
+    title:
+      locale === "ar"
+        ? `رحلات منظمة في المغرب${cityLabel}`
+        : locale === "fr"
+          ? `Voyages organisés au Maroc${cityLabel}`
+          : `Organized trips in Morocco${cityLabel}`,
     description:
       locale === "ar"
-        ? "تصفح التريبات المنظمة، قارن الوكالات والمقاعد المتاحة، ثم انتقل إلى الحجز بسرعة."
-        : "Browse organised trips, compare agencies and open seats, then move quickly to reservation.",
+        ? "تصفح الرحلات المنظمة في المغرب، وقارن البرامج والوكالات والمقاعد المتاحة قبل الحجز."
+        : locale === "fr"
+          ? "Parcourez les voyages organisés au Maroc, comparez les programmes, agences et places disponibles."
+          : "Browse organized trips in Morocco and compare itineraries, agencies and available seats before booking.",
     path: "/trips",
-    image: "/images/agencies.jpg"
+    image: "/images/agencies.jpg",
+    locale,
+    indexable: FEATURES.trips
   });
 }
 
