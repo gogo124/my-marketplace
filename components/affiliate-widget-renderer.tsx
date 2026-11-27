@@ -2,9 +2,88 @@
 import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { getSafeAffiliateEmbed, APPROVED_WIDGET_SCRIPTS } from "@/lib/affiliate-widget-embed";
+
 type Widget = { _id?: string; name?: string; provider?: "Viator" | "GetYourGuide" | "Tripadvisor" | "Booking" | "Other"; type?: string; embedCode?: string; affiliateUrl?: string; active?: boolean };
 type ProviderEmbed = Exclude<ReturnType<typeof getSafeAffiliateEmbed>, { kind: "iframe" } | null>;
+
 const loadedScripts = new Set<string>();
-function ProviderWidget({ widget, parsed }: { widget: Widget; parsed: ProviderEmbed }) { const script = parsed.kind === "viator" ? APPROVED_WIDGET_SCRIPTS.Viator : parsed.kind === "getyourguide" ? APPROVED_WIDGET_SCRIPTS.GetYourGuide : parsed.kind === "booking" ? APPROVED_WIDGET_SCRIPTS.Booking : null; useEffect(() => { if (!script || loadedScripts.has(script)) return; const element = document.createElement("script"); element.src = script; element.async = true; element.dataset.moroccanTripAffiliate = "true"; document.body.appendChild(element); loadedScripts.add(script); }, [script]); return <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white shadow-card"><div className="border-b border-ink/5 px-5 py-4"><p className="text-[10px] font-black uppercase tracking-[.22em] text-clay">{widget.provider || "Partner"}</p><h3 className="mt-1 line-clamp-2 text-lg font-black text-ink">{widget.name || "Partner offer"}</h3></div><div className="min-w-0 overflow-hidden p-2 sm:p-3">{parsed.kind === "viator" ? <div {...parsed.attrs} /> : null}{parsed.kind === "getyourguide" ? <div {...parsed.attrs} /> : null}{parsed.kind === "booking" ? <ins className="bookingaff" {...parsed.attrs} /> : null}</div></div>; }
-export function AffiliateWidgetRenderer({ widget }: { widget: Widget }) { const active = widget.active !== false; const provider = widget.provider || "Other"; const embed = useMemo(() => widget.type === "affiliate_link" ? null : getSafeAffiliateEmbed(provider, widget.embedCode || ""), [provider, widget.embedCode, widget.type]); if (!active) return null; if (widget.type === "affiliate_link") { try { const url = new URL(widget.affiliateUrl || ""); if (url.protocol !== "https:" && url.protocol !== "http:") return null; return <div className="min-w-0 rounded-[1.5rem] border border-ink/10 bg-white p-5 shadow-card"><p className="text-[10px] font-black uppercase tracking-[.22em] text-clay">{provider} partner</p><h3 className="mt-1 line-clamp-2 text-lg font-black text-ink">{widget.name || "Partner offer"}</h3><Link href={url.toString()} target="_blank" rel="nofollow sponsored noopener" className="mt-4 inline-flex min-h-11 items-center rounded-full bg-forest px-5 py-3 text-sm font-black text-white transition hover:bg-clay">View offers</Link></div>; } catch { return null; } } if (!embed) return null; if (embed.kind === "iframe") return <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white shadow-card"><div className="border-b border-ink/5 px-5 py-4"><p className="text-[10px] font-black uppercase tracking-[.22em] text-clay">{provider}</p><h3 className="mt-1 line-clamp-2 text-lg font-black text-ink">{widget.name || "Partner offer"}</h3></div><div className="min-w-0 overflow-hidden"><iframe src={embed.src} title={widget.name || "Affiliate widget"} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" className="block min-h-[320px] w-full max-w-full border-0" /></div></div>; return <ProviderWidget widget={widget} parsed={embed} />; }
-export function AffiliateWidgetSection({ widgets, title = "Partner offers" }: { widgets: Widget[]; title?: string }) { const unique = widgets.filter((widget, index, list) => list.findIndex((item) => String(item._id || item.name) === String(widget._id || widget.name)) === index); if (!unique.length) return null; return <section className="space-y-5"><div><p className="text-xs font-black uppercase tracking-[.25em] text-clay">Affiliate partners</p><h2 className="mt-2 text-3xl font-black tracking-[-.03em] text-ink sm:text-4xl">{title}</h2><p className="mt-2 max-w-2xl text-sm leading-7 text-ink/55">Compare partner experiences and booking options without leaving the discovery flow.</p></div><div className="grid min-w-0 gap-5 md:grid-cols-2">{unique.map((widget) => <AffiliateWidgetRenderer key={String(widget._id || widget.name)} widget={widget} />)}</div></section>; }
+const loadingScripts = new Map<string, Promise<void>>();
+
+function loadProviderScript(src: string) {
+  if (loadedScripts.has(src)) return Promise.resolve();
+  const existing = loadingScripts.get(src);
+  if (existing) return existing;
+
+  const promise = new Promise<void>((resolve, reject) => {
+    const existingElement = document.querySelector<HTMLScriptElement>(`script[data-moroccan-trip-affiliate="true"][src="${src}"]`);
+    if (existingElement) {
+      loadedScripts.add(src);
+      resolve();
+      return;
+    }
+    const element = document.createElement("script");
+    element.src = src;
+    element.async = true;
+    element.dataset.moroccanTripAffiliate = "true";
+    element.onload = () => {
+      loadedScripts.add(src);
+      loadingScripts.delete(src);
+      resolve();
+    };
+    element.onerror = () => {
+      loadingScripts.delete(src);
+      reject(new Error(`Failed to load affiliate widget script: ${src}`));
+    };
+    document.head.appendChild(element);
+  });
+
+  loadingScripts.set(src, promise);
+  return promise;
+}
+
+function ProviderWidget({ widget, parsed }: { widget: Widget; parsed: ProviderEmbed }) {
+  const script = parsed.kind === "viator" ? APPROVED_WIDGET_SCRIPTS.Viator : parsed.kind === "getyourguide" ? APPROVED_WIDGET_SCRIPTS.GetYourGuide : parsed.kind === "booking" ? APPROVED_WIDGET_SCRIPTS.Booking : null;
+
+  useEffect(() => {
+    if (!script) return;
+    void loadProviderScript(script).catch(() => undefined);
+  }, [script]);
+
+  return <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white shadow-card">
+    <div className="border-b border-ink/5 px-5 py-4">
+      <p className="text-[10px] font-black uppercase tracking-[.22em] text-clay">{widget.provider || "Partner"}</p>
+      <h3 className="mt-1 line-clamp-2 text-lg font-black text-ink">{widget.name || "Partner offer"}</h3>
+    </div>
+    <div className="min-w-0 overflow-hidden p-2 sm:p-3">
+      {parsed.kind === "viator" ? <div {...parsed.attrs} /> : null}
+      {parsed.kind === "getyourguide" ? <div {...parsed.attrs} /> : null}
+      {parsed.kind === "booking" ? <ins className="bookingaff" {...parsed.attrs} /> : null}
+    </div>
+  </div>;
+}
+
+export function AffiliateWidgetRenderer({ widget }: { widget: Widget }) {
+  const active = widget.active !== false;
+  const provider = widget.provider || "Other";
+  const embed = useMemo(() => widget.type === "affiliate_link" ? null : getSafeAffiliateEmbed(provider, widget.embedCode || ""), [provider, widget.embedCode, widget.type]);
+  if (!active) return null;
+
+  if (widget.type === "affiliate_link") {
+    try {
+      const url = new URL(widget.affiliateUrl || "");
+      if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+      return <div className="min-w-0 rounded-[1.5rem] border border-ink/10 bg-white p-5 shadow-card"><p className="text-[10px] font-black uppercase tracking-[.22em] text-clay">{provider} partner</p><h3 className="mt-1 line-clamp-2 text-lg font-black text-ink">{widget.name || "Partner offer"}</h3><Link href={url.toString()} target="_blank" rel="nofollow sponsored noopener" className="mt-4 inline-flex min-h-11 items-center rounded-full bg-forest px-5 py-3 text-sm font-black text-white transition hover:bg-clay">View offers</Link></div>;
+    } catch { return null; }
+  }
+
+  if (!embed) return null;
+  if (embed.kind === "iframe") return <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white shadow-card"><div className="border-b border-ink/5 px-5 py-4"><p className="text-[10px] font-black uppercase tracking-[.22em] text-clay">{provider}</p><h3 className="mt-1 line-clamp-2 text-lg font-black text-ink">{widget.name || "Partner offer"}</h3></div><div className="min-w-0 overflow-hidden"><iframe src={embed.src} title={widget.name || "Affiliate widget"} loading="eager" referrerPolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" className="block min-h-[320px] w-full max-w-full border-0" /></div></div>;
+
+  return <ProviderWidget widget={widget} parsed={embed} />;
+}
+
+export function AffiliateWidgetSection({ widgets, title = "Partner offers" }: { widgets: Widget[]; title?: string }) {
+  const unique = widgets.filter((widget, index, list) => list.findIndex((item) => String(item._id || item.name) === String(widget._id || widget.name)) === index);
+  if (!unique.length) return null;
+  return <section className="space-y-5"><div><p className="text-xs font-black uppercase tracking-[.25em] text-clay">Affiliate partners</p><h2 className="mt-2 text-3xl font-black tracking-[-.03em] text-ink sm:text-4xl">{title}</h2><p className="mt-2 max-w-2xl text-sm leading-7 text-ink/55">Compare partner experiences and booking options without leaving the discovery flow.</p></div><div className="grid min-w-0 gap-5 md:grid-cols-2">{unique.map((widget) => <AffiliateWidgetRenderer key={String(widget._id || widget.name)} widget={widget} />)}</div></section>;
+}
