@@ -2,6 +2,17 @@ import type { Metadata } from "next";
 import { ResellingProductCard } from "@/components/reselling-product-card";
 import { getPublishedResellingProducts } from "@/lib/reselling-marketplace";
 import { getDirection, resolveLocale } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/seo";
 export const revalidate=60;
-export const metadata: Metadata={title:"MoroccanTrip Marketplace",description:"Shop products from MoroccanTrip with cash on delivery."};
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string }> }): Promise<Metadata> {
+ const { lang } = await searchParams;
+ const locale = resolveLocale(lang);
+ const products = await getPublishedResellingProducts().catch(() => []);
+ const copy = {
+  ar: { title: "معدات التخييم والرحلات في المغرب", description: "اكتشف معدات التخييم والرحلات في المغرب، قارن المنتجات والأسعار واطلب بسهولة مع الدفع عند الاستلام." },
+  fr: { title: "Matériel de camping et de randonnée au Maroc", description: "Découvrez du matériel de camping et de randonnée au Maroc. Comparez les produits et commandez avec paiement à la livraison." },
+  en: { title: "Camping and hiking gear in Morocco", description: "Shop camping and hiking gear in Morocco. Compare product details and prices, then order online with cash on delivery." }
+ }[locale];
+ return buildPageMetadata({ ...copy, path: "/marketplace", image: "/images/buy-gear.jpg", locale, indexable: products.length > 0 });
+}
 export default async function MarketplacePage({searchParams}:{searchParams:Promise<{lang?:string;q?:string;category?:string;brand?:string}>}){const p=await searchParams;const locale=resolveLocale(p.lang);const products=await getPublishedResellingProducts({q:p.q,category:p.category,brand:p.brand});return <main dir={getDirection(locale)} className="page-shell max-w-[1440px] space-y-10 pb-24"><section className="rounded-[2.5rem] bg-[#0f3d2e] px-6 py-14 text-white sm:px-12"><p className="text-xs font-black uppercase tracking-[.25em] text-emerald-200">MoroccanTrip Marketplace</p><h1 className="mt-4 text-4xl font-black sm:text-6xl">{locale==="ar"?"تسوق بسهولة وادفع عند الاستلام":locale==="fr"?"Achetez simplement, payez à la livraison":"Shop simply, pay on delivery"}</h1><p className="mt-5 max-w-2xl text-white/70">{locale==="ar"?"منتجات مختارة، طلب مباشر من MoroccanTrip، بدون تحويلات خارجية.":locale==="fr"?"Des produits sélectionnés, une commande directe sur MoroccanTrip, sans redirection externe.":"Selected products, direct ordering on MoroccanTrip, with no external checkout."}</p></section><form className="grid gap-3 rounded-3xl bg-white p-4 shadow-card md:grid-cols-[1fr_auto_auto]"><input type="hidden" name="lang" value={locale}/><input name="q" defaultValue={p.q} placeholder={locale==="fr"?"Rechercher un produit":"Search products"} className="rounded-xl border p-3"/><input name="category" defaultValue={p.category} placeholder="Category" className="rounded-xl border p-3"/><button className="rounded-xl bg-[#0f3d2e] px-6 font-black text-white">Search</button></form>{products.length?<div className="grid gap-7 md:grid-cols-2 xl:grid-cols-3">{products.map(p=><ResellingProductCard key={p._id} product={p} locale={locale}/>)}</div>:<div className="rounded-3xl bg-white p-12 text-center shadow-card"><h2 className="text-2xl font-black">No products available</h2><p className="mt-2 text-slate-500">Check back soon.</p></div>}</main>}
