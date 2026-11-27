@@ -13,7 +13,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
  const { lang } = await searchParams;
  const locale = resolveLocale(lang);
  const [places, widgets] = await Promise.all([
-  getPlaces().catch(() => []),
+  getPlaces({ limit: 200 }).catch(() => []),
   getPublishedAffiliateWidgets("camping").catch(() => [])
  ]);
  const copy = {
