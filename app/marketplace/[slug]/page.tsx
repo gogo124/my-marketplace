@@ -1,8 +1,38 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { OrderForm } from "@/components/marketplace-order-form";
 import { MarketplaceProductGallery } from "@/components/marketplace-product-gallery";
 import { getPublishedResellingProductBySlug } from "@/lib/reselling-marketplace";
 import { getDirection, resolveLocale } from "@/lib/i18n";
+import { buildPageMetadata } from "@/lib/seo";
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ lang?: string }>;
+}): Promise<Metadata> {
+  const [{ slug }, sp] = await Promise.all([params, searchParams]);
+  const locale = resolveLocale(sp.lang);
+  const product = await getPublishedResellingProductBySlug(slug);
+  if (!product) return { title: "Product not found | Moroccan Trip", robots: { index: false, follow: true } };
+
+  const title = product.title?.[locale] || product.title?.fr || product.title?.en || "Outdoor product";
+  const description =
+    product.description?.[locale] ||
+    product.description?.fr ||
+    product.description?.en ||
+    `${title}. View product details, price and cash-on-delivery information on Moroccan Trip.`;
+
+  return buildPageMetadata({
+    title,
+    description,
+    path: `/marketplace/${product.slug || slug}`,
+    image: product.mainImage || "/images/buy-gear.jpg",
+    locale,
+  });
+}
 
 export default async function ProductPage({
   params,
