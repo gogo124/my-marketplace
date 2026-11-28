@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string }> }): Promise<Metadata> {
   const { lang } = await searchParams;
   const locale = resolveLocale(lang);
-  return buildPageMetadata({ title: locale === "ar" ? "من نحن" : "About Moroccan Trip", description: locale === "ar" ? "تعرف على Moroccan Trip، المنصة المغربية للتخييم والأنشطة الخارجية ورفقاء السفر والمعدات." : "Discover Moroccan Trip, Morocco's platform for camping places, outdoor activities, travel partners and recommended gear.", path: "/about" });
+  return buildPageMetadata({ title: locale === "ar" ? "من نحن" : "About Moroccan Trip", description: locale === "ar" ? "تعرف على Moroccan Trip، المنصة المغربية للتخييم والأنشطة الخارجية ورفقاء السفر والمعدات." : "Discover Moroccan Trip, Morocco's platform for camping places, outdoor activities, travel partners and recommended gear.", path: "/about", locale });
 }
 
 export default async function AboutPage({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {

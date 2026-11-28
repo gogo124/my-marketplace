@@ -9,7 +9,16 @@ import { buildPageMetadata } from "@/lib/seo";
 import { getPublishedDestinations } from "@/lib/destinations";
 import { getPublishedAffiliateWidgets } from "@/lib/affiliate-widgets";
 export const revalidate = 60;
-export const metadata: Metadata = buildPageMetadata({ title: "Morocco Destinations | Moroccan Trip", description: "Discover Morocco through curated destination guides, travel stories and practical inspiration.", path: "/destinations" });
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string }> }): Promise<Metadata> {
+ const { lang } = await searchParams;
+ const locale = resolveLocale(lang);
+ const copy = {
+  ar: { title: "وجهات سياحية في المغرب", description: "اكتشف وجهات المغرب، من المدن العتيقة والقرى الجبلية إلى البحيرات والغابات والسواحل." },
+  fr: { title: "Destinations à découvrir au Maroc", description: "Explorez les destinations du Maroc, des villes historiques aux montagnes, lacs, forêts et côtes." },
+  en: { title: "Places to visit in Morocco", description: "Explore Morocco destinations, from historic cities and mountain villages to lakes, forests and coastlines." }
+ }[locale];
+ return buildPageMetadata({ ...copy, path: "/destinations", locale });
+}
 function isValidImageUrl(value: unknown) { if (typeof value !== "string" || !value.trim()) return false; try { const url = new URL(value); return url.protocol === "http:" || url.protocol === "https:"; } catch { return false; } }
 export default async function DestinationsPage({ searchParams }: { searchParams: Promise<{ lang?: string; q?: string }> }) {
  const params = await searchParams; const locale = resolveLocale(params.lang); const q = String(params.q || "").trim().toLowerCase(); let all: any[] = []; try { const result = await getPublishedDestinations(); all = Array.isArray(result) ? result : []; } catch (error) { console.error("[destinations] Failed to load published destinations.", error); }

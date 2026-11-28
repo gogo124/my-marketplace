@@ -380,10 +380,10 @@ export async function generateMetadata({
   return buildPageMetadata({
     title:
       locale === "ar"
-        ? "Moroccan Trip | أماكن التخييم ورفقاء السفر والأنشطة الخارجية والمعدات في المغرب"
+        ? "Moroccan Trip | تخييم ورحلات ومعدات في المغرب"
         : locale === "fr"
-          ? "Moroccan Trip | Camping, partenaires de voyage, activites outdoor et marketplace au Maroc"
-          : "Moroccan Trip | Camping places, travel partners, activities and gear marketplace in Morocco",
+          ? "Moroccan Trip | Camping et voyages outdoor au Maroc"
+          : "Moroccan Trip | Camping and outdoor travel in Morocco",
     description:
       locale === "ar"
         ? "اكتشف أماكن التخييم في المغرب، اعثر على رفقاء السفر، استكشف الأنشطة الخارجية وتصفح سوق معدات التخييم."
@@ -391,6 +391,7 @@ export async function generateMetadata({
           ? "Decouvrez des campings au Maroc, trouvez des partenaires de voyage, explorez les activites outdoor et parcourez le marketplace d'equipement."
           : "Discover camping places in Morocco, find travel partners, explore outdoor activities and browse the camping gear marketplace.",
     path: "/",
+    locale,
     image: HOMEPAGE_IMAGES.hero
   });
 }
@@ -479,6 +480,28 @@ export default async function HomePage({
         {copy.stats.items.map((item) => (
           <FeatureStatCard key={item.title} title={item.title} description={item.description} />
         ))}
+      </section>
+
+      <section aria-labelledby="tripcom-booking-title" className="overflow-hidden rounded-[2.5rem] border border-emerald-900/10 bg-[linear-gradient(135deg,#f0f8f3_0%,#ffffff_58%,#fff5e9_100%)] p-4 shadow-[0_24px_70px_rgba(15,61,46,.09)] sm:rounded-[3rem] sm:p-8 lg:p-10">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-xs font-black uppercase tracking-[.25em] text-[#c46018]">Trip.com · Flights & hotels</p>
+            <h2 id="tripcom-booking-title" className="mt-3 text-2xl font-black tracking-[-.035em] text-slate-950 sm:text-3xl">{locale === "ar" ? "خطط لرحلتك واحجز إقامتك" : locale === "fr" ? "Planifiez votre voyage et réservez votre séjour" : "Plan your trip and book your stay"}</h2>
+            <p className="mt-2 text-sm leading-7 text-slate-600">{locale === "ar" ? "اكتشف عروض الرحلات الجوية والفنادق عبر شريكنا." : locale === "fr" ? "Découvrez des offres de vols et d’hôtels avec notre partenaire." : "Explore flight and hotel offers through our travel partner."}</p>
+          </div>
+          <span className="w-fit rounded-full border border-emerald-900/10 bg-white/80 px-4 py-2 text-xs font-bold text-[#0f3d2e]">{locale === "ar" ? "حجز عبر شريكنا" : locale === "fr" ? "Réservation partenaire" : "Partner booking"}</span>
+        </div>
+        <div className="w-full overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,61,46,.07)]">
+          <iframe
+            src="https://www.trip.com/partners/ad/S21638542?Allianceid=11524283&SID=337231903&trip_sub1="
+            title="Trip.com flight and hotel offers"
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+            scrolling="no"
+            className="block h-[200px] w-full border-0"
+          />
+        </div>
+        <p className="mt-3 text-center text-[11px] leading-5 text-slate-500">{locale === "ar" ? "قد نحصل على عمولة عند الحجز عبر شريكنا، دون تكلفة إضافية عليك." : locale === "fr" ? "Nous pouvons recevoir une commission si vous réservez via notre partenaire, sans frais supplémentaires." : "We may earn a commission when you book through our partner, at no extra cost to you."}</p>
       </section>
 
       <section className="space-y-8 rounded-[2.75rem] border border-white/80 bg-white/80 p-5 shadow-[0_30px_90px_rgba(15,61,46,0.1)] backdrop-blur sm:p-9 lg:p-12">

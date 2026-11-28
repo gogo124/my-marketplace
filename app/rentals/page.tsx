@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { FeatureDisabledPage } from "@/components/feature-disabled-page";
@@ -7,6 +8,18 @@ import { FEATURES } from "@/lib/features";
 import { getPublicRentalItems } from "@/lib/renter";
 import { formatLocaleNumber, getDirection, resolveLocale, withLocale } from "@/lib/i18n";
 import { logServerError } from "@/lib/server-log";
+import { buildPageMetadata } from "@/lib/seo";
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string }> }): Promise<Metadata> {
+  const { lang } = await searchParams;
+  const locale = resolveLocale(lang);
+  const copy = {
+    ar: { title: "كراء معدات الرحلات في المغرب", description: "اكتشف معدات الرحلات المتاحة للكراء في المغرب، وتعرّف على الأسعار وشروط الاستفادة." },
+    fr: { title: "Location de matériel outdoor au Maroc", description: "Consultez le matériel de randonnée et de camping disponible à la location au Maroc." },
+    en: { title: "Outdoor gear rental in Morocco", description: "Browse camping and hiking equipment available to rent in Morocco, with clear prices and rental details." }
+  }[locale];
+  return buildPageMetadata({ ...copy, path: "/rentals", locale, indexable: FEATURES.rentals });
+}
 
 export default async function RentalsPage({
   searchParams

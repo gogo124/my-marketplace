@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { getSafeAffiliateEmbed, APPROVED_WIDGET_SCRIPTS } from "@/lib/affiliate-widget-embed";
 
 type Widget = { _id?: string; name?: string; provider?: "Viator" | "GetYourGuide" | "Tripadvisor" | "Booking" | "Other"; type?: string; embedCode?: string; affiliateUrl?: string; active?: boolean };
@@ -42,14 +42,32 @@ function loadProviderScript(src: string) {
 }
 
 function ProviderWidget({ widget, parsed }: { widget: Widget; parsed: ProviderEmbed }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const script = parsed.kind === "viator" ? APPROVED_WIDGET_SCRIPTS.Viator : parsed.kind === "getyourguide" ? APPROVED_WIDGET_SCRIPTS.GetYourGuide : parsed.kind === "booking" ? APPROVED_WIDGET_SCRIPTS.Booking : null;
 
   useEffect(() => {
-    if (!script) return;
-    void loadProviderScript(script).catch(() => undefined);
+    const container = containerRef.current;
+    if (!script || !container) return;
+
+    let observer: IntersectionObserver | undefined;
+    const startLoading = () => {
+      observer?.disconnect();
+      void loadProviderScript(script).catch(() => undefined);
+    };
+
+    if ("IntersectionObserver" in window) {
+      observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) startLoading();
+      }, { rootMargin: "600px 0px" });
+      observer.observe(container);
+    } else {
+      startLoading();
+    }
+
+    return () => observer?.disconnect();
   }, [script]);
 
-  return <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white shadow-card">
+  return <div ref={containerRef} className="min-w-0 overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white shadow-card">
     <div className="border-b border-ink/5 px-5 py-4">
       <p className="text-[10px] font-black uppercase tracking-[.22em] text-clay">{widget.provider || "Partner"}</p>
       <h3 className="mt-1 line-clamp-2 text-lg font-black text-ink">{widget.name || "Partner offer"}</h3>
@@ -77,7 +95,7 @@ export function AffiliateWidgetRenderer({ widget }: { widget: Widget }) {
   }
 
   if (!embed) return null;
-  if (embed.kind === "iframe") return <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white shadow-card"><div className="border-b border-ink/5 px-5 py-4"><p className="text-[10px] font-black uppercase tracking-[.22em] text-clay">{provider}</p><h3 className="mt-1 line-clamp-2 text-lg font-black text-ink">{widget.name || "Partner offer"}</h3></div><div className="min-w-0 overflow-hidden"><iframe src={embed.src} title={widget.name || "Affiliate widget"} loading="eager" referrerPolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" className="block min-h-[320px] w-full max-w-full border-0" /></div></div>;
+  if (embed.kind === "iframe") return <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white shadow-card"><div className="border-b border-ink/5 px-5 py-4"><p className="text-[10px] font-black uppercase tracking-[.22em] text-clay">{provider}</p><h3 className="mt-1 line-clamp-2 text-lg font-black text-ink">{widget.name || "Partner offer"}</h3></div><div className="min-w-0 overflow-hidden"><iframe src={embed.src} title={widget.name || "Affiliate widget"} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" className="block min-h-[320px] w-full max-w-full border-0" /></div></div>;
 
   return <ProviderWidget widget={widget} parsed={embed} />;
 }

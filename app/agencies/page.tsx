@@ -24,10 +24,14 @@ export async function generateMetadata({
         : `Agences de voyage et voyages organises${cityLabel}`,
     description:
       locale === "ar"
-        ? "اكتشف وكالات سفر موثقة، قارن الرحلات والمقاعد المتاحة، وانتقل بسرعة إلى الحجز أو التواصل."
-        : "Decouvrez des agences verifiees, comparez les voyages et les places disponibles, puis passez rapidement a la reservation ou au contact.",
+        ? "اكتشف وكالات سفر موثقة في المغرب، وقارن الرحلات والمقاعد المتاحة قبل التواصل أو الحجز."
+        : locale === "fr"
+          ? "Découvrez des agences de voyage au Maroc, comparez les circuits et les disponibilités avant de réserver."
+          : "Discover travel agencies in Morocco, compare organized trips and availability before contacting or booking.",
     path: "/agencies",
-    image: "/images/agencies.jpg"
+    image: "/images/agencies.jpg",
+    locale,
+    indexable: FEATURES.agencies
   });
 }
 

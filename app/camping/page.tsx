@@ -9,7 +9,20 @@ import { getPublishedAffiliateWidgets } from "@/lib/affiliate-widgets";
 import { getDirection, resolveLocale } from "@/lib/i18n";
 import { buildPageMetadata } from "@/lib/seo";
 export const revalidate = 60;
-export const metadata: Metadata = buildPageMetadata({ title: "Premium Camping Directory in Morocco", description: "Discover curated camping, glamping, caravan and outdoor stays across Morocco.", path: "/camping", image: "/images/camping.jpg" });
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string }> }): Promise<Metadata> {
+ const { lang } = await searchParams;
+ const locale = resolveLocale(lang);
+ const [places, widgets] = await Promise.all([
+  getPlaces({ limit: 200 }).catch(() => []),
+  getPublishedAffiliateWidgets("camping").catch(() => [])
+ ]);
+ const copy = {
+  ar: { title: "أماكن التخييم في المغرب", description: "اكتشف أماكن التخييم والإقامة في الطبيعة بالمغرب، من المخيمات إلى تجارب التخييم المريحة." },
+  fr: { title: "Camping et séjours nature au Maroc", description: "Découvrez des campings et séjours en pleine nature au Maroc, entre bivouac, glamping et caravanes." },
+  en: { title: "Camping places and outdoor stays in Morocco", description: "Discover campsites, glamping stays and outdoor escapes across Morocco, with direct access to partners." }
+ }[locale];
+ return buildPageMetadata({ ...copy, path: "/camping", image: "/images/camping.jpg", locale, indexable: places.length > 0 || widgets.length > 0 });
+}
 export default async function Page({ searchParams }: { searchParams: Promise<any> }) {
  const p = await searchParams; const locale = resolveLocale(p.lang); const filters = { q: p.q || "", location: p.location || "", category: p.category || "", type: p.type || "", feature: p.feature || "", sort: p.sort || "newest" }; const [places, options, featured, affiliateWidgets] = await Promise.all([getPlaces(filters), getPlaceFilterOptions(), getPlaces({ featured: true, limit: 4 }), getPublishedAffiliateWidgets("camping")]); const select = (name: string, label: string, values: string[]) => <select name={name} defaultValue={filters[name as keyof typeof filters]} className="min-w-0 rounded-[1.15rem] border border-ink/10 bg-sand/30 px-4 py-3.5 text-sm font-semibold outline-none focus:border-clay focus:bg-white"><option value="">{label}</option>{values.map((value) => <option key={value}>{value}</option>)}</select>;
  return <main dir={getDirection(locale)} className="page-shell max-w-[1440px] space-y-14 pb-24 sm:space-y-20"><section className="relative min-h-[620px] overflow-hidden rounded-[2.5rem] bg-emerald-950 shadow-[0_35px_100px_rgba(15,61,46,.28)] sm:rounded-[3rem]"><Image src="/images/camping.jpg" alt="Camping Morocco" fill priority sizes="100vw" className="object-cover object-[center_58%]" /><div className="absolute inset-0 bg-[linear-gradient(112deg,rgba(3,20,14,.97),rgba(15,61,46,.78)_60%,rgba(249,115,22,.28))]" /><div className="relative flex min-h-[620px] items-end px-6 py-10 sm:px-10 sm:py-14 lg:px-16 lg:py-16"><div className="max-w-4xl text-white"><p className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[.28em] backdrop-blur">Affiliate Camping Directory</p><h1 className="mt-6 text-4xl font-black leading-[1.03] tracking-[-.04em] sm:text-6xl lg:text-7xl">Premium camping places across Morocco</h1><p className="mt-6 max-w-3xl text-base leading-8 text-white/78 sm:text-lg">Curated camps, glamping stays, caravan parks, and outdoor escapes with direct partner access.</p><div className="mt-8 flex flex-wrap gap-3 text-xs font-bold text-white/85"><span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Immersive outdoor stays</span><span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Trusted partner access</span><span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Across Morocco</span></div></div></div></section>
