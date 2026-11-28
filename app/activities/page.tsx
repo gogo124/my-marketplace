@@ -42,7 +42,6 @@ export default async function ActivitiesPage({ searchParams }: { searchParams: P
   </div>
   <p className="mt-4 text-center text-[11px] leading-5 text-ink/45">{isArabic ? "قد نحصل على عمولة عند الحجز عبر روابط الشريك، دون تكلفة إضافية عليك." : locale === "fr" ? "Nous pouvons recevoir une commission si vous réservez via notre partenaire, sans frais supplémentaires." : "We may earn a commission when you book through our partner, at no extra cost to you."}</p>
  </section>
- </section>
  <aside aria-label="Viator sponsored activities" className="flex justify-center lg:sticky lg:top-24 lg:pt-8">
   <div className="min-h-[600px] w-[120px] overflow-hidden rounded-xl bg-white/70">
    <div data-id="viator-banner" data-partner-id="P00319762" data-url="https://www.viator.com/" data-banner-width="120" data-banner-height="600" data-banner-language="en" data-banner-selection="banner3" data-campaign="moroccantrip"></div>
