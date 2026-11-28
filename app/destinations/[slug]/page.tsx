@@ -84,6 +84,8 @@ export default async function DestinationPage({ params, searchParams }: PageProp
           </div>
         </header>
 
+        {affiliateWidgets.length ? <section aria-label={t.offers} className="mx-auto mt-7 max-w-[1320px] rounded-[1.75rem] border border-clay/20 bg-gradient-to-br from-sand/80 via-white to-sand/40 p-4 shadow-card sm:p-7 lg:p-9"><div className="mb-5 flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-clay">{t.partners}</p><h2 className="mt-1 text-2xl font-black tracking-tight text-ink sm:text-3xl">{t.offers}</h2></div><span className="rounded-full border border-clay/20 bg-white px-3 py-1.5 text-xs font-bold text-ink/55">{affiliateWidgets.length}</span></div><AffiliateWidgetSection widgets={affiliateWidgets} title="" /></section> : null}
+
         <div className="mx-auto mt-8 grid min-w-0 max-w-[1320px] items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-9">
           <div className="min-w-0 space-y-8">
             {article.length ? <section id="destination-article" className="scroll-mt-8 rounded-[1.75rem] border border-ink/10 bg-white p-5 shadow-card sm:p-8 lg:p-10">
@@ -112,7 +114,6 @@ export default async function DestinationPage({ params, searchParams }: PageProp
           </aside>
         </div>
 
-        {affiliateWidgets.length ? <div className="mx-auto mt-10 max-w-[1320px] rounded-[1.75rem] border border-ink/10 bg-sand/35 p-4 sm:p-7 lg:p-9"><AffiliateWidgetSection widgets={affiliateWidgets} title={t.offers} /></div> : null}
       </article>
     </main>
   );
